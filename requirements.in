@@ -1,0 +1,11 @@
+geopandas
+xarray
+rioxarray
+dask[complete]
+geocube
+pystac-client
+planetary-computer
+pygeos
+stackstac
+azure-storage-blob
+kbatch

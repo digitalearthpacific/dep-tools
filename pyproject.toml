@@ -1,0 +1,11 @@
+[project]
+name = "dep-tools"
+version = "0.1.0"
+dynamic = ["dependencies"]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
+
