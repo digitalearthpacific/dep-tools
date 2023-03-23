@@ -1,11 +1,13 @@
+azure-storage-blob
 geopandas
-xarray
-rioxarray
 dask[complete]
+dask-gateway
 geocube
+GDAL
 pystac-client
 planetary-computer
 pygeos
+rioxarray
 stackstac
-azure-storage-blob
-kbatch
+tqdm
+xarray
