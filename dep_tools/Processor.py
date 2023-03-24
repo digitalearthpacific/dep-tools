@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from importlib.resources import open_binary
 import os
 from pathlib import Path
@@ -17,8 +17,8 @@ from stackstac import stack
 from tqdm import tqdm
 from xarray import DataArray
 
-from landsat_utils import item_collection_for_pathrow, mask_clouds
-from utils import (
+from .landsat_utils import item_collection_for_pathrow, mask_clouds
+from .utils import (
     gpdf_bounds,
     raster_bounds,
     scale_to_int16,
@@ -40,7 +40,7 @@ class Processor:
             future, Sentinel 2). Each tile must have a single row and have
             columns "PATH" and "ROW".
         dataset_id(str): Our name for the dataset, such as "ndvi"
-        storage_account(str): The name of the azure storage account we wish to 
+        storage_account(str): The name of the azure storage account we wish to
             use to write outputs. Defaults to the environmental variable
             "AZURE_STORAGE_ACCOUNT"
         container_name(str): The name of the container in the storage account
@@ -49,11 +49,14 @@ class Processor:
             For valid options, see the help for azure.storage.blob.ContainerClient.
             Defaults to the environmental variable "AZURE_STORAGE_SAS_TOKEN".
     """
+
     year: int
     scene_processor: Callable
     dataset_id: str
-    aoi_by_tile: GeoDataFrame = GeoDataFrame(open_binary('dep_tools', 'aoi_split_by_landsat_pathrow.gpkg'))
-    scene_processor_kwargs: dict = dict()
+    aoi_by_tile: GeoDataFrame = GeoDataFrame(
+        open_binary("dep_tools", "aoi_split_by_landsat_pathrow.gpkg")
+    )
+    scene_processor_kwargs: Dict = field(default_factory=dict)
     dask_chunksize: int = 4096
     storage_account: str = os.environ["AZURE_STORAGE_ACCOUNT"]
     container_name: str = "output"
@@ -87,7 +90,9 @@ class Processor:
         )
 
     def process_by_scene(self) -> None:
-        for index, row in tqdm(self.aoi_by_tile.iterrows(), total=self.aoi_by_tile.shape[0])):
+        for index, row in tqdm(
+            self.aoi_by_tile.iterrows(), total=self.aoi_by_tile.shape[0]
+        ):
             these_areas = row.geometry
             index_dict = dict(zip(self.aoi_by_tile.index.names, index))
 
@@ -120,7 +125,7 @@ class Processor:
                     results,
                     # may have to modify this based on length of index
                     # (single value may not work)
-                    f"{self.prefix}_{'_'.join([str(i) for i in index]}.tif",
+                    f"{self.prefix}_{'_'.join([str(i) for i in index])}.tif",
                     dict(driver="COG", compress="LZW", predictor=2),
                 )
             except Exception as e:

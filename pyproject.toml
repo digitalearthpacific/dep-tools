@@ -1,13 +1,36 @@
-[project]
+[tool.poetry]
 name = "dep-tools"
 version = "0.1.0"
-dynamic = ["dependencies"]
+description = ""
+authors = ["Jesse Anderson <jesse.anderson@gmail.com>"]
+license = "MIT"
+packages = [{include = "dep_tools"}]
+include = ["*.gpkg"]
 
-[tool.setuptools]
-package-dir = {"" = "src"}
+[tool.poetry.dependencies]
+python = "^3.10"
+azure-storage-blob = "^12.15.0"
+geopandas = "^0.12.2"
+dask = {extras = ["complete"], version = "^2023.3.2"}
+dask-gateway = "^2023.1.1"
+geocube = "^0.4.0"
+gdal = "^3.6.3"
+pystac-client = "^0.6.1"
+planetary-computer = "^0.4.9"
+pygeos = "^0.14"
+rioxarray = "^0.14.0"
+stackstac = "^0.4.3"
+tqdm = "^4.65.0"
+xarray = "^2023.3.0"
 
-[tool.setuptools.dynamic]
-dependencies = {file = ["requirements.in"]}
 
-[tool.setuptools.package-data]
-dep_tools = ["*.gpkg"]
+[tool.poetry.group.dev.dependencies]
+pynvim = "^0.4.3"
+black = "^23.1.0"
+neovim = "^0.3.1"
+pylint = "^2.17.1"
+mypy = "^1.1.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
