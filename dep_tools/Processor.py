@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from importlib.resources import open_binary
+from importlib.resources import files
 import os
 from pathlib import Path
 from typing import Any, Dict, List, Union, Callable
@@ -35,10 +35,10 @@ class Processor:
         scene_processor(Callable): A function which accepts at least a parameter
             of type xarray.DataArray and returns the same. Additional arguments
             can be specified using `scene_processor_kwargs`.
-        aoi_by_tile_file(pathlib.Path): The path for a vector file hold ing areas
+        aoi_by_tile(GeoDataFrame): A GeoDataFrame holdinng areas
             of interest (typically land masses), split by landsat tile (and in
-            future, Sentinel 2). Each tile must have a single row and have
-            columns "PATH" and "ROW".
+            future, Sentinel 2). Each tile must be indexed by the tile id columns
+            (e.g. "PATH" and "ROW").
         dataset_id(str): Our name for the dataset, such as "ndvi"
         storage_account(str): The name of the azure storage account we wish to
             use to write outputs. Defaults to the environmental variable
@@ -53,9 +53,9 @@ class Processor:
     year: int
     scene_processor: Callable
     dataset_id: str
-    aoi_by_tile: GeoDataFrame = GeoDataFrame(
-        open_binary("dep_tools", "aoi_split_by_landsat_pathrow.gpkg")
-    )
+    aoi_by_tile: GeoDataFrame = GeoDataFrame.from_file(
+        files("dep_tools").joinpath("aoi_split_by_landsat_pathrow.gpkg")
+    ).set_index(["PATH", "ROW"])
     scene_processor_kwargs: Dict = field(default_factory=dict)
     dask_chunksize: int = 4096
     storage_account: str = os.environ["AZURE_STORAGE_ACCOUNT"]
@@ -90,10 +90,10 @@ class Processor:
         )
 
     def process_by_scene(self) -> None:
-        for index, row in tqdm(
+        for index, _ in tqdm(
             self.aoi_by_tile.iterrows(), total=self.aoi_by_tile.shape[0]
         ):
-            these_areas = row.geometry
+            these_areas = self.aoi_by_tile.loc[index]
             index_dict = dict(zip(self.aoi_by_tile.index.names, index))
 
             item_collection = item_collection_for_pathrow(
