@@ -14,7 +14,7 @@ import rasterio
 import rioxarray
 from tqdm import tqdm
 import xarray as xr
-from xarray import DataArray
+from xarray import DataArray, Dataset
 
 
 def scale_and_offset(

@@ -61,6 +61,7 @@ class Processor:
     storage_account: str = os.environ["AZURE_STORAGE_ACCOUNT"]
     container_name: str = "output"
     credential: str = os.environ["AZURE_STORAGE_SAS_TOKEN"]
+    convert_output_to_int16: bool = True
     output_value_multiplier: int = 10000
     output_nodata: int = -32767
     color_ramp_file: Union[str, None] = None
@@ -116,9 +117,11 @@ class Processor:
             item_xr = scale_and_offset(item_xr, scale=[scale], offset=offset)
 
             results = self.scene_processor(item_xr, **self.scene_processor_kwargs)
-            results = scale_to_int16(
-                results, self.output_value_multiplier, self.output_nodata
-            )
+            if self.convert_output_to_int16:
+                # Must be DA!
+                results = scale_to_int16(
+                    results, self.output_value_multiplier, self.output_nodata
+                )
 
             try:
                 write_to_blob_storage(
