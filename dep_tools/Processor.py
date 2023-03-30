@@ -119,19 +119,22 @@ class Processor:
             item_xr = scale_and_offset(item_xr, scale=[scale], offset=offset)
 
             results = self.scene_processor(item_xr, **self.scene_processor_kwargs)
+            predictor = 3 
             if self.convert_output_to_int16:
                 # Must be DA!
                 results = scale_to_int16(
                     results, self.output_value_multiplier, self.output_nodata
                 )
+                predictor = 2
 
             try:
+                
                 write_to_blob_storage(
                     results,
                     # may have to modify this based on length of index
                     # (single value may not work)
                     f"{self.prefix}_{'_'.join([str(i) for i in index])}.tif",
-                    dict(driver="COG", compress="LZW", predictor=2),
+                    dict(driver="COG", compress="LZW", predictor=predictor),
                 )
             except Exception as e:
                 print(e)

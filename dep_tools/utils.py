@@ -36,7 +36,6 @@ def make_geocube_dask(
             .assign_coords(block.coords)
         )
 
-    like = like.rename(dict(zip(["band"], measurements)))
     return like.map_blocks(rasterize_block, template=like)
 
 

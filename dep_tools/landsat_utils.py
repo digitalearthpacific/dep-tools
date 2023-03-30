@@ -1,10 +1,8 @@
-from typing import Dict, List
+from typing import Dict
 
-import geopandas as gpd
 import planetary_computer
 import pystac_client
 from pystac import ItemCollection
-import xarray as xr
 from xarray import DataArray
 
 
