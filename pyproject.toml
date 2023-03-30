@@ -8,20 +8,33 @@ packages = [{include = "dep_tools"}]
 include = ["*.gpkg"]
 
 [tool.poetry.dependencies]
-python = "^3.10"
-azure-storage-blob = "^12.15.0"
-geopandas = "^0.12.2"
-dask = {extras = ["complete"], version = "^2023.3.2"}
-dask-gateway = "^2023.1.1"
-geocube = "^0.4.0"
-gdal = "3.5.1"
-pystac-client = "^0.6.1"
-planetary-computer = "^0.4.9"
-pygeos = "^0.14"
-rioxarray = "^0.14.0"
-stackstac = "^0.4.3"
-tqdm = "^4.65.0"
-xarray = "^2023.3.0"
+python = "^3.8"
+azure-storage-blob = "*"
+geopandas = "*"
+dask = {extras = ["complete"], version = "*"}
+dask-gateway = "*"
+geocube = "*"
+gdal = "*"
+pystac-client = "*"
+planetary-computer = "*"
+pygeos = "*"
+rioxarray = "*"
+stackstac = "*"
+tqdm = "*"
+xarray = "*"
+#azure-storage-blob = "^12.15.0"
+#geopandas = "^0.12.2"
+#dask = {extras = ["complete"], version = "^2023.3.2"}
+#dask-gateway = "^2023.1.1"
+#geocube = "^0.4.0"
+#gdal = "3.5.1"
+#pystac-client = "^0.6.1"
+#planetary-computer = "^0.4.9"
+#pygeos = "^0.14"
+#rioxarray = "^0.14.0"
+#stackstac = "^0.4.3"
+#tqdm = "^4.65.0"
+#xarray = "^2023.3.0"
 
 
 [tool.poetry.group.dev.dependencies]

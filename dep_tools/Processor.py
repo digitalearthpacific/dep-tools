@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from importlib.resources import files
+#from importlib.resources import files
 import os
 from pathlib import Path
 from typing import Any, Dict, List, Union, Callable
@@ -54,7 +54,9 @@ class Processor:
     scene_processor: Callable
     dataset_id: str
     aoi_by_tile: GeoDataFrame = GeoDataFrame.from_file(
-        files("dep_tools").joinpath("aoi_split_by_landsat_pathrow.gpkg")
+        Path(__file__).parent / "aoi_split_by_landsat_pathrow.gpkg"
+# in 3.10
+#        files("dep_tools").joinpath("aoi_split_by_landsat_pathrow.gpkg")
     ).set_index(["PATH", "ROW"])
     scene_processor_kwargs: Dict = field(default_factory=dict)
     dask_chunksize: int = 4096
