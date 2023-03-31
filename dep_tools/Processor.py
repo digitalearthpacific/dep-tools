@@ -20,7 +20,6 @@ from xarray import DataArray
 from .landsat_utils import item_collection_for_pathrow, mask_clouds
 from .utils import (
     gpdf_bounds,
-    raster_bounds,
     scale_to_int16,
     write_to_blob_storage,
     scale_and_offset,
@@ -96,7 +95,7 @@ class Processor:
         for index, _ in tqdm(
             self.aoi_by_tile.iterrows(), total=self.aoi_by_tile.shape[0]
         ):
-            these_areas = self.aoi_by_tile.loc[index]
+            these_areas = self.aoi_by_tile.loc[[index]]
             index_dict = dict(zip(self.aoi_by_tile.index.names, index))
 
             item_collection = item_collection_for_pathrow(
@@ -111,6 +110,8 @@ class Processor:
                     bbox=gpdf_bounds(these_areas),
                 ),
             )
+            if len(item_collection) == 0:
+                continue
 
             item_xr = self.get_stack(item_collection, these_areas)
             item_xr = mask_clouds(item_xr)
@@ -128,7 +129,6 @@ class Processor:
                 predictor = 2
 
             try:
-                
                 write_to_blob_storage(
                     results,
                     # may have to modify this based on length of index
