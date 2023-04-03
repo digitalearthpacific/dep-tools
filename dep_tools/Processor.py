@@ -53,7 +53,7 @@ class Processor:
 
     scene_processor: Callable
     dataset_id: str
-    year: int | None = None
+    year: Union[str, None] = None
     aoi_by_tile: GeoDataFrame = GeoDataFrame.from_file(
         Path(__file__).parent
         / "aoi_split_by_landsat_pathrow.gpkg"
@@ -61,6 +61,7 @@ class Processor:
         #        files("dep_tools").joinpath("aoi_split_by_landsat_pathrow.gpkg")
     ).set_index(["PATH", "ROW"])
     scene_processor_kwargs: Dict = field(default_factory=dict)
+    send_area_to_scene_processor: bool = False
     dask_chunksize: int = 4096
     storage_account: str = os.environ["AZURE_STORAGE_ACCOUNT"]
     container_name: str = "output"
@@ -108,7 +109,6 @@ class Processor:
         ):
             these_areas = self.aoi_by_tile.loc[[index]]
             index_dict = dict(zip(self.aoi_by_tile.index.names, index))
-            print(index)
             item_collection = item_collection_for_pathrow(
                 # For S2, would probably just pass index_dict as kwargs
                 # to generic function
@@ -131,6 +131,8 @@ class Processor:
             offset = -0.2
             item_xr = scale_and_offset(item_xr, scale=[scale], offset=offset)
 
+            if self.send_area_to_scene_processor:
+                self.scene_processor_kwargs.update(dict(area=these_areas))
             results = self.scene_processor(item_xr, **self.scene_processor_kwargs)
             predictor = 3
             if self.convert_output_to_int16:
@@ -145,6 +147,7 @@ class Processor:
                     results,
                     # may have to modify this based on length of index
                     # (single value may not work)
+                    #                    f"{self.prefix}_{'_'.join([str(i) for i in index])}.tif",
                     f"{self.prefix}_{'_'.join([str(i) for i in index])}.tif",
                     dict(driver="COG", compress="LZW", predictor=predictor),
                 )

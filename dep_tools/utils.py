@@ -5,6 +5,7 @@ from typing import Dict, List, Union
 
 import azure.storage.blob
 from dask.distributed import Client, Lock
+import fiona
 from geopandas import GeoDataFrame
 from geocube.api.core import make_geocube
 import numpy as np
@@ -55,19 +56,18 @@ def write_to_blob_storage(
         credential=credential,
     )
 
-
     if isinstance(d, (DataArray, Dataset)):
         with io.BytesIO() as buffer:
             d.rio.to_raster(buffer, **write_args)
             buffer.seek(0)
-            blob_client = container_client.get_blob_client(path)
+            blob_client = container_client.get_blob_client(str(path))
             blob_client.upload_blob(buffer, overwrite=True)
     elif isinstance(d, GeoDataFrame):
         # some sort of vector data
         with fiona.io.MemoryFile() as buffer:
             d.to_file(buffer, **write_args)
             buffer.seek(0)
-            blob_client = container_client.get_blob_client(path)
+            blob_client = container_client.get_blob_client(str(path))
             blob_client.upload_blob(buffer, overwrite=True)
     else:
         # throw exception
@@ -223,7 +223,6 @@ def mosaic_scenes(
     scale_factor: float = None,
     overwrite: bool = True,
 ) -> None:
-
     mosaic_file = _mosaic_file(prefix)
     if not Path(mosaic_file).is_file() or overwrite:
         vrt_file = build_vrt(
@@ -240,6 +239,7 @@ def mosaic_scenes(
         if scale_factor is not None:
             with rasterio.open(mosaic_file, "r+") as dst:
                 dst.scales = (scale_factor,)
+
 
 def fix_bad_epsgs(item_collection: ItemCollection) -> None:
     """Repairs some band epsg codes in stac items loaded from the Planetary
