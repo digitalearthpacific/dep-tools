@@ -3,6 +3,7 @@ from typing import Dict
 import planetary_computer
 import pystac_client
 from pystac import ItemCollection
+from retry import retry
 from xarray import DataArray
 
 
@@ -17,6 +18,7 @@ def mask_clouds(xr: DataArray) -> DataArray:
     return xr.where(qa & bitmask == 0)
 
 
+@retry(tries=10, delay=1)
 def item_collection_for_pathrow(
     path: int, row: int, search_args: Dict
 ) -> ItemCollection:

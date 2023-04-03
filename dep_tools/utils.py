@@ -10,6 +10,7 @@ from geocube.api.core import make_geocube
 import numpy as np
 from osgeo import gdal
 import osgeo_utils.gdal2tiles
+from pystac import ItemCollection
 import rasterio
 import rioxarray
 from tqdm import tqdm
@@ -53,6 +54,7 @@ def write_to_blob_storage(
         container_name=container_name,
         credential=credential,
     )
+
 
     if isinstance(d, (DataArray, Dataset)):
         with io.BytesIO() as buffer:
@@ -238,3 +240,13 @@ def mosaic_scenes(
         if scale_factor is not None:
             with rasterio.open(mosaic_file, "r+") as dst:
                 dst.scales = (scale_factor,)
+
+def fix_bad_epsgs(item_collection: ItemCollection) -> None:
+    """Repairs some band epsg codes in stac items loaded from the Planetary
+    Computer stac catalog"""
+    # ** modifies in place **
+    # See https://github.com/microsoft/PlanetaryComputer/discussions/113
+    # Will get fixed at some point and we can remove this
+    for item in item_collection:
+        epsg = str(item.properties["proj:epsg"])
+        item.properties["proj:epsg"] = int(f"{epsg[0:3]}{int(epsg[3:]):02d}")

@@ -1,13 +1,14 @@
 from dataclasses import dataclass, field
-#from importlib.resources import files
+
+# from importlib.resources import files
 import os
 from pathlib import Path
-from typing import Any, Dict, List, Union, Callable
+from typing import Dict, List, Union, Callable
 
 from azure.storage.blob import ContainerClient
 from dask.distributed import Client, Lock
 from dask_gateway import GatewayCluster
-from geopandas import read_file, GeoDataFrame
+from geopandas import GeoDataFrame
 from osgeo import gdal
 from osgeo_utils import gdal2tiles
 from pystac import ItemCollection
@@ -19,6 +20,7 @@ from xarray import DataArray
 
 from .landsat_utils import item_collection_for_pathrow, mask_clouds
 from .utils import (
+    fix_bad_epsgs,
     gpdf_bounds,
     scale_to_int16,
     write_to_blob_storage,
@@ -49,13 +51,14 @@ class Processor:
             Defaults to the environmental variable "AZURE_STORAGE_SAS_TOKEN".
     """
 
-    year: int
     scene_processor: Callable
     dataset_id: str
+    year: int | None = None
     aoi_by_tile: GeoDataFrame = GeoDataFrame.from_file(
-        Path(__file__).parent / "aoi_split_by_landsat_pathrow.gpkg"
-# in 3.10
-#        files("dep_tools").joinpath("aoi_split_by_landsat_pathrow.gpkg")
+        Path(__file__).parent
+        / "aoi_split_by_landsat_pathrow.gpkg"
+        # in 3.10
+        #        files("dep_tools").joinpath("aoi_split_by_landsat_pathrow.gpkg")
     ).set_index(["PATH", "ROW"])
     scene_processor_kwargs: Dict = field(default_factory=dict)
     dask_chunksize: int = 4096
@@ -73,7 +76,11 @@ class Processor:
             container_name=self.container_name,
             credential=self.credential,
         )
-        self.prefix = f"{self.dataset_id}/{self.year}/{self.dataset_id}_{self.year}"
+        self.prefix = (
+            f"{self.dataset_id}/{self.year}/{self.dataset_id}_{self.year}"
+            if self.year
+            else f"{self.dataset_id}/{self.dataset_id}"
+        )
         self.local_prefix = Path(self.prefix).stem
         self.mosaic_file = f"data/{self.local_prefix}.tif"
 
@@ -88,7 +95,11 @@ class Processor:
                 resolution=30,
             )
             .rio.write_crs("EPSG:8859")
-            .rio.clip(these_areas.to_crs("EPSG:8859").geometry, all_touched=True)
+            .rio.clip(
+                these_areas.to_crs("EPSG:8859").geometry,
+                all_touched=True,
+                from_disk=True,
+            )
         )
 
     def process_by_scene(self) -> None:
@@ -97,21 +108,22 @@ class Processor:
         ):
             these_areas = self.aoi_by_tile.loc[[index]]
             index_dict = dict(zip(self.aoi_by_tile.index.names, index))
-
+            print(index)
             item_collection = item_collection_for_pathrow(
                 # For S2, would probably just pass index_dict as kwargs
                 # to generic function
                 path=index_dict["PATH"],
                 row=index_dict["ROW"],
-                # obv change collection here
                 search_args=dict(
                     collections=["landsat-c2-l2"],
-                    datetime=str(self.year),
+                    datetime=self.year,
                     bbox=gpdf_bounds(these_areas),
                 ),
             )
+
             if len(item_collection) == 0:
                 continue
+            fix_bad_epsgs(item_collection)
 
             item_xr = self.get_stack(item_collection, these_areas)
             item_xr = mask_clouds(item_xr)
@@ -120,7 +132,7 @@ class Processor:
             item_xr = scale_and_offset(item_xr, scale=[scale], offset=offset)
 
             results = self.scene_processor(item_xr, **self.scene_processor_kwargs)
-            predictor = 3 
+            predictor = 3
             if self.convert_output_to_int16:
                 # Must be DA!
                 results = scale_to_int16(
