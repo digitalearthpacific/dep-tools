@@ -131,22 +131,18 @@ class Processor:
             if self.send_area_to_scene_processor:
                 self.scene_processor_kwargs.update(dict(area=these_areas))
             results = self.scene_processor(item_xr, **self.scene_processor_kwargs)
-            predictor = 3
             if self.convert_output_to_int16:
                 # Must be DA!
                 results = scale_to_int16(
                     results, self.output_value_multiplier, self.output_nodata
                 )
-                predictor = 2
 
             if len(results.dims.keys()) > 2:
                 for var in results:
                     these_results = results[var].to_dataset("time")
                     name = (f"{var}_{'_'.join([str(i) for i in index])}.tif",)
                     write_to_blob_storage(
-                        these_results,
-                        name,
-                        dict(driver="COG", compress="LZW", predictor=predictor),
+                        these_results, name, dict(driver="COG", compress="LZW")
                     )
 
             else:
