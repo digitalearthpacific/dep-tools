@@ -139,17 +139,22 @@ class Processor:
                 )
                 predictor = 2
 
-            try:
+            if len(results.dims.keys()) > 2:
+                for var in results:
+                    these_results = results[var].to_dataset("time")
+                    name = (f"{var}_{'_'.join([str(o) for i in index])}.tif",)
+                    write_to_blob_storage(
+                        these_results,
+                        name,
+                        dict(driver="COG", compress="LZW", predictor=predictor),
+                    )
+
+            else:
                 write_to_blob_storage(
                     results,
-                    # may have to modify this based on length of index
-                    # (single value may not work)
-                    #                    f"{self.prefix}_{'_'.join([str(i) for i in index])}.tif",
                     f"{self.prefix}_{'_'.join([str(i) for i in index])}.tif",
                     dict(driver="COG", compress="LZW", predictor=predictor),
                 )
-            except Exception as e:
-                print(e)
 
     def copy_to_blob_storage(self, local_path: Path, remote_path: Path) -> None:
         with open(local_path, "rb") as src:

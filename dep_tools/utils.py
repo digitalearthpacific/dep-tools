@@ -57,6 +57,7 @@ def write_to_blob_storage(
     )
 
     if isinstance(d, (DataArray, Dataset)):
+        breakpoint()
         with io.BytesIO() as buffer:
             d.rio.to_raster(buffer, **write_args)
             buffer.seek(0)
