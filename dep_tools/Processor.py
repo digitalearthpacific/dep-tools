@@ -145,8 +145,8 @@ class Processor:
                     # may have to modify this based on length of index
                     # (single value may not work)
                     #                    f"{self.prefix}_{'_'.join([str(i) for i in index])}.tif",
-                    f"{self.prefix}_{'_'.join([str(i) for i in index])}.nc",
-                    #                    dict(driver="COG", compress="LZW", predictor=predictor),
+                    f"{self.prefix}_{'_'.join([str(i) for i in index])}.tif",
+                    dict(driver="COG", compress="LZW", predictor=predictor),
                 )
             except Exception as e:
                 print(e)

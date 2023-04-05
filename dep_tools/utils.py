@@ -60,7 +60,6 @@ def write_to_blob_storage(
         with io.BytesIO() as buffer:
             d.rio.to_raster(buffer, **write_args)
             buffer.seek(0)
-            print(path)
             blob_client = container_client.get_blob_client(str(path))
             blob_client.upload_blob(buffer, overwrite=True)
     elif isinstance(d, GeoDataFrame):
