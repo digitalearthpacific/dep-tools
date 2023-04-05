@@ -55,10 +55,7 @@ class Processor:
     dataset_id: str
     year: Union[str, None] = None
     aoi_by_tile: GeoDataFrame = GeoDataFrame.from_file(
-        Path(__file__).parent
-        / "aoi_split_by_landsat_pathrow.gpkg"
-        # in 3.10
-        #        files("dep_tools").joinpath("aoi_split_by_landsat_pathrow.gpkg")
+        Path(__file__).parent / "aoi_split_by_landsat_pathrow.gpkg"
     ).set_index(["PATH", "ROW"])
     scene_processor_kwargs: Dict = field(default_factory=dict)
     send_area_to_scene_processor: bool = False
@@ -148,8 +145,8 @@ class Processor:
                     # may have to modify this based on length of index
                     # (single value may not work)
                     #                    f"{self.prefix}_{'_'.join([str(i) for i in index])}.tif",
-                    f"{self.prefix}_{'_'.join([str(i) for i in index])}.tif",
-                    dict(driver="COG", compress="LZW", predictor=predictor),
+                    f"{self.prefix}_{'_'.join([str(i) for i in index])}.nc",
+                    #                    dict(driver="COG", compress="LZW", predictor=predictor),
                 )
             except Exception as e:
                 print(e)
