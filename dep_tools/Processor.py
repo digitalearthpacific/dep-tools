@@ -142,7 +142,7 @@ class Processor:
             if len(results.dims.keys()) > 2:
                 for var in results:
                     these_results = results[var].to_dataset("time")
-                    name = (f"{var}_{'_'.join([str(o) for i in index])}.tif",)
+                    name = (f"{var}_{'_'.join([str(i) for i in index])}.tif",)
                     write_to_blob_storage(
                         these_results,
                         name,
