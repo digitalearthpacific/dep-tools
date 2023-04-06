@@ -138,12 +138,18 @@ class Processor:
                 )
 
             if len(results.dims.keys()) > 2:
-                for var in results:
-                    these_results = results[var].to_dataset("time")
-                    name = f"{var}_{'_'.join([str(i) for i in index])}.tif"
+                for year in results.coords['time']:
+                    these_results = results.sel(time=year)
+                    name = f"{self.dataset_id}/{year.values.tolist()}_{'_'.join([str(i) for i in index])}.tif"
                     write_to_blob_storage(
                         these_results, name, dict(driver="COG", compress="LZW")
                     )
+#                for var in results:
+#                    these_results = results[var].to_dataset("time")
+#                    name = f"{self.dataset_id}/{var}_{'_'.join([str(i) for i in index])}.tif"
+#                    write_to_blob_storage(
+#                        these_results, name, dict(driver="COG", compress="LZW")
+#                    )
 
             else:
                 write_to_blob_storage(
