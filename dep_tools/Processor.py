@@ -132,7 +132,6 @@ class Processor:
                 self.scene_processor_kwargs.update(dict(area=these_areas))
             results = self.scene_processor(item_xr, **self.scene_processor_kwargs)
             if self.convert_output_to_int16:
-                # Must be DA!
                 results = scale_to_int16(
                     results, self.output_value_multiplier, self.output_nodata
                 )
@@ -140,7 +139,8 @@ class Processor:
             if len(results.dims.keys()) > 2:
                 results = (
                     results.to_array(dim="variables")
-                    .stack(z=["variables", "time"])
+                    #                    .stack(z=["variables", "time"])
+                    .stack(z=["time", "variables"])
                     .to_dataset(dim="z")
                     .pipe(
                         lambda ds: ds.rename_vars(
