@@ -13,6 +13,7 @@ from osgeo import gdal
 from osgeo_utils import gdal2tiles
 from pystac import ItemCollection
 import rasterio
+from rasterio import RasterioIOError
 import rioxarray
 from stackstac import stack
 from tqdm import tqdm
@@ -91,6 +92,8 @@ class Processor:
                 epsg=8859,
                 chunksize=self.dask_chunksize,
                 resolution=30,
+                # Previously it only caught 404s, we are getting other errors
+                errors_as_nodata=(RasterioIOError(".*"),),
             )
             .rio.write_crs("EPSG:8859")
             .rio.clip(
