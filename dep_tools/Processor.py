@@ -138,16 +138,23 @@ class Processor:
                 )
 
             if len(results.dims.keys()) > 2:
-                for year in results.coords["time"]:
-                    # Writing crs because it seems to be getting lost on write
-                    # (it says it's there though)
-                    these_results = results.sel(time=year).rio.write_crs(
-                        results.rio.crs, inplace=True
+                results = (
+                    results.to_array(dim="variables")
+                    .stack(z=["variables", "time"])
+                    .to_dataset(dim="z")
+                    .pipe(
+                        lambda ds: ds.rename_vars(
+                            {name: "_".join(name) for name in ds.data_vars}
+                        )
                     )
-                    name = f"{self.dataset_id}/{year.values.tolist()}_{'_'.join([str(i) for i in index])}.tif"
-                    write_to_blob_storage(
-                        these_results, name, dict(driver="COG", compress="LZW")
-                    )
+                    .drop_vars(["variables", "time"])
+                )
+            #                    for year in results.coords["time"]:
+            #                        these_results = results.sel(time=year)
+            #                        name = f"{self.dataset_id}/{year.values.tolist()}_{'_'.join([str(i) for i in index])}.tif"
+            #                        write_to_blob_storage(
+            #                            these_results, name, dict(driver="COG", compress="LZW")
+            #                        )
             #                for var in results:
             #                    these_results = results[var].to_dataset("time")
             #                    name = f"{self.dataset_id}/{var}_{'_'.join([str(i) for i in index])}.tif"
@@ -155,12 +162,12 @@ class Processor:
             #                        these_results, name, dict(driver="COG", compress="LZW")
             #                    )
 
-            else:
-                write_to_blob_storage(
-                    results,
-                    f"{self.prefix}_{'_'.join([str(i) for i in index])}.tif",
-                    dict(driver="COG", compress="LZW", predictor=predictor),
-                )
+            #            else:
+            write_to_blob_storage(
+                results,
+                f"{self.prefix}_{'_'.join([str(i) for i in index])}.tif",
+                dict(driver="COG", compress="LZW"),
+            )
 
     def copy_to_blob_storage(self, local_path: Path, remote_path: Path) -> None:
         with open(local_path, "rb") as src:
