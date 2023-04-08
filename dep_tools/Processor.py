@@ -152,7 +152,8 @@ class Processor:
                 #                    .drop_vars(["variables", "time"])
                 #                )
                 for year in results.coords["time"]:
-                    these_results = results.sel(time=year)
+                    # try loading?
+                    these_results = results.sel(time=year).load()
                     #                    name = f"{self.dataset_id}/{year.values.tolist()}_{'_'.join([str(i) for i in index])}.tif"
                     #                    write_to_blob_storage(
                     #                        these_results, name, dict(driver="COG", compress="LZW")
