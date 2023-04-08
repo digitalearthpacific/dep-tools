@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Dict, List, Union
 
 import azure.storage.blob
+from azure.storage.blob import ContainerClient
 from dask.distributed import Client, Lock
 import fiona
 from geopandas import GeoDataFrame
@@ -41,33 +42,47 @@ def make_geocube_dask(
     return like.map_blocks(rasterize_block, template=like)
 
 
-def write_to_blob_storage(
-    d: Union[DataArray, Dataset, GeoDataFrame],
-    path: Union[str, Path],
-    write_args: Dict = dict(),
-    #    output_scale: List = [1.0],
+def get_container_client(
     storage_account: str = os.environ["AZURE_STORAGE_ACCOUNT"],
     container_name: str = "output",
     credential: str = os.environ["AZURE_STORAGE_SAS_TOKEN"],
-) -> None:
-    container_client = azure.storage.blob.ContainerClient(
+) -> ContainerClient:
+    return azure.storage.blob.ContainerClient(
         f"https://{storage_account}.blob.core.windows.net",
         container_name=container_name,
         credential=credential,
     )
 
+
+def blob_exists(path: Union[str, Path], **kwargs):
+    container_client = get_container_client(**kwargs)
+    blob_client = container_client.get_blob_client(str(path))
+    return blob_client.exists()
+
+
+def write_to_blob_storage(
+    d: Union[DataArray, Dataset, GeoDataFrame],
+    path: Union[str, Path],
+    write_args: Dict = dict(),
+    overwrite: bool = True,
+    **kwargs,
+) -> None:
+    container_client = get_container_client(**kwargs)
+
+    blob_client = container_client.get_blob_client(str(path))
+    if not overwrite and blob_client.exists():
+        return
+
     if isinstance(d, (DataArray, Dataset)):
         with io.BytesIO() as buffer:
             d.rio.to_raster(buffer, **write_args)
             buffer.seek(0)
-            blob_client = container_client.get_blob_client(str(path))
             blob_client.upload_blob(buffer, overwrite=True)
     elif isinstance(d, GeoDataFrame):
         # some sort of vector data
         with fiona.io.MemoryFile() as buffer:
             d.to_file(buffer, **write_args)
             buffer.seek(0)
-            blob_client = container_client.get_blob_client(str(path))
             blob_client.upload_blob(buffer, overwrite=True)
     else:
         # throw exception

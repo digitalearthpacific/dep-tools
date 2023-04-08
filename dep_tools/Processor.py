@@ -55,6 +55,7 @@ class Processor:
     scene_processor: Callable
     dataset_id: str
     year: Union[str, None] = None
+    overwrite: bool = False
     aoi_by_tile: GeoDataFrame = GeoDataFrame.from_file(
         Path(__file__).parent / "aoi_split_by_landsat_pathrow.gpkg"
     ).set_index(["PATH", "ROW"])
@@ -162,6 +163,8 @@ class Processor:
                         these_rresults = these_results[var]  # .to_dataset("time")
 
                         name = f"{self.dataset_id}/{year.values.tolist()}/{var}_{'_'.join([str(i) for i in index])}.tif"
+                        if not self.overwrite and blob_exists(name):
+                            continue
                         write_to_blob_storage(
                             these_rresults, name, dict(driver="COG", compress="LZW")
                         )
