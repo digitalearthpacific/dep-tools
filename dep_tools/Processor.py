@@ -158,11 +158,11 @@ class Processor:
                     #                        these_results, name, dict(driver="COG", compress="LZW")
                     #                    )
                     for var in results:
-                        these_results = these_results[var]  # .to_dataset("time")
+                        these_rresults = these_results[var]  # .to_dataset("time")
 
                         name = f"{self.dataset_id}/{year.values.tolist()}/{var}_{'_'.join([str(i) for i in index])}.tif"
                         write_to_blob_storage(
-                            these_results, name, dict(driver="COG", compress="LZW")
+                            these_rresults, name, dict(driver="COG", compress="LZW")
                         )
 
             else:
