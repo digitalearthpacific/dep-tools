@@ -21,6 +21,7 @@ from xarray import DataArray
 
 from .landsat_utils import item_collection_for_pathrow, mask_clouds
 from .utils import (
+    blob_exists,
     fix_bad_epsgs,
     gpdf_bounds,
     scale_to_int16,
@@ -153,7 +154,9 @@ class Processor:
                 #                    .drop_vars(["variables", "time"])
                 #                )
                 for year in results.coords["time"]:
-                    # try loading?
+                    last_name = f"{self.dataset_id}/{year.values.tolist()}/count_{'_'.join([str(i) for i in index])}.tif"
+                    if not self.overwrite and blob_exists(last_name):
+                        continue
                     these_results = results.sel(time=year).load()
                     #                    name = f"{self.dataset_id}/{year.values.tolist()}_{'_'.join([str(i) for i in index])}.tif"
                     #                    write_to_blob_storage(
