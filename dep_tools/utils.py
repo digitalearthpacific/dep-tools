@@ -42,7 +42,7 @@ def make_geocube_dask(
 
 
 def write_to_blob_storage(
-    d: Union[DataArray, GeoDataFrame],
+    d: Union[DataArray, Dataset, GeoDataFrame],
     path: Union[str, Path],
     write_args: Dict = dict(),
     #    output_scale: List = [1.0],
