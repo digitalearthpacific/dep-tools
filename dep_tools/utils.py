@@ -14,6 +14,7 @@ from osgeo import gdal
 import osgeo_utils.gdal2tiles
 from pystac import ItemCollection
 import rasterio
+from retry import retry
 import rioxarray
 from tqdm import tqdm
 import xarray as xr
@@ -60,6 +61,7 @@ def blob_exists(path: Union[str, Path], **kwargs):
     return blob_client.exists()
 
 
+@retry(tries=20, delay=10)
 def write_to_blob_storage(
     d: Union[DataArray, Dataset, GeoDataFrame],
     path: Union[str, Path],

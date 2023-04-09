@@ -142,42 +142,42 @@ class Processor:
                 )
 
             if len(results.dims.keys()) > 2:
-                #                results = (
-                #                    results.to_array(dim="variables")
-                #                    .stack(z=["time", "variables"])
-                #                    .to_dataset(dim="z")
-                #                    .pipe(
-                #                        lambda ds: ds.rename_vars(
-                #                            {name: "_".join(name) for name in ds.data_vars}
-                #                        )
-                #                    )
-                #                    .drop_vars(["variables", "time"])
-                #                )
-                for year in results.coords["time"]:
-                    last_name = f"{self.dataset_id}/{year.values.tolist()}/count_{'_'.join([str(i) for i in index])}.tif"
-                    if not self.overwrite and blob_exists(last_name):
-                        continue
-                    these_results = results.sel(time=year).load()
-                    #                    name = f"{self.dataset_id}/{year.values.tolist()}_{'_'.join([str(i) for i in index])}.tif"
-                    #                    write_to_blob_storage(
-                    #                        these_results, name, dict(driver="COG", compress="LZW")
-                    #                    )
-                    for var in results:
-                        these_rresults = these_results[var]  # .to_dataset("time")
-
-                        name = f"{self.dataset_id}/{year.values.tolist()}/{var}_{'_'.join([str(i) for i in index])}.tif"
-                        if not self.overwrite and blob_exists(name):
-                            continue
-                        write_to_blob_storage(
-                            these_rresults, name, dict(driver="COG", compress="LZW")
+                results = (
+                    results.to_array(dim="variables")
+                    .stack(z=["time", "variables"])
+                    .to_dataset(dim="z")
+                    .pipe(
+                        lambda ds: ds.rename_vars(
+                            {name: "_".join(name) for name in ds.data_vars}
                         )
-
-            else:
-                write_to_blob_storage(
-                    results,
-                    f"{self.prefix}_{'_'.join([str(i) for i in index])}.tif",
-                    dict(driver="COG", compress="LZW"),
+                    )
+                    .drop_vars(["variables", "time"])
                 )
+                #                for year in results.coords["time"]:
+                #                    last_name = f"{self.dataset_id}/{year.values.tolist()}/count_{'_'.join([str(i) for i in index])}.tif"
+                #                    if not self.overwrite and blob_exists(last_name):
+                #                        continue
+                #                    these_results = results.sel(time=year).load()
+                #                    #                    name = f"{self.dataset_id}/{year.values.tolist()}_{'_'.join([str(i) for i in index])}.tif"
+                #                    #                    write_to_blob_storage(
+                #                    #                        these_results, name, dict(driver="COG", compress="LZW")
+                #                    #                    )
+                #                    for var in results:
+                #                        these_rresults = these_results[var]  # .to_dataset("time")
+                #
+                #                        name = f"{self.dataset_id}/{year.values.tolist()}/{var}_{'_'.join([str(i) for i in index])}.tif"
+                #                        if not self.overwrite and blob_exists(name):
+                #                            continue
+                #                        write_to_blob_storage(
+                #                            these_rresults, name, dict(driver="COG", compress="LZW")
+                #                        )
+
+                #            else:
+            write_to_blob_storage(
+                results,
+                f"{self.prefix}_{'_'.join([str(i) for i in index])}.tif",
+                dict(driver="COG", compress="LZW"),
+            )
 
     def copy_to_blob_storage(self, local_path: Path, remote_path: Path) -> None:
         with open(local_path, "rb") as src:
