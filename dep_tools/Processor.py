@@ -57,6 +57,8 @@ class Processor:
     dataset_id: str
     year: Union[str, None] = None
     overwrite: bool = False
+    split_output_by_year: bool = False
+    split_output_by_variable: bool = False
     aoi_by_tile: GeoDataFrame = GeoDataFrame.from_file(
         Path(__file__).parent / "aoi_split_by_landsat_pathrow.gpkg"
     ).set_index(["PATH", "ROW"])
@@ -141,44 +143,113 @@ class Processor:
                     results, self.output_value_multiplier, self.output_nodata
                 )
 
-            if len(results.dims.keys()) > 2:
-                results = (
-                    results.to_array(dim="variables")
-                    .stack(z=["time", "variables"])
-                    .to_dataset(dim="z")
-                    .pipe(
-                        lambda ds: ds.rename_vars(
-                            {name: "_".join(name) for name in ds.data_vars}
-                        )
-                    )
-                    .drop_vars(["variables", "time"])
-                )
-                #                for year in results.coords["time"]:
-                #                    last_name = f"{self.dataset_id}/{year.values.tolist()}/count_{'_'.join([str(i) for i in index])}.tif"
-                #                    if not self.overwrite and blob_exists(last_name):
-                #                        continue
-                #                    these_results = results.sel(time=year).load()
-                #                    #                    name = f"{self.dataset_id}/{year.values.tolist()}_{'_'.join([str(i) for i in index])}.tif"
-                #                    #                    write_to_blob_storage(
-                #                    #                        these_results, name, dict(driver="COG", compress="LZW")
-                #                    #                    )
-                #                    for var in results:
-                #                        these_rresults = these_results[var]  # .to_dataset("time")
-                #
-                #                        name = f"{self.dataset_id}/{year.values.tolist()}/{var}_{'_'.join([str(i) for i in index])}.tif"
-                #                        if not self.overwrite and blob_exists(name):
-                #                            continue
-                #                        write_to_blob_storage(
-                #                            these_rresults, name, dict(driver="COG", compress="LZW")
-                #                        )
+            # If we want to create an output for each year, split results
+            # into a list of da/ds
+            if self.split_output_by_year:
+                results = [results.sel(time=year) for year in results.coords["time"]]
 
-                #            else:
-            write_to_blob_storage(
-                results,
-                f"{self.prefix}_{'_'.join([str(i) for i in index])}.tif",
-                dict(driver="COG", compress="LZW"),
-                overwrite=self.overwrite,
-            )
+            # If we want to create an output for each variable, split or further
+            # split results into a list of da/ds for each variable
+            # or variable x year
+            if self.split_output_by_variable:
+                results = (
+                    [
+                        result.to_array().sel(variable=var)
+                        for result in results
+                        for var in result
+                    ]
+                    if self.split_output_by_year
+                    else [results.to_array().sel(variable=var) for var in results]
+                )
+
+            if isinstance(results, List):
+                for result in results:
+                    # preferable to to results.coords.get('time') but that returns
+                    # a dataarray rather than a string
+                    time = (
+                        result.coords["time"].values.tolist()
+                        if "time" in result.coords
+                        else None
+                    )
+                    variable = (
+                        result.coords["variable"].values.tolist()
+                        if "variable" in result.coords
+                        else None
+                    )
+
+                    write_to_blob_storage(
+                        result,
+                        path=self.get_path(index, time, variable),
+                        write_args=dict(driver="COG", compress="LZW"),
+                        overwrite=self.overwrite,
+                    )
+            else:
+                # We cannot write outputs with > 2 dimensions using rio.to_raster,
+                # so we create new variables for each year x variable combination
+                # Note this requires time to represent year, so we should consider
+                # doing that here as well (rather than earlier).
+                if len(results.dims.keys()) > 2:
+                    results = (
+                        results.to_array(dim="variables")
+                        .stack(z=["time", "variables"])
+                        .to_dataset(dim="z")
+                        .pipe(
+                            lambda ds: ds.rename_vars(
+                                {name: "_".join(name) for name in ds.data_vars}
+                            )
+                        )
+                        .drop_vars(["variables", "time"])
+                    )
+                write_to_blob_storage(
+                    results,
+                    path=self.get_path(index),
+                    write_args=dict(driver="COG", compress="LZW"),
+                    overwrite=self.overwrite,
+                )
+
+    #                for var in results:
+    #                    these_rresults = these_results[var]  # .to_dataset("time")
+    #
+    #                    name = f"{self.dataset_id}/{year.values.tolist()}/{var}_{'_'.join([str(i) for i in index])}.tif"
+    #                    if not self.overwrite and blob_exists(name):
+    #                        continue
+    #                    write_to_blob_storage(
+    #                        these_rresults, name, dict(driver="COG", compress="LZW")
+    #                    )
+
+    #                for year in results.coords["time"]:
+    #                    last_name = f"{self.dataset_id}/{year.values.tolist()}/count_{'_'.join([str(i) for i in index])}.tif"
+    #                    these_results = results.sel(time=year).load()
+    #                    #                    name = f"{self.dataset_id}/{year.values.tolist()}_{'_'.join([str(i) for i in index])}.tif"
+    #                    #                    write_to_blob_storage(
+    #                    #                        these_results, name, dict(driver="COG", compress="LZW")
+    #                    #                    )
+    #                    for var in results:
+    #                        these_rresults = these_results[var]  # .to_dataset("time")
+    #
+    #                        name = f"{self.dataset_id}/{year.values.tolist()}/{var}_{'_'.join([str(i) for i in index])}.tif"
+    #                        if not self.overwrite and blob_exists(name):
+    #                            continue
+    #                        write_to_blob_storage(
+    #                            these_rresults, name, dict(driver="COG", compress="LZW")
+    #                        )
+
+    #            else:
+
+    def get_path(
+        self, index, year: Union[str, None] = None, variable: Union[str, None] = None
+    ) -> str:
+        if variable is None:
+            variable = self.dataset_id
+        if year is None:
+            year = self.year
+
+        suffix = "_".join([str(i) for i in index])
+        return (
+            f"{self.dataset_id}/{year}/{variable}_{suffix}.tif"
+            if year is not None
+            else f"{self.dataset_id}/{variable}.tif"
+        )
 
     def copy_to_blob_storage(self, local_path: Path, remote_path: Path) -> None:
         with open(local_path, "rb") as src:
