@@ -177,6 +177,7 @@ class Processor:
                 results,
                 f"{self.prefix}_{'_'.join([str(i) for i in index])}.tif",
                 dict(driver="COG", compress="LZW"),
+                overwrite=self.overwrite,
             )
 
     def copy_to_blob_storage(self, local_path: Path, remote_path: Path) -> None:
