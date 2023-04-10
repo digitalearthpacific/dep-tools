@@ -111,6 +111,7 @@ class Processor:
         for index, _ in tqdm(
             self.aoi_by_tile.iterrows(), total=self.aoi_by_tile.shape[0]
         ):
+            print(index)
             these_areas = self.aoi_by_tile.loc[[index]]
             index_dict = dict(zip(self.aoi_by_tile.index.names, index))
             item_collection = item_collection_for_pathrow(
@@ -138,6 +139,10 @@ class Processor:
             if self.send_area_to_scene_processor:
                 self.scene_processor_kwargs.update(dict(area=these_areas))
             results = self.scene_processor(item_xr, **self.scene_processor_kwargs)
+            # Happens in coastlines sometimes
+            if results is None:
+                continue
+
             if self.convert_output_to_int16:
                 results = scale_to_int16(
                     results, self.output_value_multiplier, self.output_nodata
