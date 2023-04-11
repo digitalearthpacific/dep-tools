@@ -253,7 +253,7 @@ class Processor:
         return (
             f"{self.dataset_id}/{year}/{variable}_{suffix}.tif"
             if year is not None
-            else f"{self.dataset_id}/{variable}.tif"
+            else f"{self.dataset_id}/{variable}_{suffix}.tif"
         )
 
     def copy_to_blob_storage(self, local_path: Path, remote_path: Path) -> None:
