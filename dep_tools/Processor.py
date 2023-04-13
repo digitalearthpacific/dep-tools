@@ -21,7 +21,6 @@ from xarray import DataArray
 
 from .landsat_utils import item_collection_for_pathrow, mask_clouds
 from .utils import (
-    blob_exists,
     fix_bad_epsgs,
     gpdf_bounds,
     scale_to_int16,
@@ -71,6 +70,7 @@ class Processor:
     convert_output_to_int16: bool = True
     output_value_multiplier: int = 10000
     output_nodata: int = -32767
+    scale_int16s: bool = False
     color_ramp_file: Union[str, None] = None
 
     def __post_init__(self):
@@ -145,7 +145,10 @@ class Processor:
 
             if self.convert_output_to_int16:
                 results = scale_to_int16(
-                    results, self.output_value_multiplier, self.output_nodata
+                    results,
+                    output_multiplier=self.output_value_multiplier,
+                    output_nodata=self.output_nodata,
+                    scale_int16s=self.scale_int16s,
                 )
 
             # If we want to create an output for each year, split results
@@ -206,40 +209,12 @@ class Processor:
                         .drop_vars(["variables", "time"])
                     )
                 write_to_blob_storage(
-                    results,
+                    # Squeeze here in case we have e.g. a single time reading
+                    results.squeeze(),
                     path=self.get_path(index),
                     write_args=dict(driver="COG", compress="LZW"),
                     overwrite=self.overwrite,
                 )
-
-    #                for var in results:
-    #                    these_rresults = these_results[var]  # .to_dataset("time")
-    #
-    #                    name = f"{self.dataset_id}/{year.values.tolist()}/{var}_{'_'.join([str(i) for i in index])}.tif"
-    #                    if not self.overwrite and blob_exists(name):
-    #                        continue
-    #                    write_to_blob_storage(
-    #                        these_rresults, name, dict(driver="COG", compress="LZW")
-    #                    )
-
-    #                for year in results.coords["time"]:
-    #                    last_name = f"{self.dataset_id}/{year.values.tolist()}/count_{'_'.join([str(i) for i in index])}.tif"
-    #                    these_results = results.sel(time=year).load()
-    #                    #                    name = f"{self.dataset_id}/{year.values.tolist()}_{'_'.join([str(i) for i in index])}.tif"
-    #                    #                    write_to_blob_storage(
-    #                    #                        these_results, name, dict(driver="COG", compress="LZW")
-    #                    #                    )
-    #                    for var in results:
-    #                        these_rresults = these_results[var]  # .to_dataset("time")
-    #
-    #                        name = f"{self.dataset_id}/{year.values.tolist()}/{var}_{'_'.join([str(i) for i in index])}.tif"
-    #                        if not self.overwrite and blob_exists(name):
-    #                            continue
-    #                        write_to_blob_storage(
-    #                            these_rresults, name, dict(driver="COG", compress="LZW")
-    #                        )
-
-    #            else:
 
     def get_path(
         self, index, year: Union[str, None] = None, variable: Union[str, None] = None
@@ -251,7 +226,7 @@ class Processor:
 
         suffix = "_".join([str(i) for i in index])
         return (
-            f"{self.dataset_id}/{year}/{variable}_{suffix}.tif"
+            f"{self.dataset_id}/{year}/{variable}_{year}_{suffix}.tif"
             if year is not None
             else f"{self.dataset_id}/{variable}_{suffix}.tif"
         )

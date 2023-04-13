@@ -110,24 +110,32 @@ def copy_to_blob_storage(
 
 
 def scale_to_int16(
-    da: Union[DataArray, Dataset], output_multiplier: int, output_nodata: int
-) -> DataArray:
+    xr: Union[DataArray, Dataset],
+    output_multiplier: int,
+    output_nodata: int,
+    scale_int16s: bool = False,
+) -> Union[DataArray, Dataset]:
     """Multiply the given DataArray by the given multiplier and convert to
     int16 data type, with the given nodata value"""
-    is_dataset = isinstance(da, Dataset)
-    if is_dataset:
-        da = da.to_array()
-    scaled_da = (
-        np.multiply(da, output_multiplier)
-        .where(da.notnull(), output_nodata)
-        .astype("int16")
-        .rio.write_nodata(output_nodata)
-        .rio.write_crs(da.rio.crs)
-    )
-    if is_dataset:
-        scaled_da = scaled_da.to_dataset("variable")
 
-    return scaled_da
+    def scale_da(da: DataArray):
+        if da.dtype != "int16" or scale_int16s:
+            da = np.multiply(da, output_multiplier)
+
+        return (
+            da.where(da.notnull(), output_nodata)
+            .astype("int16")
+            .rio.write_nodata(output_nodata)
+        )
+
+    if isinstance(xr, Dataset):
+        for var in xr:
+            xr[var] = scale_da(xr[var])
+            xr[var].rio.write_nodata(output_nodata, inplace=True)
+    else:
+        xr = scale_da(xr)
+
+    return xr
 
 
 def raster_bounds(raster_path: Path) -> List:
