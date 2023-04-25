@@ -62,6 +62,7 @@ class Processor:
         Path(__file__).parent / "aoi_split_by_landsat_pathrow.gpkg"
     ).set_index(["PATH", "ROW"])
     scene_processor_kwargs: Dict = field(default_factory=dict)
+    scale_and_offset: bool = True
     send_area_to_scene_processor: bool = False
     dask_chunksize: int = 4096
     storage_account: str = os.environ["AZURE_STORAGE_ACCOUNT"]
@@ -132,9 +133,14 @@ class Processor:
 
             item_xr = self.get_stack(item_collection, these_areas)
             item_xr = mask_clouds(item_xr)
-            scale = 0.0000275
-            offset = -0.2
-            item_xr = scale_and_offset(item_xr, scale=[scale], offset=offset)
+
+            if self.scale_and_offset:
+                # These values only work for SR bands of landsat. Ideally we could
+                # read from metadata. _Really_ ideally we could just pass "scale"
+                # to rioxarray but apparently that doesn't work.
+                scale = 0.0000275
+                offset = -0.2
+                item_xr = scale_and_offset(item_xr, scale=[scale], offset=offset)
 
             if self.send_area_to_scene_processor:
                 self.scene_processor_kwargs.update(dict(area=these_areas))
@@ -299,25 +305,29 @@ class Processor:
 
 
 def run_processor(
-    year: int,
     scene_processor: Callable,
-    color_ramp_file: str = None,
-    run_scenes: bool = False,
+    dataset_id: str,
+    color_ramp_file: Union[str, None] = None,
+    run_scenes: bool = True,
     mosaic: bool = False,
     tile: bool = False,
     remake_mosaic_for_tiles: bool = True,
     **kwargs,
-):
+    ) -> None:
     processor = Processor(
-        year, scene_processor, color_ramp_file=color_ramp_file, **kwargs
+        scene_processor, dataset_id, color_ramp_file=color_ramp_file, **kwargs
     )
     if run_scenes:
-        cluster = GatewayCluster(worker_cores=1, worker_memory=8)
-        cluster.scale(400)
-        with cluster.get_client() as client:
-            print(client.dashboard_link)
-            processor.process_by_scene()
-
+        try:
+            cluster = GatewayCluster(worker_cores=1, worker_memory=8)
+            cluster.scale(400)
+            with cluster.get_client() as client:
+                print(client.dashboard_link)
+                processor.process_by_scene()
+        except ValueError:
+            with Client() as client:
+                print(client.dashboard_link)
+                processor.process_by_scene()
     if mosaic:
         processor.mosaic_scenes()
 
