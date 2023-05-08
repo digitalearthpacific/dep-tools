@@ -6,13 +6,10 @@ from pathlib import Path
 from typing import Dict, List, Union, Callable
 
 from azure.storage.blob import ContainerClient
-from dask.distributed import Client, Lock
+from dask.distributed import Client
 from dask_gateway import GatewayCluster
 from geopandas import GeoDataFrame
-from osgeo import gdal
-from osgeo_utils import gdal2tiles
 from pystac import ItemCollection
-import rasterio
 from rasterio import RasterioIOError
 import rioxarray
 from stackstac import stack
@@ -33,27 +30,53 @@ from .utils import (
 class Processor:
     """
     Args:
-        year(int): The year for which we wish to run computations.
         scene_processor(Callable): A function which accepts at least a parameter
-            of type xarray.DataArray and returns the same. Additional arguments
-            can be specified using `scene_processor_kwargs`.
+            of type xarray.DataArray or xarray.Dataset and returns the same.
+            Additional arguments can be specified using `scene_processor_kwargs`.
+        scene_processor_kwargs(Dict): Additional arguments to `scene_processor`.
+        send_area_to_scene_processor(bool): Should the features contained in
+            `aoi_by_tile` for this scene be sent to `scene_processor` as the
+            second argument? Useful if masking or some other custom processing.
+            Defaults to false.
+        dataset_id(str): Our name for the dataset, such as "ndvi"
+        year(int): The year for which we wish to run computations. If None,
+            all years are processed. Default is None.
+        split_output_by_year(bool): If year is None and there are multiple years
+            to process, should a file be made for each year, or should they be
+            combined? Useful if computations across all years results in out of
+            memory errors. Default is False.
+        split_output_by_variable(bool): If scene_processor returns a dataset with
+            multiple variables, should outputs be written for each variable?
+            Not as useful for memory errors as `split_output_by_year`. Default
+            is False.
+        overwrite(bool). If True, then overwrite any existing output. Defaults
+            to False
         aoi_by_tile(GeoDataFrame): A GeoDataFrame holdinng areas
             of interest (typically land masses), split by landsat tile (and in
             future, Sentinel 2). Each tile must be indexed by the tile id columns
             (e.g. "PATH" and "ROW").
-        dataset_id(str): Our name for the dataset, such as "ndvi"
-        storage_account(str): The name of the azure storage account we wish to
-            use to write outputs. Defaults to the environmental variable
-            "AZURE_STORAGE_ACCOUNT"
-        container_name(str): The name of the container in the storage account
-            to which we wish to write data. Defaults to "output".
-        credential(str): The credentials for the storage account we wish to use.
-            For valid options, see the help for azure.storage.blob.ContainerClient.
-            Defaults to the environmental variable "AZURE_STORAGE_SAS_TOKEN".
+        container_client(azure.storage.blob.ContainerClient): The container
+            client for the container to which we wish to write the output.
+        scale_and_offset(bool). Should raw landsat data be scaled and offset or
+            kept in raw (integer) values. Defaults to True.
+        dask_chunksize(int). The (single dimensional) chunk size set when
+        convert_output_to_int16(bool). Should output be cast to int16 before
+            writing to blob storage? Can save space on disk as well as solve
+            memory issues since output files are written to memory before
+            being copied to blob storage (as I can't find another way to do
+            it; see planetary computer docs). Default is True.
+        output_value_multiplier(int). What to multiply output values by before
+            casting to int. Default is 10000.
+        output_nodata(int). The output nodata value. Seems to stick for DataArrays
+            but not Datasets (see discussion in docs for rioxarray.to_raster for more).
+            Defaults to -32767.
+        scale_int16s(bool). Should arrays or Dataset variables which are already int16
+            be rescaled before writing? Defaults to False.
     """
 
     scene_processor: Callable
     dataset_id: str
+    container_client: ContainerClient
     year: Union[str, None] = None
     overwrite: bool = False
     split_output_by_year: bool = False
@@ -65,21 +88,12 @@ class Processor:
     scale_and_offset: bool = True
     send_area_to_scene_processor: bool = False
     dask_chunksize: int = 4096
-    storage_account: str = os.environ["AZURE_STORAGE_ACCOUNT"]
-    container_name: str = "output"
-    credential: str = os.environ["AZURE_STORAGE_SAS_TOKEN"]
     convert_output_to_int16: bool = True
     output_value_multiplier: int = 10000
     output_nodata: int = -32767
     scale_int16s: bool = False
-    color_ramp_file: Union[str, None] = None
 
     def __post_init__(self):
-        self.container_client = ContainerClient(
-            f"https://{self.storage_account}.blob.core.windows.net",
-            container_name=self.container_name,
-            credential=self.credential,
-        )
         self.prefix = (
             f"{self.dataset_id}/{self.year}/{self.dataset_id}_{self.year}"
             if self.year
@@ -87,26 +101,6 @@ class Processor:
         )
         self.local_prefix = Path(self.prefix).stem
         self.mosaic_file = f"data/{self.local_prefix}.tif"
-
-    def get_stack(
-        self, item_collection: ItemCollection, these_areas: GeoDataFrame
-    ) -> DataArray:
-        return (
-            stack(
-                item_collection,
-                epsg=8859,
-                chunksize=self.dask_chunksize,
-                resolution=30,
-                # Previously it only caught 404s, we are getting other errors
-                errors_as_nodata=(RasterioIOError(".*"),),
-            )
-            .rio.write_crs("EPSG:8859")
-            .rio.clip(
-                these_areas.to_crs("EPSG:8859").geometry,
-                all_touched=True,
-                from_disk=True,
-            )
-        )
 
     def process_by_scene(self) -> None:
         for index, _ in tqdm(
@@ -131,7 +125,7 @@ class Processor:
                 continue
             fix_bad_epsgs(item_collection)
 
-            item_xr = self.get_stack(item_collection, these_areas)
+            item_xr = self._get_stack(item_collection, these_areas)
             item_xr = mask_clouds(item_xr)
 
             if self.scale_and_offset:
@@ -193,7 +187,7 @@ class Processor:
 
                     write_to_blob_storage(
                         result,
-                        path=self.get_path(index, time, variable),
+                        path=self._get_path(index, time, variable),
                         write_args=dict(driver="COG", compress="LZW"),
                         overwrite=self.overwrite,
                     )
@@ -217,12 +211,32 @@ class Processor:
                 write_to_blob_storage(
                     # Squeeze here in case we have e.g. a single time reading
                     results.squeeze(),
-                    path=self.get_path(index),
+                    path=self._get_path(index),
                     write_args=dict(driver="COG", compress="LZW"),
                     overwrite=self.overwrite,
                 )
 
-    def get_path(
+    def _get_stack(
+        self, item_collection: ItemCollection, these_areas: GeoDataFrame
+    ) -> DataArray:
+        return (
+            stack(
+                item_collection,
+                epsg=8859,
+                chunksize=self.dask_chunksize,
+                resolution=30,
+                # Previously it only caught 404s, we are getting other errors
+                errors_as_nodata=(RasterioIOError(".*"),),
+            )
+            .rio.write_crs("EPSG:8859")
+            .rio.clip(
+                these_areas.to_crs("EPSG:8859").geometry,
+                all_touched=True,
+                from_disk=True,
+            )
+        )
+
+    def _get_path(
         self, index, year: Union[str, None] = None, variable: Union[str, None] = None
     ) -> str:
         if variable is None:
@@ -237,99 +251,22 @@ class Processor:
             else f"{self.dataset_id}/{variable}_{suffix}.tif"
         )
 
-    def copy_to_blob_storage(self, local_path: Path, remote_path: Path) -> None:
-        with open(local_path, "rb") as src:
-            blob_client = self.container_client.get_blob_client(str(remote_path))
-            blob_client.upload_blob(src, overwrite=True)
-
-    def build_vrt(self, bounds: List[float]) -> Path:
-        blobs = [
-            f"/vsiaz/{self.container_name}/{blob.name}"
-            for blob in self.container_client.list_blobs()
-            if blob.name.startswith(self.prefix)
-        ]
-
-        vrt_file = f"data/{self.local_prefix}.vrt"
-        gdal.BuildVRT(vrt_file, blobs, outputBounds=bounds)
-        return Path(vrt_file)
-
-    def mosaic_scenes(self, scale_factor: float = None, overwrite: bool = True) -> None:
-        if not Path(self.mosaic_file).is_file() or overwrite:
-            vrt_file = self.build_vrt()
-            with Client() as local_client:
-                rioxarray.open_rasterio(vrt_file, chunks=True).rio.to_raster(
-                    self.mosaic_file,
-                    compress="LZW",
-                    predictor=2,
-                    lock=Lock("rio", client=local_client),
-                )
-
-            if scale_factor is not None:
-                with rasterio.open(self.mosaic_file, "r+") as dst:
-                    dst.scales = (scale_factor,)
-
-    def create_tiles(self, remake_mosaic: bool = True) -> None:
-        if remake_mosaic:
-            self.mosaic_scenes(scale_factor=1.0 / 1000, overwrite=True)
-        dst_vrt_file = f"data/{self.local_prefix}_rgb.vrt"
-        gdal.DEMProcessing(
-            dst_vrt_file,
-            str(self.mosaic_file),
-            "color-relief",
-            colorFilename=self.color_ramp_file,
-            addAlpha=True,
-        )
-        dst_name = f"data/tiles/{self.prefix}"
-        os.makedirs(dst_name, exist_ok=True)
-        max_zoom = 11
-        # First arg is just a dummy so the second arg is not removed (see gdal2tiles code)
-        # I'm using 512 x 512 tiles so there's fewer files to copy over. likewise
-        # for -x
-        gdal2tiles.main(
-            [
-                "gdal2tiles.py",
-                "--tilesize=512",
-                "--processes=4",
-                f"--zoom=0-{max_zoom}",
-                "-x",
-                dst_vrt_file,
-                dst_name,
-            ]
-        )
-
-        for local_path in tqdm(Path(dst_name).rglob("*")):
-            if local_path.is_file():
-                remote_path = Path("tiles") / "/".join(local_path.parts[4:])
-                self.copy_to_blob_storage(local_path, remote_path)
-                local_path.unlink()
-
 
 def run_processor(
     scene_processor: Callable,
     dataset_id: str,
-    color_ramp_file: Union[str, None] = None,
-    run_scenes: bool = True,
-    mosaic: bool = False,
-    tile: bool = False,
-    remake_mosaic_for_tiles: bool = True,
     **kwargs,
-    ) -> None:
-    processor = Processor(
-        scene_processor, dataset_id, color_ramp_file=color_ramp_file, **kwargs
-    )
-    if run_scenes:
-        try:
-            cluster = GatewayCluster(worker_cores=1, worker_memory=8)
-            cluster.scale(400)
-            with cluster.get_client() as client:
-                print(client.dashboard_link)
-                processor.process_by_scene()
-        except ValueError:
-            with Client() as client:
-                print(client.dashboard_link)
-                processor.process_by_scene()
-    if mosaic:
-        processor.mosaic_scenes()
-
-    if tile:
-        processor.create_tiles(remake_mosaic_for_tiles)
+) -> None:
+    processor = Processor(scene_processor, dataset_id, **kwargs)
+    # Try to run on a gateway cluster, if one is not configured,
+    # fall back to local cluster
+    try:
+        cluster = GatewayCluster(worker_cores=1, worker_memory=8)
+        cluster.scale(400)
+        with cluster.get_client() as client:
+            print(client.dashboard_link)
+            processor.process_by_scene()
+    except ValueError:
+        with Client() as client:
+            print(client.dashboard_link)
+            processor.process_by_scene()
