@@ -30,7 +30,7 @@ def item_collection_for_pathrow(
     return catalog.search(
         **search_args,
         query=[
-            f"landsat:wrs_path={path:03d}",
-            f"landsat:wrs_row={row:03d}",
+ #           f"landsat:wrs_path={path:03d}",
+ #           f"landsat:wrs_row={row:03d}",
         ],
     ).item_collection()
