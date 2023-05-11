@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 
 # from importlib.resources import files
-import os
+import json
 from pathlib import Path
 from typing import Dict, List, Union, Callable
 
@@ -117,7 +117,11 @@ class Processor:
                 search_args=dict(
                     collections=["landsat-c2-l2"],
                     datetime=self.year,
-                    bbox=gpdf_bounds(these_areas),
+                    #        bbox=gpdf_bounds(these_areas),
+                    # likely an easier way than this
+                    intersects=json.loads(these_areas.geometry.to_json())["features"][
+                        0
+                    ]["geometry"],
                 ),
             )
 
