@@ -117,11 +117,7 @@ class Processor:
                 search_args=dict(
                     collections=["landsat-c2-l2"],
                     datetime=self.year,
-                    #        bbox=gpdf_bounds(these_areas),
-                    # likely an easier way than this
-                    intersects=json.loads(these_areas.geometry.to_json())["features"][
-                        0
-                    ]["geometry"],
+                    bbox=gpdf_bounds(these_areas),
                 ),
             )
 
