@@ -121,7 +121,17 @@ class Processor:
                 ),
             )
 
-            if len(item_collection) == 0:
+            # If there are not items in this collection for _this_ pathrow,
+            # we don't want to process, since they will be captured in
+            # other pathrows (or are areas not covered by our aoi)
+            item_collection_for_this_pathrow = [
+                i
+                for i in item_collection
+                if i.properties["landsat:wrs_path"] == f"{index_dict['PATH']:03d}"
+                and i.properties["landsat:wrs_row"] == f"{index_dict['ROW']:03d}"
+            ]
+
+            if len(item_collection_for_this_pathrow) == 0:
                 continue
             fix_bad_epsgs(item_collection)
 
