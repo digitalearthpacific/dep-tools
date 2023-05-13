@@ -115,6 +115,7 @@ class Processor:
                 collections=["landsat-c2-l2"],
                 datetime=self.year,
             )
+            breakpoint()
             #            item_collection = item_collection_for_pathrow(
             #                # For S2, would probably just pass index_dict as kwargs
             #                # to generic function

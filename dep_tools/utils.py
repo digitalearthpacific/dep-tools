@@ -43,25 +43,32 @@ def search_across_180(gpdf: GeoDataFrame, **kwargs) -> ItemCollection:
     # intersects, but we can wait to see if that's needed (for the current
     # work I am collecting io-lulc which doesn't have data in areas which
     # aren't near land
-    gpdf_8859 = gpdf.to_crs(8859)
-    projector = pyproj.Transformer.from_crs(
-        gpdf_8859.crs, pyproj.CRS("EPSG:4326"), always_xy=True
-    ).transform
-
-    xmin, ymin, xmax, ymax = gpdf_8859.total_bounds
-    xmin_ll, ymin_ll = transform(projector, Point(xmin, ymin)).coords[0]
-    xmax_ll, ymax_ll = transform(projector, Point(xmax, ymax)).coords[0]
-
-    left_bbox = [xmin_ll, ymin_ll, 180, ymax_ll]
-    right_bbox = [-180, ymin_ll, xmax_ll, ymax_ll]
     catalog = pystac_client.Client.open(
         "https://planetarycomputer.microsoft.com/api/stac/v1",
         modifier=planetary_computer.sign_inplace,
     )
-    return ItemCollection(
-        list(catalog.search(bbox=left_bbox, **kwargs).items())
-        + list(catalog.search(bbox=right_bbox, **kwargs).items())
-    )
+
+    bbox_4326 = gpdf.to_crs(4326).total_bounds
+    bbox_crosses_antimeridian = bbox_4326[0] < 0 and bbox_4326[2] > 0
+    if bbox_crosses_antimeridian:
+        gpdf_8859 = gpdf.to_crs(8859)
+        projector = pyproj.Transformer.from_crs(
+            gpdf_8859.crs, pyproj.CRS("EPSG:4326"), always_xy=True
+        ).transform
+
+        xmin, ymin, xmax, ymax = gpdf_8859.total_bounds
+        xmin_ll, ymin_ll = transform(projector, Point(xmin, ymin)).coords[0]
+        xmax_ll, ymax_ll = transform(projector, Point(xmax, ymax)).coords[0]
+
+        left_bbox = [xmin_ll, ymin_ll, 180, ymax_ll]
+        right_bbox = [-180, ymin_ll, xmax_ll, ymax_ll]
+        breakpoint()
+        return ItemCollection(
+            list(catalog.search(bbox=left_bbox, **kwargs).items())
+            + list(catalog.search(bbox=right_bbox, **kwargs).items())
+        )
+    else:
+        return catalog.search(bbox=bbox_4326, **kwargs).item_collection()
 
 
 def scale_and_offset(
@@ -190,7 +197,7 @@ def raster_bounds(raster_path: Path) -> List:
 def gpdf_bounds(gpdf: GeoDataFrame) -> List[float]:
     """Returns the bounds for the give GeoDataFrame, and makes sure
     it doesn't cross the antimeridian."""
-    bbox = gpdf.to_crs("EPSG:4326").bounds.values[0]
+    bbox = gpdf.to_crs("EPSG:4326").total_bounds
     # Or the opposite!
     bbox_crosses_antimeridian = bbox[0] < 0 and bbox[2] > 0
     if bbox_crosses_antimeridian:
