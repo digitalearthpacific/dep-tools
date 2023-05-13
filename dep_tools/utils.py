@@ -62,7 +62,6 @@ def search_across_180(gpdf: GeoDataFrame, **kwargs) -> ItemCollection:
 
         left_bbox = [xmin_ll, ymin_ll, 180, ymax_ll]
         right_bbox = [-180, ymin_ll, xmax_ll, ymax_ll]
-        breakpoint()
         return ItemCollection(
             list(catalog.search(bbox=left_bbox, **kwargs).items())
             + list(catalog.search(bbox=right_bbox, **kwargs).items())
