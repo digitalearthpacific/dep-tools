@@ -20,9 +20,10 @@ from .landsat_utils import item_collection_for_pathrow, mask_clouds
 from .utils import (
     fix_bad_epsgs,
     gpdf_bounds,
+    scale_and_offset,
+    search_across_180,
     scale_to_int16,
     write_to_blob_storage,
-    scale_and_offset,
 )
 
 
@@ -109,17 +110,22 @@ class Processor:
             print(index)
             these_areas = self.aoi_by_tile.loc[[index]]
             index_dict = dict(zip(self.aoi_by_tile.index.names, index))
-            item_collection = item_collection_for_pathrow(
-                # For S2, would probably just pass index_dict as kwargs
-                # to generic function
-                path=index_dict["PATH"],
-                row=index_dict["ROW"],
-                search_args=dict(
-                    collections=["landsat-c2-l2"],
-                    datetime=self.year,
-                    bbox=gpdf_bounds(these_areas),
-                ),
+            item_collection = search_across_180(
+                these_areas,
+                collections=["landsat-c2-l2"],
+                datetime=self.year,
             )
+            #            item_collection = item_collection_for_pathrow(
+            #                # For S2, would probably just pass index_dict as kwargs
+            #                # to generic function
+            #                path=index_dict["PATH"],
+            #                row=index_dict["ROW"],
+            #                search_args=dict(
+            #                    collections=["landsat-c2-l2"],
+            #                    datetime=self.year,
+            #                    bbox=gpdf_bounds(these_areas),
+            #                ),
+            #            )
 
             # If there are not items in this collection for _this_ pathrow,
             # we don't want to process, since they will be captured in

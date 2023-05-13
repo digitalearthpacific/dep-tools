@@ -1,7 +1,8 @@
 import io
+from itertools import chain
 import os
 from pathlib import Path
-from typing import Dict, List, Union
+from typing import Dict, Iterable, List, Union
 
 import azure.storage.blob
 from azure.storage.blob import ContainerClient
@@ -12,13 +13,53 @@ from geocube.api.core import make_geocube
 import numpy as np
 from osgeo import gdal
 import osgeo_utils.gdal2tiles
+import pyproj
 from pystac import ItemCollection
+import pystac_client
 import rasterio
 from retry import retry
 import rioxarray
+from shapely.geometry import Point
+from shapely.ops import transform
 from tqdm import tqdm
 import xarray as xr
 from xarray import DataArray, Dataset
+
+
+@retry(tries=10, delay=1)
+def search_across_180(gpdf: GeoDataFrame, **kwargs) -> ItemCollection:
+    """
+    gpdf: A GeoDataFrame.
+    **kwargs: Arguments besides bbox and intersects passed to
+        pystac_client.Client.search
+    """
+
+    # pystac_client doesn't appear to be able to handle non-geographic data,
+    # either via the `bbox` or `intersects` parameter. The docs don't really say.
+    # Here I split the bbox of the given GeoDataFrame on either side of the
+    # 180th meridian and concatenate the results.
+    # An alternative would be to actually cut the gpdf in two pieces and use
+    # intersects, but we can wait to see if that's needed (for the current
+    # work I am collecting io-lulc which doesn't have data in areas which
+    # aren't near land
+    gpdf_8859 = gpdf.to_crs(8859)
+    projector = pyproj.Transformer.from_crs(
+        gpdf_8859.crs, pyproj.CRS("EPSG:4326"), always_xy=True
+    ).transform
+
+    xmin, ymin, xmax, ymax = gpdf_8859.total_bounds
+    xmin_ll, ymin_ll = transform(projector, Point(xmin, ymin)).coords[0]
+    xmax_ll, ymax_ll = transform(projector, Point(xmax, ymax)).coords[0]
+
+    left_bbox = [xmin_ll, ymin_ll, 180, ymax_ll]
+    right_bbox = [-180, ymin_ll, xmax_ll, ymax_ll]
+    catalog = pystac_client.Client.open(
+        "https://planetarycomputer.microsoft.com/api/stac/v1"
+    )
+    return ItemCollection(
+        list(catalog.search(bbox=left_bbox, **kwargs).items())
+        + list(catalog.search(bbox=right_bbox, **kwargs).items())
+    )
 
 
 def scale_and_offset(

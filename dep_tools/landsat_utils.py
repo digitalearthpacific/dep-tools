@@ -22,7 +22,6 @@ def mask_clouds(xr: DataArray) -> DataArray:
 def item_collection_for_pathrow(
     path: int, row: int, search_args: Dict
 ) -> ItemCollection:
-
     catalog = pystac_client.Client.open(
         "https://planetarycomputer.microsoft.com/api/stac/v1",
         modifier=planetary_computer.sign_inplace,
@@ -30,7 +29,7 @@ def item_collection_for_pathrow(
     return catalog.search(
         **search_args,
         query=[
- #           f"landsat:wrs_path={path:03d}",
- #           f"landsat:wrs_row={row:03d}",
+            #           f"landsat:wrs_path={path:03d}",
+            #           f"landsat:wrs_row={row:03d}",
         ],
     ).item_collection()
