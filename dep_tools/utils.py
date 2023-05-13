@@ -13,6 +13,7 @@ from geocube.api.core import make_geocube
 import numpy as np
 from osgeo import gdal
 import osgeo_utils.gdal2tiles
+import planetary_computer
 import pyproj
 from pystac import ItemCollection
 import pystac_client
@@ -54,7 +55,8 @@ def search_across_180(gpdf: GeoDataFrame, **kwargs) -> ItemCollection:
     left_bbox = [xmin_ll, ymin_ll, 180, ymax_ll]
     right_bbox = [-180, ymin_ll, xmax_ll, ymax_ll]
     catalog = pystac_client.Client.open(
-        "https://planetarycomputer.microsoft.com/api/stac/v1"
+        "https://planetarycomputer.microsoft.com/api/stac/v1",
+        modifier=planetary_computer.sign_inplace,
     )
     return ItemCollection(
         list(catalog.search(bbox=left_bbox, **kwargs).items())
