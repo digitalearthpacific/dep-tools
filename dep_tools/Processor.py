@@ -272,6 +272,7 @@ class Processor:
 def run_processor(
     scene_processor: Callable,
     dataset_id: str,
+    n_workers: int = 400,
     **kwargs,
 ) -> None:
     processor = Processor(scene_processor, dataset_id, **kwargs)
@@ -279,7 +280,7 @@ def run_processor(
     # fall back to local cluster
     try:
         cluster = GatewayCluster(worker_cores=1, worker_memory=8)
-        cluster.scale(400)
+        cluster.scale(n_workers)
         with cluster.get_client() as client:
             print(client.dashboard_link)
             processor.process_by_scene()
