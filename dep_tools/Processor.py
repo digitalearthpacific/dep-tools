@@ -260,6 +260,7 @@ class Processor:
         if year is None:
             year = self.year
 
+        year = year.replace("/", "_")
         suffix = "_".join([str(i) for i in index])
         return (
             f"{self.dataset_id}/{year}/{variable}_{year}_{suffix}.tif"
