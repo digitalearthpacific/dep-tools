@@ -110,6 +110,29 @@ def blob_exists(path: Union[str, Path], **kwargs):
     return blob_client.exists()
 
 
+def get_blob_path(dataset: str, year: str, path: str, row: str) -> str:
+    # A less robust version of Processor._get_path, but I might revisit that
+    # since it doesn't look like combining years / variables may work that well
+    return f"{dataset}/{year}/{dataset}_{year}_{path}_{row}.tif"
+
+
+def download_blob(
+    container_client: ContainerClient,
+    dataset: str,
+    year: int,
+    path: str,
+    row: str,
+    local_dir: Path,
+) -> None:
+    remote_path = f"{dataset}/{year}/{dataset}_{year}_{path}_{row}.tif"
+    local_path = f"{local_dir}/{dataset}_{year}_{path}_{row}.tif"
+    blob_client = container_client.get_blob_client(remote_path)
+    if blob_client.exists() and not Path(local_path).exists():
+        with open(local_path, "wb") as dst:
+            download_stream = blob_client.download_blob()
+            dst.write(download_stream.readall())
+
+
 @retry(tries=20, delay=10)
 def write_to_blob_storage(
     d: Union[DataArray, Dataset, GeoDataFrame],
