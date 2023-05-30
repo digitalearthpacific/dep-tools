@@ -232,18 +232,10 @@ def gpdf_bounds(gpdf: GeoDataFrame) -> List[float]:
 def build_vrt(
     prefix: str,
     bounds: List,
-    storage_account: str = os.environ["AZURE_STORAGE_ACCOUNT"],
-    credential: str = os.environ["AZURE_STORAGE_SAS_TOKEN"],
-    container_name: str = "output",
 ) -> Path:
-    container_client = azure.storage.blob.ContainerClient(
-        f"https://{storage_account}.blob.core.windows.net",
-        container_name=container_name,
-        credential=credential,
-    )
     blobs = [
-        f"/vsiaz/{container_name}/{blob.name}"
-        for blob in container_client.list_blobs()
+        f"/vsiaz/output/{blob.name}"
+        for blob in get_container_client().list_blobs()
         if blob.name.startswith(prefix)
     ]
 
