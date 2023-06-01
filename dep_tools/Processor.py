@@ -1,7 +1,5 @@
 from dataclasses import dataclass, field
 
-# from importlib.resources import files
-import json
 from pathlib import Path
 from typing import Dict, List, Union, Callable
 
@@ -16,10 +14,10 @@ from stackstac import stack
 from tqdm import tqdm
 from xarray import DataArray
 
-from .landsat_utils import item_collection_for_pathrow, mask_clouds
+from .landsat_utils import mask_clouds
 from .utils import (
     fix_bad_epsgs,
-    gpdf_bounds,
+    get_container_client,
     scale_and_offset,
     search_across_180,
     scale_to_int16,
@@ -30,6 +28,11 @@ from .utils import (
 @dataclass
 class Processor:
     """
+    Calls `scene_processor` for each row of `aoi_by_tile` and writes the result
+    to azure blob storage. This is the core method to scale processing across
+    the study area, particularly when processing on the planetary computer using
+    kbatch and (optionally, but recommended) the dask gateway.
+
     Args:
         scene_processor(Callable): A function which accepts at least a parameter
             of type xarray.DataArray or xarray.Dataset and returns the same.
@@ -77,7 +80,7 @@ class Processor:
 
     scene_processor: Callable
     dataset_id: str
-    container_client: ContainerClient
+    container_client: ContainerClient = get_container_client()
     year: Union[str, None] = None
     overwrite: bool = False
     split_output_by_year: bool = False
@@ -115,6 +118,15 @@ class Processor:
                 collections=["landsat-c2-l2"],
                 datetime=self.year,
             )
+
+            # Previous version which filtered search by landsat path and row.
+            # Was a little quicker than a geographic search, but only returned
+            # items for the specific pathrow - not those that might be overlapping.
+            # This became an issue later when doing a "naive" mosaic - that is, 
+            # just stacking rasters atop one another. For now I'm leaving this here
+            # in case we have a use for it in the near future, but it should
+            # probably be removed. -JA, 1 June 2023.
+            #
             #            item_collection = item_collection_for_pathrow(
             #                # For S2, would probably just pass index_dict as kwargs
             #                # to generic function
@@ -168,13 +180,22 @@ class Processor:
                 )
 
             # If we want to create an output for each year, split results
-            # into a list of da/ds
+            # into a list of da/ds. Useful in theory but in practice it often
+            # made dask jobs unwieldy and caused slowdowns. My current 
+            # recommendation is to one run process for each year's work of data,
+            # particularly for larger areas.
             if self.split_output_by_year:
                 results = [results.sel(time=year) for year in results.coords["time"]]
 
             # If we want to create an output for each variable, split or further
             # split results into a list of da/ds for each variable
-            # or variable x year
+            # or variable x year. This is behaves a little better than splitting
+            # by year above, since individual variables often use the same data,
+            # requiring only one pull. However writing multiple files does create
+            # overhead. Perhaps only useful / required when the output dataset
+            # with multiple variables doesn't fit into memory (since as of this
+            # writing write_to_blob_storage must first write to an in memory 
+            # object before shipping to azure bs.
             if self.split_output_by_variable:
                 results = (
                     [
@@ -235,6 +256,10 @@ class Processor:
     def _get_stack(
         self, item_collection: ItemCollection, these_areas: GeoDataFrame
     ) -> DataArray:
+        """
+        Returns a DataArray from the given ItemCollection with crs set (to 8859)
+        and clipped to the features in `these_areas`. Uses stackstac.stack.
+        """
         return (
             stack(
                 item_collection,
@@ -275,9 +300,12 @@ def run_processor(
     n_workers: int = 400,
     **kwargs,
 ) -> None:
+    """
+    Creates a Processor object and calls process_by_scene with the given
+    arguments. Tries to do so using a dask GatewayCluster with the given
+    number of workers. If one is not available, uses a local dask client.
+    """
     processor = Processor(scene_processor, dataset_id, **kwargs)
-    # Try to run on a gateway cluster, if one is not configured,
-    # fall back to local cluster
     try:
         cluster = GatewayCluster(worker_cores=1, worker_memory=8)
         cluster.scale(n_workers)

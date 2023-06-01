@@ -260,9 +260,6 @@ def create_tiles(
                 prefix=prefix,
                 bounds=bounds,
                 client=local_client,
-                storage_account=storage_account,
-                credential=credential,
-                container_name=container_name,
                 scale_factor=1.0 / 1000,
                 overwrite=remake_mosaic,
             )
@@ -313,22 +310,15 @@ def mosaic_scenes(
     prefix: str,
     bounds: List,
     client: Client,
-    storage_account: str = os.environ["AZURE_STORAGE_ACCOUNT"],
-    credential: str = os.environ["AZURE_STORAGE_SAS_TOKEN"],
-    container_name: str = "output",
     scale_factor: float = None,
     overwrite: bool = True,
 ) -> None:
     mosaic_file = _mosaic_file(prefix)
     if not Path(mosaic_file).is_file() or overwrite:
-        vrt_file = build_vrt(
-            prefix, bounds, storage_account, credential, container_name
-        )
-        vrt_file = f"data/{_local_prefix(prefix)}.vrt"
+        vrt_file = build_vrt(prefix, bounds)
         rioxarray.open_rasterio(vrt_file, chunks=True).rio.to_raster(
             mosaic_file,
             compress="LZW",
-            predictor=2,
             lock=Lock("rio", client=client),
         )
 
