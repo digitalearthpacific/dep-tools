@@ -20,11 +20,32 @@ import pystac_client
 import rasterio
 from retry import retry
 import rioxarray
-from shapely.geometry import Point
+from shapely import buffer, difference
+from shapely.geometry import MultiLineString, LineString, Point
 from shapely.ops import transform
 from tqdm import tqdm
 import xarray as xr
 from xarray import DataArray, Dataset
+
+
+def shift_negative_longitudes(
+    geometry: Union[LineString, MultiLineString]
+) -> Union[LineString, MultiLineString]:
+    """
+    Fixes lines that span the antimeridian by adding 360 to any negative
+    latitudes.
+    """
+    # This is likely a pacific-specific test.
+    if abs(geometry.bounds[2] - geometry.bounds[0]) < 180:
+        return geometry
+
+    if isinstance(geometry, MultiLineString):
+        return MultiLineString(
+            [shift_negative_longitudes(geom) for geom in geometry.geoms]
+        )
+
+    # If this doesn't work, shift, split, then unshift
+    return LineString([(((pt[0] + 360) % 360), pt[1]) for pt in geometry.coords])
 
 
 @retry(tries=10, delay=1)
