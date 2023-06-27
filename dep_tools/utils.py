@@ -33,7 +33,7 @@ def shift_negative_longitudes(
 ) -> Union[LineString, MultiLineString]:
     """
     Fixes lines that span the antimeridian by adding 360 to any negative
-    latitudes.
+    longitudes.
     """
     # This is likely a pacific-specific test.
     if abs(geometry.bounds[2] - geometry.bounds[0]) < 180:
