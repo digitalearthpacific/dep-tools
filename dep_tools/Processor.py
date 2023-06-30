@@ -122,7 +122,7 @@ class Processor:
             # Previous version which filtered search by landsat path and row.
             # Was a little quicker than a geographic search, but only returned
             # items for the specific pathrow - not those that might be overlapping.
-            # This became an issue later when doing a "naive" mosaic - that is, 
+            # This became an issue later when doing a "naive" mosaic - that is,
             # just stacking rasters atop one another. For now I'm leaving this here
             # in case we have a use for it in the near future, but it should
             # probably be removed. -JA, 1 June 2023.
@@ -181,7 +181,7 @@ class Processor:
 
             # If we want to create an output for each year, split results
             # into a list of da/ds. Useful in theory but in practice it often
-            # made dask jobs unwieldy and caused slowdowns. My current 
+            # made dask jobs unwieldy and caused slowdowns. My current
             # recommendation is to one run process for each year's work of data,
             # particularly for larger areas.
             if self.split_output_by_year:
@@ -194,7 +194,7 @@ class Processor:
             # requiring only one pull. However writing multiple files does create
             # overhead. Perhaps only useful / required when the output dataset
             # with multiple variables doesn't fit into memory (since as of this
-            # writing write_to_blob_storage must first write to an in memory 
+            # writing write_to_blob_storage must first write to an in memory
             # object before shipping to azure bs.
             if self.split_output_by_variable:
                 results = (
@@ -285,7 +285,7 @@ class Processor:
         if year is None:
             year = self.year
 
-        year = year.replace("/", "_")
+        year = year.replace("/", "_") if year is not None else year
         suffix = "_".join([str(i) for i in index])
         return (
             f"{self.dataset_id}/{year}/{variable}_{year}_{suffix}.tif"
