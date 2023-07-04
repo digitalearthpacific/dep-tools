@@ -7,8 +7,10 @@ from azure.storage.blob import ContainerClient
 from dask.distributed import Client
 from dask_gateway import GatewayCluster
 from geopandas import GeoDataFrame
+from odc.stac import load
 from pystac import ItemCollection
 from rasterio import RasterioIOError
+from rasterio.enums import Resampling
 import rioxarray
 from stackstac import stack
 from tqdm import tqdm
@@ -88,10 +90,15 @@ class Processor:
     aoi_by_tile: GeoDataFrame = GeoDataFrame.from_file(
         Path(__file__).parent / "aoi_split_by_landsat_pathrow.gpkg"
     ).set_index(["PATH", "ROW"])
+    stac_kwargs: Dict = field(
+        default_factory=lambda: dict(epsg=8859, resampling=Resampling.nearest)
+    )
     scene_processor_kwargs: Dict = field(default_factory=dict)
     scale_and_offset: bool = True
     send_area_to_scene_processor: bool = False
-    dask_chunksize: int = 4096
+    dask_chunksize: Dict = field(
+        default_factory=lambda: dict(band=1, time=1, x=4096, y=4096)
+    )
     convert_output_to_int16: bool = True
     output_value_multiplier: int = 10000
     output_nodata: int = -32767
@@ -119,26 +126,6 @@ class Processor:
                 datetime=self.year,
             )
 
-            # Previous version which filtered search by landsat path and row.
-            # Was a little quicker than a geographic search, but only returned
-            # items for the specific pathrow - not those that might be overlapping.
-            # This became an issue later when doing a "naive" mosaic - that is,
-            # just stacking rasters atop one another. For now I'm leaving this here
-            # in case we have a use for it in the near future, but it should
-            # probably be removed. -JA, 1 June 2023.
-            #
-            #            item_collection = item_collection_for_pathrow(
-            #                # For S2, would probably just pass index_dict as kwargs
-            #                # to generic function
-            #                path=index_dict["PATH"],
-            #                row=index_dict["ROW"],
-            #                search_args=dict(
-            #                    collections=["landsat-c2-l2"],
-            #                    datetime=self.year,
-            #                    bbox=gpdf_bounds(these_areas),
-            #                ),
-            #            )
-
             # If there are not items in this collection for _this_ pathrow,
             # we don't want to process, since they will be captured in
             # other pathrows (or are areas not covered by our aoi)
@@ -151,15 +138,19 @@ class Processor:
 
             if len(item_collection_for_this_pathrow) == 0:
                 continue
+
             fix_bad_epsgs(item_collection)
 
-            item_xr = self._get_stack(item_collection, these_areas)
+            native_epsg = item_collection_for_this_pathrow[0].properties["proj:epsg"]
+            item_xr = self._get_stack(
+                item_collection, these_areas, native_epsg, **self.stac_kwargs
+            )
             item_xr = mask_clouds(item_xr)
 
             if self.scale_and_offset:
                 # These values only work for SR bands of landsat. Ideally we could
                 # read from metadata. _Really_ ideally we could just pass "scale"
-                # to rioxarray but apparently that doesn't work.
+                # to rioxarray/stack/odc.stac.load but apparently that doesn't work.
                 scale = 0.0000275
                 offset = -0.2
                 item_xr = scale_and_offset(item_xr, scale=[scale], offset=offset)
@@ -167,6 +158,7 @@ class Processor:
             if self.send_area_to_scene_processor:
                 self.scene_processor_kwargs.update(dict(area=these_areas))
             results = self.scene_processor(item_xr, **self.scene_processor_kwargs)
+
             # Happens in coastlines sometimes
             if results is None:
                 continue
@@ -254,7 +246,49 @@ class Processor:
                 )
 
     def _get_stack(
-        self, item_collection: ItemCollection, these_areas: GeoDataFrame
+        self, items, these_areas: GeoDataFrame, epsg: int = 8859, **kwargs: Dict
+    ) -> DataArray:
+        """
+        Returns a DataArray from the given ItemCollection with crs set (to 8859)
+        and clipped to the features in `these_areas`. Uses odc.stac.load.
+        """
+        # This appears to be functionally equivalent to the stackstac based version,
+        # except non-dimensional coords (e.g. "landsat_collection_number", etc)
+        # are not loaded. May be able to load these if needed with `stac_cfg`
+        # param.
+
+        # I did this so we could have a "free" groupby for solar day (thanks Alex)
+        # and also could define per-band resampling (thanks Robbi)
+        return (
+            load(
+                items,
+                groupby="solar_day",
+                crs=epsg,
+                chunks=self.dask_chunksize,
+                # Not sure this is identical to errors_as_nodata, we shall see.
+                # In particular, does it work for all errors and does it fill
+                # with nodata
+                fail_on_error=False,
+                **kwargs,
+            )
+            .to_array("band")  # <- just to match what stackstac makes, at least for now
+            # stackstac names it stackstac-lkj1928d-l81938d890 or similar,
+            # in places a name is needed (for instance .to_dataset())
+            .rename("data")
+            .rio.write_crs(epsg)
+            .rio.clip(
+                these_areas.to_crs(epsg).geometry,
+                all_touched=True,
+                from_disk=True,
+            )
+        )
+
+    def _get_stackstacstack(
+        self,
+        item_collection: ItemCollection,
+        these_areas: GeoDataFrame,
+        epsg: int = 8859,
+        **kwargs: Dict,
     ) -> DataArray:
         """
         Returns a DataArray from the given ItemCollection with crs set (to 8859)
@@ -263,15 +297,22 @@ class Processor:
         return (
             stack(
                 item_collection,
-                epsg=8859,
-                chunksize=self.dask_chunksize,
+                # stack will take a dict but not keyed by bandname, only numbers
+                # I don't know how to find the order of the dimensions from the
+                # itemcollection, so this is essentially hoping x & y are always
+                # last. If we want to continue to support stack then we need
+                # a slicker solution, but for now I'm just testing so I will wait.
+                chunksize=self.dask_chunksize.values(),
+                # chunksize=4096,
+                epsg=epsg,
                 resolution=30,
                 # Previously it only caught 404s, we are getting other errors
                 errors_as_nodata=(RasterioIOError(".*"),),
+                #                **kwargs,
             )
-            .rio.write_crs("EPSG:8859")
+            .rio.write_crs(epsg)
             .rio.clip(
-                these_areas.to_crs("EPSG:8859").geometry,
+                these_areas.to_crs(epsg).geometry,
                 all_touched=True,
                 from_disk=True,
             )
