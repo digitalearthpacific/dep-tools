@@ -85,9 +85,11 @@ class Processor:
     overwrite: bool = False
     split_output_by_year: bool = False
     split_output_by_variable: bool = False
-    aoi_by_tile: GeoDataFrame = GeoDataFrame.from_file(
-        Path(__file__).parent / "aoi_split_by_landsat_pathrow.gpkg"
-    ).set_index(["PATH", "ROW"])
+    aoi_by_tile: GeoDataFrame = field(
+        default_factory=lambda: GeoDataFrame.from_file(
+            Path(__file__).parent / "aoi_split_by_landsat_pathrow.gpkg"
+        ).set_index(["PATH", "ROW"])
+    )
     scene_processor_kwargs: Dict = field(default_factory=dict)
     scale_and_offset: bool = True
     send_area_to_scene_processor: bool = False
