@@ -87,9 +87,11 @@ class Processor:
     overwrite: bool = False
     split_output_by_year: bool = False
     split_output_by_variable: bool = False
-    aoi_by_tile: GeoDataFrame = GeoDataFrame.from_file(
-        Path(__file__).parent / "aoi_split_by_landsat_pathrow.gpkg"
-    ).set_index(["PATH", "ROW"])
+    aoi_by_tile: GeoDataFrame = field(
+        default_factory=lambda: GeoDataFrame.from_file(
+            Path(__file__).parent / "aoi_split_by_landsat_pathrow.gpkg"
+        ).set_index(["PATH", "ROW"])
+    )
     stac_kwargs: Dict = field(
         default_factory=lambda: dict(epsg=8859, resampling=Resampling.nearest)
     )
