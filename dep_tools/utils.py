@@ -172,13 +172,13 @@ def write_to_blob_storage(
         with io.BytesIO() as buffer:
             d.rio.to_raster(buffer, **write_args)
             buffer.seek(0)
-            blob_client.upload_blob(buffer, overwrite=True)
+            blob_client.upload_blob(buffer, overwrite=overwrite)
     elif isinstance(d, GeoDataFrame):
         # some sort of vector data
         with fiona.io.MemoryFile() as buffer:
             d.to_file(buffer, **write_args)
             buffer.seek(0)
-            blob_client.upload_blob(buffer, overwrite=True)
+            blob_client.upload_blob(buffer, overwrite=overwrite)
     else:
         # throw exception
         print("rn you can only write a DataArray, Dataset, or GDF")

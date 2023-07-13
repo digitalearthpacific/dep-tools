@@ -8,6 +8,7 @@ from dask.distributed import Client
 from dask_gateway import GatewayCluster
 from geopandas import GeoDataFrame
 from odc.stac import load
+from pandas import DataFrame
 from pystac import ItemCollection
 from rasterio import RasterioIOError
 from rasterio.enums import Resampling
@@ -82,7 +83,7 @@ class Processor:
 
     scene_processor: Callable
     dataset_id: str
-    container_client: ContainerClient = get_container_client()
+    prefix: Union[str, None] = None
     year: Union[str, None] = None
     overwrite: bool = False
     split_output_by_year: bool = False
@@ -92,28 +93,22 @@ class Processor:
             Path(__file__).parent / "aoi_split_by_landsat_pathrow.gpkg"
         ).set_index(["PATH", "ROW"])
     )
-    stac_kwargs: Dict = field(
+    stac_loader_kwargs: Dict = field(
         default_factory=lambda: dict(epsg=8859, resampling=Resampling.nearest)
     )
+    load_tile_pathrow_only: bool = False
     scene_processor_kwargs: Dict = field(default_factory=dict)
     scale_and_offset: bool = True
     send_area_to_scene_processor: bool = False
     dask_chunksize: Dict = field(
         default_factory=lambda: dict(band=1, time=1, x=4096, y=4096)
     )
+    container_client: ContainerClient = get_container_client()
     convert_output_to_int16: bool = True
     output_value_multiplier: int = 10000
     output_nodata: int = -32767
+    extra_attrs: Dict = field(default_factory=dict)
     scale_int16s: bool = False
-
-    def __post_init__(self):
-        self.prefix = (
-            f"{self.dataset_id}/{self.year}/{self.dataset_id}_{self.year}"
-            if self.year
-            else f"{self.dataset_id}/{self.dataset_id}"
-        )
-        self.local_prefix = Path(self.prefix).stem
-        self.mosaic_file = f"data/{self.local_prefix}.tif"
 
     def process_by_scene(self) -> None:
         for index, _ in tqdm(
@@ -131,6 +126,7 @@ class Processor:
             # If there are not items in this collection for _this_ pathrow,
             # we don't want to process, since they will be captured in
             # other pathrows (or are areas not covered by our aoi)
+
             item_collection_for_this_pathrow = [
                 i
                 for i in item_collection
@@ -141,11 +137,22 @@ class Processor:
             if len(item_collection_for_this_pathrow) == 0:
                 continue
 
+            if self.load_tile_pathrow_only:
+                item_collection = item_collection_for_this_pathrow
+
             fix_bad_epsgs(item_collection)
 
-            native_epsg = item_collection_for_this_pathrow[0].properties["proj:epsg"]
+            if (
+                "epsg" in self.stac_loader_kwargs
+                and self.stac_loader_kwargs["epsg"] == "native"
+            ):
+                native_epsg = item_collection_for_this_pathrow[0].properties[
+                    "proj:epsg"
+                ]
+                self.stac_loader_kwargs.update(dict(epsg=native_epsg))
+
             item_xr = self._get_stack(
-                item_collection, these_areas, native_epsg, **self.stac_kwargs
+                item_collection, these_areas, **self.stac_loader_kwargs
             )
             item_xr = mask_clouds(item_xr)
 
@@ -160,6 +167,8 @@ class Processor:
             if self.send_area_to_scene_processor:
                 self.scene_processor_kwargs.update(dict(area=these_areas))
             results = self.scene_processor(item_xr, **self.scene_processor_kwargs)
+
+            results.attrs.update(self.extra_attrs)
 
             # Happens in coastlines sometimes
             if results is None:
@@ -248,23 +257,33 @@ class Processor:
                 )
 
     def _get_stack(
-        self, items, these_areas: GeoDataFrame, epsg: int = 8859, **kwargs: Dict
+        self,
+        items,
+        these_areas: GeoDataFrame,
+        loader: str = "odc",
+        epsg: int = 8859,
+        **kwargs: Dict,
     ) -> DataArray:
         """
-        Returns a DataArray from the given ItemCollection with crs set (to 8859)
+        Returns a DataArray from the given ItemCollection with given epsg
         and clipped to the features in `these_areas`. Uses odc.stac.load.
         """
-        # This appears to be functionally equivalent to the stackstac based version,
-        # except non-dimensional coords (e.g. "landsat_collection_number", etc)
-        # are not loaded. May be able to load these if needed with `stac_cfg`
-        # param.
 
+        fxn = self._get_odc_stack if loader == "odc" else self._get_stackstac_stack
+        return fxn(items, these_areas, epsg, **kwargs)
+
+    def _get_odc_stack(
+        self,
+        items,
+        these_areas: GeoDataFrame,
+        epsg: int = 8859,
+        **kwargs: Dict,
+    ) -> DataArray:
         # I did this so we could have a "free" groupby for solar day (thanks Alex)
         # and also could define per-band resampling (thanks Robbi)
         return (
             load(
                 items,
-                groupby="solar_day",
                 crs=epsg,
                 chunks=self.dask_chunksize,
                 # Not sure this is identical to errors_as_nodata, we shall see.
@@ -272,6 +291,26 @@ class Processor:
                 # with nodata
                 fail_on_error=False,
                 **kwargs,
+            )
+            # odc.stac.load appears to be functionally equivalent to the stackstac
+            # based version, except non-dimensional coords (e.g.
+            # "landsat_collection_number", etc) are not loaded.
+            # This roughly mimic that behavior, except in cases where the
+            # properties are identical across all items, stackstac appears to
+            # set them to a single value.
+            #
+            # Sadly, this was unreliable. The last straw was that there were
+            # sometimes identical times (I think), so there were fewer
+            # times in the loaded data than the item collection
+            .assign_coords(
+                {
+                    # `[str(l)...` part is because there are some other-dimensioned
+                    # data which xarray can't add as coordinates
+                    k: ("time", [str(l) for l in v])
+                    for k, v in DataFrame([i.properties for i in items])
+                    .to_dict("list")
+                    .items()
+                }
             )
             .to_array("band")  # <- just to match what stackstac makes, at least for now
             # stackstac names it stackstac-lkj1928d-l81938d890 or similar,
@@ -285,7 +324,7 @@ class Processor:
             )
         )
 
-    def _get_stackstacstack(
+    def _get_stackstac_stack(
         self,
         item_collection: ItemCollection,
         these_areas: GeoDataFrame,
@@ -310,7 +349,7 @@ class Processor:
                 resolution=30,
                 # Previously it only caught 404s, we are getting other errors
                 errors_as_nodata=(RasterioIOError(".*"),),
-                #                **kwargs,
+                **kwargs,
             )
             .rio.write_crs(epsg)
             .rio.clip(
@@ -328,12 +367,13 @@ class Processor:
         if year is None:
             year = self.year
 
+        prefix = f"{self.prefix}/" if self.prefix is not None else ""
         year = year.replace("/", "_") if year is not None else year
         suffix = "_".join([str(i) for i in index])
         return (
-            f"{self.dataset_id}/{year}/{variable}_{year}_{suffix}.tif"
+            f"{prefix}{self.dataset_id}/{year}/{variable}_{year}_{suffix}.tif"
             if year is not None
-            else f"{self.dataset_id}/{variable}_{suffix}.tif"
+            else f"{prefix}{self.dataset_id}/{variable}_{suffix}.tif"
         )
 
 
