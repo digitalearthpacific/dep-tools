@@ -20,6 +20,7 @@ import pystac_client
 import rasterio
 from retry import retry
 import rioxarray
+from rio_stac import create_stac_item
 from shapely import buffer, difference
 from shapely.geometry import MultiLineString, LineString, Point
 from shapely.ops import transform

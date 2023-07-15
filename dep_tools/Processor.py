@@ -1,3 +1,4 @@
+from copy import deepcopy
 from dataclasses import dataclass, field
 
 from pathlib import Path
@@ -86,7 +87,7 @@ class Processor:
     prefix: Union[str, None] = None
     year: Union[str, None] = None
     overwrite: bool = False
-    split_output_by_year: bool = False
+    split_output_by_time: bool = False
     split_output_by_variable: bool = False
     aoi_by_tile: GeoDataFrame = field(
         default_factory=lambda: GeoDataFrame.from_file(
@@ -100,6 +101,7 @@ class Processor:
     scene_processor_kwargs: Dict = field(default_factory=dict)
     scale_and_offset: bool = True
     send_area_to_scene_processor: bool = False
+    send_item_collection_to_scene_processor: bool = False
     dask_chunksize: Dict = field(
         default_factory=lambda: dict(band=1, time=1, x=4096, y=4096)
     )
@@ -122,6 +124,7 @@ class Processor:
                 collections=["landsat-c2-l2"],
                 datetime=self.year,
             )
+            fix_bad_epsgs(item_collection)
 
             # If there are not items in this collection for _this_ pathrow,
             # we don't want to process, since they will be captured in
@@ -140,7 +143,7 @@ class Processor:
             if self.load_tile_pathrow_only:
                 item_collection = item_collection_for_this_pathrow
 
-            fix_bad_epsgs(item_collection)
+            these_stac_loader_kwargs = deepcopy(self.stac_loader_kwargs)
 
             if (
                 "epsg" in self.stac_loader_kwargs
@@ -149,10 +152,10 @@ class Processor:
                 native_epsg = item_collection_for_this_pathrow[0].properties[
                     "proj:epsg"
                 ]
-                self.stac_loader_kwargs.update(dict(epsg=native_epsg))
+                these_stac_loader_kwargs.update(dict(epsg=native_epsg))
 
             item_xr = self._get_stack(
-                item_collection, these_areas, **self.stac_loader_kwargs
+                item_collection, these_areas, **these_stac_loader_kwargs
             )
             item_xr = mask_clouds(item_xr)
 
@@ -166,6 +169,11 @@ class Processor:
 
             if self.send_area_to_scene_processor:
                 self.scene_processor_kwargs.update(dict(area=these_areas))
+
+            if self.send_item_collection_to_scene_processor:
+                self.scene_processor_kwargs.update(
+                    dict(item_collection=item_collection)
+                )
             results = self.scene_processor(item_xr, **self.scene_processor_kwargs)
 
             results.attrs.update(self.extra_attrs)
@@ -187,8 +195,8 @@ class Processor:
             # made dask jobs unwieldy and caused slowdowns. My current
             # recommendation is to one run process for each year's work of data,
             # particularly for larger areas.
-            if self.split_output_by_year:
-                results = [results.sel(time=year) for year in results.coords["time"]]
+            if self.split_output_by_time:
+                results = [results.sel(time=time) for time in results.coords["time"]]
 
             # If we want to create an output for each variable, split or further
             # split results into a list of da/ds for each variable
@@ -215,12 +223,12 @@ class Processor:
                     # preferable to to results.coords.get('time') but that returns
                     # a dataarray rather than a string
                     time = (
-                        result.coords["time"].values.tolist()
+                        result.coords["time"].values
                         if "time" in result.coords
                         else None
                     )
                     variable = (
-                        result.coords["variable"].values.tolist()
+                        result.coords["variable"].values
                         if "variable" in result.coords
                         else None
                     )
@@ -292,26 +300,6 @@ class Processor:
                 fail_on_error=False,
                 **kwargs,
             )
-            # odc.stac.load appears to be functionally equivalent to the stackstac
-            # based version, except non-dimensional coords (e.g.
-            # "landsat_collection_number", etc) are not loaded.
-            # This roughly mimic that behavior, except in cases where the
-            # properties are identical across all items, stackstac appears to
-            # set them to a single value.
-            #
-            # Sadly, this was unreliable. The last straw was that there were
-            # sometimes identical times (I think), so there were fewer
-            # times in the loaded data than the item collection
-            .assign_coords(
-                {
-                    # `[str(l)...` part is because there are some other-dimensioned
-                    # data which xarray can't add as coordinates
-                    k: ("time", [str(l) for l in v])
-                    for k, v in DataFrame([i.properties for i in items])
-                    .to_dict("list")
-                    .items()
-                }
-            )
             .to_array("band")  # <- just to match what stackstac makes, at least for now
             # stackstac names it stackstac-lkj1928d-l81938d890 or similar,
             # in places a name is needed (for instance .to_dataset())
@@ -360,19 +348,19 @@ class Processor:
         )
 
     def _get_path(
-        self, index, year: Union[str, None] = None, variable: Union[str, None] = None
+        self, index, time: Union[str, None] = None, variable: Union[str, None] = None
     ) -> str:
         if variable is None:
             variable = self.dataset_id
-        if year is None:
-            year = self.year
+        if time is None:
+            time = self.year
 
         prefix = f"{self.prefix}/" if self.prefix is not None else ""
-        year = year.replace("/", "_") if year is not None else year
+        time = time.replace("/", "_") if time is not None else time
         suffix = "_".join([str(i) for i in index])
         return (
-            f"{prefix}{self.dataset_id}/{year}/{variable}_{year}_{suffix}.tif"
-            if year is not None
+            f"{prefix}{self.dataset_id}/{time}/{variable}_{time}_{suffix}.tif"
+            if time is not None
             else f"{prefix}{self.dataset_id}/{variable}_{suffix}.tif"
         )
 

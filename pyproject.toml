@@ -23,11 +23,10 @@ stackstac = "*"
 retry = "*"
 tqdm = "*"
 xarray = "*"
+rio-stac = "^0.8.0"
 
 [tool.poetry.group.dev.dependencies]
-pynvim = "^0.4.3"
 black = "^23.1.0"
-neovim = "^0.3.1"
 pylint = "^2.17.1"
 mypy = "^1.1.1"
 
