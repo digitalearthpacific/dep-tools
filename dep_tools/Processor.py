@@ -176,12 +176,11 @@ class Processor:
                 )
             results = self.scene_processor(item_xr, **self.scene_processor_kwargs)
 
-            results.attrs.update(self.extra_attrs)
-
             # Happens in coastlines sometimes
             if results is None:
                 continue
 
+            results.attrs.update(self.extra_attrs)
             if self.convert_output_to_int16:
                 results = scale_to_int16(
                     results,
@@ -287,20 +286,22 @@ class Processor:
         epsg: int = 8859,
         **kwargs: Dict,
     ) -> DataArray:
-        # I did this so we could have a "free" groupby for solar day (thanks Alex)
-        # and also could define per-band resampling (thanks Robbi)
+        # For most EO data native dtype is int. Loading as such saves space but
+        # the only more-or-less universally accepted nodata value is nan,
+        # which is not available for int types. So we need to load as float and
+        # then replace existing nodata values (usually 0) with nan. At least
+        # I _think_ all this is necessary and there's not an easier way I didn't
+        # see in the docs.
+        xr = load(
+            items, crs=epsg, chunks=self.dask_chunksize, **kwargs, dtype="float32"
+        )
+
+        xr = xr.where(xr != xr[list(xr.data_vars)[0]].rio.nodata, float("nan"))
+
         return (
-            load(
-                items,
-                crs=epsg,
-                chunks=self.dask_chunksize,
-                # Not sure this is identical to errors_as_nodata, we shall see.
-                # In particular, does it work for all errors and does it fill
-                # with nodata
-                fail_on_error=False,
-                **kwargs,
-            )
-            .to_array("band")  # <- just to match what stackstac makes, at least for now
+            xr.to_array(
+                "band"
+            )  # ^^ just to match what stackstac makes, at least for now
             # stackstac names it stackstac-lkj1928d-l81938d890 or similar,
             # in places a name is needed (for instance .to_dataset())
             .rename("data")

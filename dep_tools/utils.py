@@ -165,6 +165,7 @@ def write_to_blob_storage(
 ) -> None:
     container_client = get_container_client(**kwargs)
 
+    print(path)
     blob_client = container_client.get_blob_client(str(path))
     if not overwrite and blob_client.exists():
         return
