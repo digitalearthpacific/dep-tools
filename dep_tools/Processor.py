@@ -369,7 +369,9 @@ class Processor:
 def run_processor(
     scene_processor: Callable,
     dataset_id: str,
-    n_workers: int = 400,
+    n_workers: int = 100,
+    worker_cores: int = 1,
+    worker_memory: int = 8,
     **kwargs,
 ) -> None:
     """
@@ -379,7 +381,7 @@ def run_processor(
     """
     processor = Processor(scene_processor, dataset_id, **kwargs)
     try:
-        cluster = GatewayCluster(worker_cores=1, worker_memory=16)
+        cluster = GatewayCluster(worker_cores=worker_cores, worker_memory=worker_memory)
         cluster.scale(n_workers)
         with cluster.get_client() as client:
             print(client.dashboard_link)
