@@ -379,7 +379,7 @@ def run_processor(
     """
     processor = Processor(scene_processor, dataset_id, **kwargs)
     try:
-        cluster = GatewayCluster(worker_cores=1, worker_memory=8)
+        cluster = GatewayCluster(worker_cores=1, worker_memory=16)
         cluster.scale(n_workers)
         with cluster.get_client() as client:
             print(client.dashboard_link)
