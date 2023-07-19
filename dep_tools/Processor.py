@@ -296,7 +296,8 @@ class Processor:
             items, crs=epsg, chunks=self.dask_chunksize, **kwargs, dtype="float32"
         )
 
-        xr = xr.where(xr != xr[list(xr.data_vars)[0]].rio.nodata, float("nan"))
+        for name in xr:
+            xr[name] = xr[name].where(xr[name] != xr[name].rio.nodata, float("nan"))
 
         return (
             xr.to_array(
@@ -306,6 +307,7 @@ class Processor:
             # in places a name is needed (for instance .to_dataset())
             .rename("data")
             .rio.write_crs(epsg)
+            .rio.write_nodata(float("nan"))
             .rio.clip(
                 these_areas.to_crs(epsg).geometry,
                 all_touched=True,
