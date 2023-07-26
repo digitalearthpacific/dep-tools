@@ -7,6 +7,7 @@ from rasterio import RasterioIOError
 from stackstac import stack
 from xarray import DataArray
 
+from .exceptions import EmptyCollectionError
 from .utils import search_across_180, fix_bad_epsgs
 
 
@@ -59,8 +60,7 @@ class LandsatLoaderMixin(object):
         ]
 
         if len(item_collection_for_this_pathrow) == 0:
-            # should probably raise error here
-            return None
+            raise EmptyCollectionError()
 
         if self.load_tile_pathrow_only:
             item_collection = item_collection_for_this_pathrow
