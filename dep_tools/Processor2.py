@@ -119,152 +119,17 @@ class Processor:
         ):
             print(index)
             these_areas = self.aoi_by_tile.loc[[index]]
-            index_dict = dict(zip(self.aoi_by_tile.index.names, index))
-            item_collection = search_across_180(
-                these_areas,
-                collections=["landsat-c2-l2"],
-                datetime=self.year,
-            )
-            fix_bad_epsgs(item_collection)
-
-            # If there are not items in this collection for _this_ pathrow,
-            # we don't want to process, since they will be captured in
-            # other pathrows (or are areas not covered by our aoi)
-
-            item_collection_for_this_pathrow = [
-                i
-                for i in item_collection
-                if i.properties["landsat:wrs_path"] == f"{index_dict['PATH']:03d}"
-                and i.properties["landsat:wrs_row"] == f"{index_dict['ROW']:03d}"
-            ]
-
-            if len(item_collection_for_this_pathrow) == 0:
-                if self.logger:
-                    self.logger.warning(dict(index=index, )
-                continue
-
-            if self.load_tile_pathrow_only:
-                item_collection = item_collection_for_this_pathrow
-
-            these_stac_loader_kwargs = deepcopy(self.stac_loader_kwargs)
-
-            if (
-                "epsg" in self.stac_loader_kwargs
-                and self.stac_loader_kwargs["epsg"] == "native"
-            ):
-                native_epsg = item_collection_for_this_pathrow[0].properties[
-                    "proj:epsg"
-                ]
-                these_stac_loader_kwargs.update(dict(epsg=native_epsg))
-
-            item_xr = self._get_stack(
-                item_collection, these_areas, **these_stac_loader_kwargs
-            )
-            item_xr = mask_clouds(item_xr)
-
-            if self.scale_and_offset:
-                # These values only work for SR bands of landsat. Ideally we could
-                # read from metadata. _Really_ ideally we could just pass "scale"
-                # to rioxarray/stack/odc.stac.load but apparently that doesn't work.
-                scale = 0.0000275
-                offset = -0.2
-                item_xr = scale_and_offset(item_xr, scale=[scale], offset=offset)
-
-            if self.send_area_to_scene_processor:
-                self.scene_processor_kwargs.update(dict(area=these_areas))
-
-            if self.send_item_collection_to_scene_processor:
-                self.scene_processor_kwargs.update(
-                    dict(item_collection=item_collection)
-                )
-            results = self.scene_processor(item_xr, **self.scene_processor_kwargs)
-
+            input_xr = loader.load(these_areas)
+            output_xr = processor.process(input_xr)
             # Happens in coastlines sometimes
-            if results is None:
+
+            if output_xr is None:
                 continue
+            writer.write(output_xr)
 
-            results.attrs.update(self.extra_attrs)
-            if self.convert_output_to_int16:
-                results = scale_to_int16(
-                    results,
-                    output_multiplier=self.output_value_multiplier,
-                    output_nodata=self.output_nodata,
-                    scale_int16s=self.scale_int16s,
-                )
 
-            # If we want to create an output for each year, split results
-            # into a list of da/ds. Useful in theory but in practice it often
-            # made dask jobs unwieldy and caused slowdowns. My current
-            # recommendation is to one run process for each year's work of data,
-            # particularly for larger areas.
-            if self.split_output_by_time:
-                results = [results.sel(time=time) for time in results.coords["time"]]
 
-            # If we want to create an output for each variable, split or further
-            # split results into a list of da/ds for each variable
-            # or variable x year. This is behaves a little better than splitting
-            # by year above, since individual variables often use the same data,
-            # requiring only one pull. However writing multiple files does create
-            # overhead. Perhaps only useful / required when the output dataset
-            # with multiple variables doesn't fit into memory (since as of this
-            # writing write_to_blob_storage must first write to an in memory
-            # object before shipping to azure bs.
-            if self.split_output_by_variable:
-                results = (
-                    [
-                        result.to_array().sel(variable=var)
-                        for result in results
-                        for var in result
-                    ]
-                    if self.split_output_by_year
-                    else [results.to_array().sel(variable=var) for var in results]
-                )
 
-            if isinstance(results, List):
-                for result in results:
-                    # preferable to to results.coords.get('time') but that returns
-                    # a dataarray rather than a string
-                    time = (
-                        result.coords["time"].values
-                        if "time" in result.coords
-                        else None
-                    )
-                    variable = (
-                        result.coords["variable"].values
-                        if "variable" in result.coords
-                        else None
-                    )
-
-                    write_to_blob_storage(
-                        result,
-                        path=self._get_path(index, time, variable),
-                        write_args=dict(driver="COG", compress="LZW"),
-                        overwrite=self.overwrite,
-                    )
-            else:
-                # We cannot write outputs with > 2 dimensions using rio.to_raster,
-                # so we create new variables for each year x variable combination
-                # Note this requires time to represent year, so we should consider
-                # doing that here as well (rather than earlier).
-                if len(results.dims.keys()) > 2:
-                    results = (
-                        results.to_array(dim="variables")
-                        .stack(z=["time", "variables"])
-                        .to_dataset(dim="z")
-                        .pipe(
-                            lambda ds: ds.rename_vars(
-                                {name: "_".join(name) for name in ds.data_vars}
-                            )
-                        )
-                        .drop_vars(["variables", "time"])
-                    )
-                write_to_blob_storage(
-                    # Squeeze here in case we have e.g. a single time reading
-                    results.squeeze(),
-                    path=self._get_path(index),
-                    write_args=dict(driver="COG", compress="LZW"),
-                    overwrite=self.overwrite,
-                )
                 logger.info(index, "Successfully written")
 
     def _get_stack(
@@ -282,42 +147,6 @@ class Processor:
 
         fxn = self._get_odc_stack if loader == "odc" else self._get_stackstac_stack
         return fxn(items, these_areas, epsg, **kwargs)
-
-    def _get_odc_stack(
-        self,
-        items,
-        these_areas: GeoDataFrame,
-        epsg: int = 8859,
-        **kwargs: Dict,
-    ) -> DataArray:
-        # For most EO data native dtype is int. Loading as such saves space but
-        # the only more-or-less universally accepted nodata value is nan,
-        # which is not available for int types. So we need to load as float and
-        # then replace existing nodata values (usually 0) with nan. At least
-        # I _think_ all this is necessary and there's not an easier way I didn't
-        # see in the docs.
-        xr = load(
-            items, crs=epsg, chunks=self.dask_chunksize, **kwargs, dtype="float32"
-        )
-
-        for name in xr:
-            xr[name] = xr[name].where(xr[name] != xr[name].rio.nodata, float("nan"))
-
-        return (
-            xr.to_array(
-                "band"
-            )  # ^^ just to match what stackstac makes, at least for now
-            # stackstac names it stackstac-lkj1928d-l81938d890 or similar,
-            # in places a name is needed (for instance .to_dataset())
-            .rename("data")
-            .rio.write_crs(epsg)
-            .rio.write_nodata(float("nan"))
-            .rio.clip(
-                these_areas.to_crs(epsg).geometry,
-                all_touched=True,
-                from_disk=True,
-            )
-        )
 
     def _get_stackstac_stack(
         self,
