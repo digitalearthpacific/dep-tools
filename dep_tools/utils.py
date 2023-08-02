@@ -165,7 +165,6 @@ def write_to_blob_storage(
 ) -> None:
     container_client = get_container_client(**kwargs)
 
-    print(path)
     blob_client = container_client.get_blob_client(str(path))
     if not overwrite and blob_client.exists():
         return
@@ -175,6 +174,7 @@ def write_to_blob_storage(
             d.rio.to_raster(buffer, **write_args)
             buffer.seek(0)
             blob_client.upload_blob(buffer, overwrite=overwrite)
+        blob_client.set_blob_tags(d.attrs)
     elif isinstance(d, GeoDataFrame):
         # some sort of vector data
         with fiona.io.MemoryFile() as buffer:
@@ -182,8 +182,9 @@ def write_to_blob_storage(
             buffer.seek(0)
             blob_client.upload_blob(buffer, overwrite=overwrite)
     else:
-        # throw exception
-        print("rn you can only write a DataArray, Dataset, or GDF")
+        raise ValueError(
+            "You can only write an Xarray DataArray or Dataset, or Geopandas GeoDataFrame"
+        )
 
 
 def copy_to_blob_storage(

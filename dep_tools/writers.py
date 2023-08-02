@@ -67,18 +67,20 @@ class AzureXrWriter(Writer):
 
         if isinstance(xr, List):
             paths = []
-            for xr in xr:
-                # preferable to to results.coords.get('time') but that returns
-                # a dataarray rather than a string
-                time = xr.coords["time"].values if "time" in xr.coords else None
+            for this_xr in xr:
+                time = (
+                    this_xr.time.values.tolist() if "time" in this_xr.coords else None
+                )
                 variable = (
-                    xr.coords["variable"].values if "variable" in xr.coords else None
+                    this_xr.coords["variable"].values
+                    if "variable" in this_xr.coords
+                    else None
                 )
 
                 path = self._get_path(item_id, time, variable)
                 paths.append(path)
                 write_to_blob_storage(
-                    xr,
+                    this_xr,
                     path=path,
                     write_args=dict(driver="COG", compress="LZW"),
                     overwrite=self.overwrite,
