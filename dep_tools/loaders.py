@@ -16,6 +16,7 @@ class Loader(ABC):
         self.epsg = epsg
         self.datetime = datetime
         self.dask_chunksize = dask_chunksize
+        self._current_epsg = epsg
 
     def load(self, area):
         items = self._get_items(area)
@@ -66,7 +67,9 @@ class LandsatLoaderMixin(object):
             item_collection = item_collection_for_this_pathrow
 
         if self.epsg is None:
-            self.epsg = item_collection_for_this_pathrow[0].properties["proj:epsg"]
+            self._current_epsg = item_collection_for_this_pathrow[0].properties[
+                "proj:epsg"
+            ]
 
         return item_collection
 
@@ -89,7 +92,7 @@ class OdcLoaderMixin:
         # see in the docs.
         xr = load(
             items,
-            crs=self.epsg,
+            crs=self._current_epsg,
             chunks=self.dask_chunksize,
             **self.odc_load_kwargs,
             dtype="float32",
@@ -105,10 +108,10 @@ class OdcLoaderMixin:
             # stackstac names it stackstac-lkj1928d-l81938d890 or similar,
             # in places a name is needed (for instance .to_dataset())
             .rename("data")
-            .rio.write_crs(self.epsg)
+            .rio.write_crs(self._current_epsg)
             .rio.write_nodata(float("nan"))
             .rio.clip(
-                areas.to_crs(self.epsg).geometry,
+                areas.to_crs(self._current_epsg).geometry,
                 all_touched=True,
                 from_disk=True,
             )
@@ -139,15 +142,15 @@ class StacLoader(Loader):
                 # a slicker solution, but for now I'm just testing so I will wait.
                 chunksize=self.dask_chunksize.values(),
                 # chunksize=4096,
-                epsg=self.epsg,
+                epsg=self._current_epsg,
                 resolution=30,
                 # Previously it only caught 404s, we are getting other errors
                 errors_as_nodata=(RasterioIOError(".*"),),
                 **kwargs,
             )
-            .rio.write_crs(self.epsg)
+            .rio.write_crs(self._current_epsg)
             .rio.clip(
-                areas.to_crs(self.epsg).geometry,
+                areas.to_crs(self._current_epsg).geometry,
                 all_touched=True,
                 from_disk=True,
             )

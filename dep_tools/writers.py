@@ -11,7 +11,7 @@ class Writer(ABC):
         pass
 
     @abstractmethod
-    def write(self) -> None:
+    def write(self, data, id) -> str:
         pass
 
 
@@ -29,7 +29,9 @@ class AzureXrWriter(Writer):
     extra_attrs: Dict = field(default_factory=dict)
     overwrite: bool = False
 
-    def write(self, xr: Union[DataArray, Dataset], item_id: Union[str, List]) -> None:
+    def write(
+        self, xr: Union[DataArray, Dataset], item_id: Union[str, List]
+    ) -> Union[str, List]:
         xr.attrs.update(self.extra_attrs)
         if self.convert_to_int16:
             xr = scale_to_int16(
@@ -64,6 +66,7 @@ class AzureXrWriter(Writer):
             )
 
         if isinstance(xr, List):
+            paths = []
             for xr in xr:
                 # preferable to to results.coords.get('time') but that returns
                 # a dataarray rather than a string
@@ -72,12 +75,15 @@ class AzureXrWriter(Writer):
                     xr.coords["variable"].values if "variable" in xr.coords else None
                 )
 
+                path = self._get_path(item_id, time, variable)
+                paths.append(path)
                 write_to_blob_storage(
                     xr,
-                    path=self._get_path(item_id, time, variable),
+                    path=path,
                     write_args=dict(driver="COG", compress="LZW"),
                     overwrite=self.overwrite,
                 )
+                return paths
         else:
             # We cannot write outputs with > 2 dimensions using rio.to_raster,
             # so we create new variables for each year x variable combination
@@ -95,13 +101,15 @@ class AzureXrWriter(Writer):
                     )
                     .drop_vars(["variables", "time"])
                 )
+            path = self._get_path(item_id)
             write_to_blob_storage(
                 # Squeeze here in case we have e.g. a single time reading
                 xr.squeeze(),
-                path=self._get_path(item_id),
+                path=path,
                 write_args=dict(driver="COG", compress="LZW"),
                 overwrite=self.overwrite,
             )
+            return path
 
     def _get_path(
         self, item_id, time: Union[str, None] = None, variable: Union[str, None] = None
