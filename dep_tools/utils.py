@@ -155,7 +155,7 @@ def download_blob(
             dst.write(download_stream.readall())
 
 
-@retry(tries=20, delay=10)
+@retry(tries=20, delay=2)
 def write_to_blob_storage(
     d: Union[DataArray, Dataset, GeoDataFrame],
     path: Union[str, Path],

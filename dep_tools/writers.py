@@ -85,7 +85,7 @@ class AzureXrWriter(Writer):
                     write_args=dict(driver="COG", compress="LZW"),
                     overwrite=self.overwrite,
                 )
-                return paths
+            return paths
         else:
             # We cannot write outputs with > 2 dimensions using rio.to_raster,
             # so we create new variables for each year x variable combination
