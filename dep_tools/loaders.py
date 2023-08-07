@@ -1,9 +1,17 @@
 from abc import ABC, abstractmethod
+from typing import Union, List
 
 from geopandas import GeoDataFrame
 from odc.stac import load
 from pystac import ItemCollection
 from rasterio import RasterioIOError
+
+# I get errors sometimes that `DataArray` has no attribute `rio`  which I _think_
+# is a dask worker issue but it might be possible that `odc.stac` _sometimes_ needs
+# rioxarray loaded ????
+import rioxarray
+
+
 from stackstac import stack
 from xarray import DataArray
 
@@ -18,12 +26,12 @@ class Loader(ABC):
         self.dask_chunksize = dask_chunksize
         self._current_epsg = epsg
 
-    def load(self, area):
+    def load(self, area) -> DataArray:
         items = self._get_items(area)
         return self._get_xr(items, area)
 
     @abstractmethod
-    def _get_items(self, area):
+    def _get_items(self, area) -> ItemCollection:
         pass
 
     @abstractmethod
@@ -36,9 +44,16 @@ class Loader(ABC):
 
 
 class LandsatLoaderMixin(object):
-    def __init__(self, load_tile_pathrow_only: bool = False, **kwargs):
+    def __init__(
+        self,
+        load_tile_pathrow_only: bool = False,
+        exclude_platforms: Union[List, None] = None,
+        **kwargs,
+    ):
         super().__init__(**kwargs)
         self.load_tile_pathrow_only = load_tile_pathrow_only
+        # e.g. exclude_platforms = ['landsat-7']
+        self._exclude_platforms = exclude_platforms
 
     def _get_items(self, area):
         index_dict = dict(zip(area.index.names, area.index[0]))
@@ -48,6 +63,13 @@ class LandsatLoaderMixin(object):
             datetime=self.datetime,
         )
         fix_bad_epsgs(item_collection)
+
+        if self._exclude_platforms:
+            item_collection = [
+                i
+                for i in item_collection
+                if i.properties["platform"] not in self._exclude_platforms
+            ]
 
         # If there are not items in this collection for _this_ pathrow,
         # we don't want to process, since they will be captured in
@@ -123,7 +145,7 @@ class LandsatOdcLoader(LandsatLoaderMixin, OdcLoaderMixin, Loader):
         super().__init__(**kwargs)
 
 
-class StacLoader(Loader):
+class StacLoaderMixin:
     def __init__(self, epsg):
         super().__init__(epsg)
 
