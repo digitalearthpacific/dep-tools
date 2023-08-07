@@ -13,7 +13,7 @@ import rioxarray
 
 
 from stackstac import stack
-from xarray import DataArray
+from xarray import DataArray, concat
 
 from .exceptions import EmptyCollectionError
 from .utils import search_across_180, fix_bad_epsgs
@@ -140,40 +140,56 @@ class OdcLoaderMixin:
         )
 
 
-class LandsatOdcLoader(LandsatLoaderMixin, OdcLoaderMixin, Loader):
-    def __init__(self, **kwargs):
+class StackStacLoaderMixin:
+    def __init__(self, stack_kwargs=dict(), resamplers_and_assets=None, **kwargs):
         super().__init__(**kwargs)
-
-
-class StacLoaderMixin:
-    def __init__(self, epsg):
-        super().__init__(epsg)
+        self.stack_kwargs = stack_kwargs
+        self.resamplers_and_assets = resamplers_and_assets
 
     def _get_xr(
         self,
         item_collection: ItemCollection,
         areas: GeoDataFrame,
     ) -> DataArray:
-        return (
-            stack(
+        if self.resamplers_and_assets is not None:
+            s = concat(
+                [
+                    stack(
+                        item_collection,
+                        chunksize=self.dask_chunksize,
+                        epsg=self._current_epsg,
+                        resolution=30,
+                        errors_as_nodata=(RasterioIOError(".*"),),
+                        assets=resampler_and_assets["assets"],
+                        resampling=resampler_and_assets["resampler"],
+                        **self.stack_kwargs,
+                    )
+                    for resampler_and_assets in self.resamplers_and_assets
+                ],
+                dim="band",
+            )
+        else:
+            s = stack(
                 item_collection,
-                # stack will take a dict but not keyed by bandname, only numbers
-                # I don't know how to find the order of the dimensions from the
-                # itemcollection, so this is essentially hoping x & y are always
-                # last. If we want to continue to support stack then we need
-                # a slicker solution, but for now I'm just testing so I will wait.
-                chunksize=self.dask_chunksize.values(),
-                # chunksize=4096,
+                chunksize=self.dask_chunksize,
                 epsg=self._current_epsg,
                 resolution=30,
-                # Previously it only caught 404s, we are getting other errors
                 errors_as_nodata=(RasterioIOError(".*"),),
-                **kwargs,
+                **self.stack_kwargs,
             )
-            .rio.write_crs(self._current_epsg)
-            .rio.clip(
-                areas.to_crs(self._current_epsg).geometry,
-                all_touched=True,
-                from_disk=True,
-            )
+
+        return s.rio.write_crs(self._current_epsg).rio.clip(
+            areas.to_crs(self._current_epsg).geometry,
+            all_touched=True,
+            from_disk=True,
         )
+
+
+class LandsatOdcLoader(LandsatLoaderMixin, OdcLoaderMixin, Loader):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+
+class LandsatStackLoader(LandsatLoaderMixin, StackStacLoaderMixin, Loader):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
