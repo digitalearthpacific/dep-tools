@@ -132,10 +132,20 @@ def blob_exists(path: Union[str, Path], **kwargs):
     return blob_client.exists()
 
 
-def get_blob_path(dataset: str, year: str, path: str, row: str) -> str:
-    # A less robust version of Processor._get_path, but I might revisit that
-    # since it doesn't look like combining years / variables may work that well
-    return f"{dataset}/{year}/{dataset}_{year}_{path}_{row}.tif"
+def get_blob_path(
+    dataset_id, item_id, prefix=None, time=None, variable=None, ext: str = "tif"
+) -> str:
+    if variable is None:
+        variable = dataset_id
+
+    prefix = f"{prefix}/" if prefix is not None else ""
+    time = str(time).replace("/", "_") if time is not None else time
+    suffix = "_".join([str(i) for i in item_id])
+    return (
+        f"{prefix}{dataset_id}/{time}/{variable}_{time}_{suffix}.{ext}"
+        if time is not None
+        else f"{prefix}{dataset_id}/{variable}_{suffix}.{ext}"
+    )
 
 
 def download_blob(
