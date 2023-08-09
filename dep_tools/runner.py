@@ -42,9 +42,6 @@ def run_by_area(
         except RasterioIOError as e:
             logger.error([index, "r/w error", "", e])
             continue
-        except NotGeoreferencedWarning as w:
-            logger.error([index, "bad crs on something", "", w])
-            continue
 
         logger.info([index, "complete", paths])
 

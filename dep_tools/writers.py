@@ -18,7 +18,7 @@ class Writer(ABC):
 @dataclass
 class AzureXrWriter(Writer):
     dataset_id: str
-    year: str
+    year: Union[str, None] = None
     prefix: Union[str, None] = None
     convert_to_int16: bool = True
     output_value_multiplier: int = 10000
