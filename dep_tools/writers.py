@@ -16,22 +16,18 @@ class Writer(ABC):
 
 
 @dataclass
-class AzureXrWriter(Writer):
+class XrWriterMixin(object):
     dataset_id: str
     year: Union[str, None] = None
     prefix: Union[str, None] = None
+    overwrite: bool = False
     convert_to_int16: bool = True
     output_value_multiplier: int = 10000
     output_nodata: int = -32767
     scale_int16s: bool = False
-    split_by_variable: bool = False
-    split_by_time: bool = False
     extra_attrs: Dict = field(default_factory=dict)
-    overwrite: bool = False
 
-    def write(
-        self, xr: Union[DataArray, Dataset], item_id: Union[str, List]
-    ) -> Union[str, List]:
+    def prep(self, xr: Union[DataArray, Dataset]):
         xr.attrs.update(self.extra_attrs)
         if self.convert_to_int16:
             xr = scale_to_int16(
@@ -40,7 +36,53 @@ class AzureXrWriter(Writer):
                 output_nodata=self.output_nodata,
                 scale_int16s=self.scale_int16s,
             )
+        return xr
 
+    def _get_path(
+        self, item_id, time: Union[str, None] = None, variable: Union[str, None] = None
+    ) -> str:
+        if variable is None:
+            variable = self.dataset_id
+        if time is None:
+            time = self.year
+
+        prefix = f"{self.prefix}/" if self.prefix is not None else ""
+        time = time.replace("/", "_") if time is not None else time
+        suffix = "_".join([str(i) for i in item_id])
+        return (
+            f"{prefix}{self.dataset_id}/{time}/{variable}_{time}_{suffix}.tif"
+            if time is not None
+            else f"{prefix}{self.dataset_id}/{variable}_{suffix}.tif"
+        )
+
+
+@dataclass
+class LocalXrWriter(XrWriterMixin, Writer):
+    def __init__(self, write_kwargs=dict(), **kwargs):
+        super().__init__(**kwargs)
+        self.write_kwargs = write_kwargs
+
+    def write(self, xr: Union[DataArray, Dataset], item_id: str) -> str:
+        xr = super().prep(xr)
+        path = self._get_path(item_id)
+        xr.squeeze().rio.to_raster(
+            raster_path=path,
+            compress="LZW",
+            overwrite=self.overwrite,
+            **self.write_kwargs,
+        )
+        return path
+
+
+@dataclass
+class AzureXrWriter(XrWriterMixin, Writer):
+    split_by_variable: bool = False
+    split_by_time: bool = False
+
+    def write(
+        self, xr: Union[DataArray, Dataset], item_id: Union[str, List]
+    ) -> Union[str, List]:
+        xr = super().prep(xr)
         # If we want to create an output for each year, split results
         # into a list of da/ds. Useful in theory but in practice it often
         # made dask jobs unwieldy and caused slowdowns. My current
@@ -92,7 +134,7 @@ class AzureXrWriter(Writer):
             # Note this requires time to represent year, so we should consider
             # doing that here as well (rather than earlier).
             if len(xr.dims.keys()) > 2:
-                results = (
+                xr = (
                     xr.to_array(dim="variables")
                     .stack(z=["time", "variables"])
                     .to_dataset(dim="z")
@@ -112,20 +154,3 @@ class AzureXrWriter(Writer):
                 overwrite=self.overwrite,
             )
             return path
-
-    def _get_path(
-        self, item_id, time: Union[str, None] = None, variable: Union[str, None] = None
-    ) -> str:
-        if variable is None:
-            variable = self.dataset_id
-        if time is None:
-            time = self.year
-
-        prefix = f"{self.prefix}/" if self.prefix is not None else ""
-        time = time.replace("/", "_") if time is not None else time
-        suffix = "_".join([str(i) for i in item_id])
-        return (
-            f"{prefix}{self.dataset_id}/{time}/{variable}_{time}_{suffix}.tif"
-            if time is not None
-            else f"{prefix}{self.dataset_id}/{variable}_{suffix}.tif"
-        )

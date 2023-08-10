@@ -20,6 +20,14 @@ from .utils import search_across_180, fix_bad_epsgs
 
 
 class Loader(ABC):
+    def __init__(self):
+        pass
+
+    def load(self):
+        pass
+
+
+class StackXrLoader(Loader):
     def __init__(self, epsg=None, datetime=None, dask_chunksize=None):
         self.epsg = epsg
         self.datetime = datetime
@@ -185,11 +193,11 @@ class StackStacLoaderMixin:
         )
 
 
-class LandsatOdcLoader(LandsatLoaderMixin, OdcLoaderMixin, Loader):
+class LandsatOdcLoader(LandsatLoaderMixin, OdcLoaderMixin, StackXrLoader):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
 
-class LandsatStackLoader(LandsatLoaderMixin, StackStacLoaderMixin, Loader):
+class LandsatStackLoader(LandsatLoaderMixin, StackStacLoaderMixin, StackXrLoader):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
