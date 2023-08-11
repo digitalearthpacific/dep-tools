@@ -10,19 +10,23 @@ class Processor(ABC):
         self.send_area_to_processor = send_area_to_processor
 
     @abstractmethod
-    def process(self, xr: DataArray) -> DataArray:
+    def process(self, input_data):
         pass
 
 
 class LandsatProcessor(Processor):
     def __init__(
-        self, send_area_to_processor: bool = False, scale_and_offset: bool = True
+        self,
+        send_area_to_processor: bool = False,
+        scale_and_offset: bool = True,
+        dilate_mask: bool = False,
     ) -> None:
         super().__init__(send_area_to_processor)
         self.scale_and_offset = scale_and_offset
+        self.dilate_mask = dilate_mask
 
     def process(self, xr: DataArray) -> DataArray:
-        xr = mask_clouds(xr)
+        xr = mask_clouds(xr, dilate=self.dilate_mask)
         if self.scale_and_offset:
             # These values only work for SR bands of landsat. Ideally we could
             # read from metadata. _Really_ ideally we could just pass "scale"
