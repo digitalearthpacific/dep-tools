@@ -4,7 +4,7 @@ from typing import Union, List
 from geopandas import GeoDataFrame
 from odc.stac import load
 from pystac import ItemCollection
-from rasterio import RasterioIOError
+from rasterio.errors import RasterioIOError, RasterioError
 
 # I get errors sometimes that `DataArray` has no attribute `rio`  which I _think_
 # is a dask worker issue but it might be possible that `odc.stac` _sometimes_ needs
@@ -80,6 +80,7 @@ class LandsatLoaderMixin(object):
             ]
 
         # If there are not items in this collection for _this_ pathrow,
+
         # we don't want to process, since they will be captured in
         # other pathrows (or are areas not covered by our aoi)
 
@@ -167,9 +168,12 @@ class StackStacLoaderMixin:
                         chunksize=self.dask_chunksize,
                         epsg=self._current_epsg,
                         resolution=30,
-                        errors_as_nodata=(RasterioIOError(".*"),),
+                        errors_as_nodata=(RasterioError(".*"),),
                         assets=resampler_and_assets["assets"],
                         resampling=resampler_and_assets["resampler"],
+                        band_coords=False,  # needed or some coords are often missing
+                        # from qa pixel and we get an error. Make sure it doesn't
+                        # mess anything up else where (e.g. rio.crs)
                         **self.stack_kwargs,
                     )
                     for resampler_and_assets in self.resamplers_and_assets
