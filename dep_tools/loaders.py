@@ -16,7 +16,7 @@ from stackstac import stack
 from xarray import DataArray, concat
 
 from .exceptions import EmptyCollectionError
-from .utils import search_across_180, fix_bad_epsgs
+from .utils import search_across_180, fix_bad_epsgs, remove_bad_items
 
 
 class Loader(ABC):
@@ -71,6 +71,7 @@ class LandsatLoaderMixin(object):
             datetime=self.datetime,
         )
         fix_bad_epsgs(item_collection)
+        item_collection = remove_bad_items(item_collection)
 
         if self._exclude_platforms:
             item_collection = [
@@ -121,10 +122,14 @@ class OdcLoaderMixin:
         # then replace existing nodata values (usually 0) with nan. At least
         # I _think_ all this is necessary and there's not an easier way I didn't
         # see in the docs.
+        areas_proj = areas.to_crs(self._current_epsg)
+        bounds = areas_proj.total_bounds.tolist()
         xr = load(
             items,
             crs=self._current_epsg,
             chunks=self.dask_chunksize,
+            x=(bounds[0], bounds[2]),
+            y=(bounds[1], bounds[3]),
             **self.odc_load_kwargs,
             dtype="float32",
         )
@@ -142,7 +147,7 @@ class OdcLoaderMixin:
             .rio.write_crs(self._current_epsg)
             .rio.write_nodata(float("nan"))
             .rio.clip(
-                areas.to_crs(self._current_epsg).geometry,
+                areas_proj.geometry,
                 all_touched=True,
                 from_disk=True,
             )
@@ -160,6 +165,7 @@ class StackStacLoaderMixin:
         item_collection: ItemCollection,
         areas: GeoDataFrame,
     ) -> DataArray:
+        areas_proj = areas.to_crs(self._current_epsg)
         if self.resamplers_and_assets is not None:
             s = concat(
                 [
@@ -171,6 +177,7 @@ class StackStacLoaderMixin:
                         errors_as_nodata=(RasterioError(".*"),),
                         assets=resampler_and_assets["assets"],
                         resampling=resampler_and_assets["resampler"],
+                        bounds=areas_proj.total_bounds.tolist(),
                         band_coords=False,  # needed or some coords are often missing
                         # from qa pixel and we get an error. Make sure it doesn't
                         # mess anything up else where (e.g. rio.crs)
@@ -191,7 +198,7 @@ class StackStacLoaderMixin:
             )
 
         return s.rio.write_crs(self._current_epsg).rio.clip(
-            areas.to_crs(self._current_epsg).geometry,
+            areas_proj.geometry,
             all_touched=True,
             from_disk=True,
         )

@@ -360,7 +360,7 @@ def mosaic_scenes(
 
 
 def fix_bad_epsgs(item_collection: ItemCollection) -> None:
-    """Repairs some band epsg codes in stac items loaded from the Planetary
+    """Repairs soLC08_L2SP_101055_20220612_20220617_02_T2me band epsg codes in stac items loaded from the Planetary
     Computer stac catalog"""
     # ** modifies in place **
     # See https://github.com/microsoft/PlanetaryComputer/discussions/113
@@ -368,3 +368,13 @@ def fix_bad_epsgs(item_collection: ItemCollection) -> None:
     for item in item_collection:
         epsg = str(item.properties["proj:epsg"])
         item.properties["proj:epsg"] = int(f"{epsg[0:3]}{int(epsg[3:]):02d}")
+
+
+def remove_bad_items(item_collection: ItemCollection) -> ItemCollection:
+    """Remove really bad items which clobber processes even if `fail_on_error` is
+    set to False for odc.stac.load or the equivalent for stackstac.stack. The
+    first one here is a real file that is just an error in html.
+    See https://github.com/microsoft/PlanetaryComputer/discussions/101
+    """
+    bad_ids = ["LC08_L2SP_101055_20220612_02_T2"]
+    return ItemCollection([i for i in item_collection if i.id not in bad_ids])
