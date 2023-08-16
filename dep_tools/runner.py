@@ -3,7 +3,7 @@ from logging import getLogger, Logger
 from dask.distributed import Client
 from dask_gateway import GatewayCluster
 from geopandas import GeoDataFrame
-from rasterio.errors import RasterioIOError, NotGeoreferencedWarning
+from rasterio.errors import RasterioError, NotGeoreferencedWarning
 from tqdm import tqdm
 
 from .exceptions import EmptyCollectionError
@@ -39,7 +39,7 @@ def run_by_area(
 
         try:
             paths = writer.write(output_data, index)
-        except RasterioIOError as e:
+        except RasterioError as e:
             logger.error([index, "r/w error", "", e])
             continue
 
