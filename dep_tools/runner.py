@@ -39,8 +39,8 @@ def run_by_area(
 
         try:
             paths = writer.write(output_data, index)
-        except RasterioError as e:
-            logger.error([index, "r/w error", "", e])
+        except Exception as e:
+            logger.error([index, "error", "", e.__traceback__])
             continue
 
         logger.info([index, "complete", paths])

@@ -20,14 +20,20 @@ from .utils import search_across_180, fix_bad_epsgs, remove_bad_items
 
 
 class Loader(ABC):
+    """A loader loads data."""
+
     def __init__(self):
         pass
 
-    def load(self):
+    def load(self, area):
         pass
 
 
 class StackXrLoader(Loader):
+    """An abstract base class for Loaders which support loading pystac Item
+    Collections into Xarray DataArray or Dataset objects.
+    """
+
     def __init__(self, epsg=None, datetime=None, dask_chunksize=None):
         self.epsg = epsg
         self.datetime = datetime

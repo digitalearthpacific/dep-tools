@@ -23,8 +23,8 @@ class XrWriterMixin(object):
     overwrite: bool = False
     convert_to_int16: bool = True
     output_value_multiplier: int = 10000
-    output_nodata: int = -32767
     scale_int16s: bool = False
+    output_nodata: int = -32767
     extra_attrs: Dict = field(default_factory=dict)
 
     def prep(self, xr: Union[DataArray, Dataset]):
@@ -56,7 +56,6 @@ class XrWriterMixin(object):
         )
 
 
-@dataclass
 class LocalXrWriter(XrWriterMixin, Writer):
     def __init__(self, write_kwargs=dict(), **kwargs):
         super().__init__(**kwargs)
