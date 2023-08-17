@@ -20,6 +20,7 @@ import pystac_client
 import rasterio
 from retry import retry
 import rioxarray
+from rio_stac import create_stac_item
 from shapely import buffer, difference
 from shapely.geometry import MultiLineString, LineString, Point
 from shapely.ops import transform
@@ -131,10 +132,20 @@ def blob_exists(path: Union[str, Path], **kwargs):
     return blob_client.exists()
 
 
-def get_blob_path(dataset: str, year: str, path: str, row: str) -> str:
-    # A less robust version of Processor._get_path, but I might revisit that
-    # since it doesn't look like combining years / variables may work that well
-    return f"{dataset}/{year}/{dataset}_{year}_{path}_{row}.tif"
+def get_blob_path(
+    dataset_id, item_id, prefix=None, time=None, variable=None, ext: str = "tif"
+) -> str:
+    if variable is None:
+        variable = dataset_id
+
+    prefix = f"{prefix}/" if prefix is not None else ""
+    time = str(time).replace("/", "_") if time is not None else time
+    suffix = "_".join([str(i) for i in item_id])
+    return (
+        f"{prefix}{dataset_id}/{time}/{variable}_{time}_{suffix}.{ext}"
+        if time is not None
+        else f"{prefix}{dataset_id}/{variable}_{suffix}.{ext}"
+    )
 
 
 def download_blob(
@@ -154,7 +165,7 @@ def download_blob(
             dst.write(download_stream.readall())
 
 
-@retry(tries=20, delay=10)
+@retry(tries=2, delay=2)
 def write_to_blob_storage(
     d: Union[DataArray, Dataset, GeoDataFrame],
     path: Union[str, Path],
@@ -172,16 +183,16 @@ def write_to_blob_storage(
         with io.BytesIO() as buffer:
             d.rio.to_raster(buffer, **write_args)
             buffer.seek(0)
-            blob_client.upload_blob(buffer, overwrite=True)
+            blob_client.upload_blob(buffer, overwrite=overwrite)
     elif isinstance(d, GeoDataFrame):
-        # some sort of vector data
         with fiona.io.MemoryFile() as buffer:
             d.to_file(buffer, **write_args)
             buffer.seek(0)
-            blob_client.upload_blob(buffer, overwrite=True)
+            blob_client.upload_blob(buffer, overwrite=overwrite)
     else:
-        # throw exception
-        print("rn you can only write a DataArray, Dataset, or GDF")
+        raise ValueError(
+            "You can only write an Xarray DataArray or Dataset, or Geopandas GeoDataFrame"
+        )
 
 
 def copy_to_blob_storage(
@@ -349,7 +360,7 @@ def mosaic_scenes(
 
 
 def fix_bad_epsgs(item_collection: ItemCollection) -> None:
-    """Repairs some band epsg codes in stac items loaded from the Planetary
+    """Repairs soLC08_L2SP_101055_20220612_20220617_02_T2me band epsg codes in stac items loaded from the Planetary
     Computer stac catalog"""
     # ** modifies in place **
     # See https://github.com/microsoft/PlanetaryComputer/discussions/113
@@ -357,3 +368,13 @@ def fix_bad_epsgs(item_collection: ItemCollection) -> None:
     for item in item_collection:
         epsg = str(item.properties["proj:epsg"])
         item.properties["proj:epsg"] = int(f"{epsg[0:3]}{int(epsg[3:]):02d}")
+
+
+def remove_bad_items(item_collection: ItemCollection) -> ItemCollection:
+    """Remove really bad items which clobber processes even if `fail_on_error` is
+    set to False for odc.stac.load or the equivalent for stackstac.stack. The
+    first one here is a real file that is just an error in html.
+    See https://github.com/microsoft/PlanetaryComputer/discussions/101
+    """
+    bad_ids = ["LC08_L2SP_101055_20220612_02_T2"]
+    return ItemCollection([i for i in item_collection if i.id not in bad_ids])

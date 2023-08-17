@@ -1,0 +1,2 @@
+class EmptyCollectionError(Exception):
+    pass
