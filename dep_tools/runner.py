@@ -54,7 +54,11 @@ class AreasRunner(Runner):
                 if self.processor.send_area_to_processor
                 else dict()
             )
-            output_data = self.processor.process(input_data, **processor_kwargs)
+            try:
+                output_data = self.processor.process(input_data, **processor_kwargs)
+            except Exception as e:
+                self.logger.debug([index, "processor error", e])
+                continue
 
             if output_data is None:
                 self.logger.debug([index, "no output from processor"])
@@ -65,7 +69,7 @@ class AreasRunner(Runner):
             except Exception as e:
                 # I just put "error" here because it could be more than
                 # a write error due to dask.
-                self.logger.error([index, "error", "", e.__traceback__])
+                self.logger.error([index, "error", "", e])
                 continue
 
             self.logger.info([index, "complete", paths])
