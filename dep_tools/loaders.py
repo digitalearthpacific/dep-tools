@@ -161,7 +161,9 @@ class OdcLoaderMixin:
 
 
 class StackStacLoaderMixin:
-    def __init__(self, stack_kwargs=dict(), resamplers_and_assets=None, **kwargs):
+    def __init__(
+        self, stack_kwargs=dict(resolution=30), resamplers_and_assets=None, **kwargs
+    ):
         super().__init__(**kwargs)
         self.stack_kwargs = stack_kwargs
         self.resamplers_and_assets = resamplers_and_assets
@@ -179,7 +181,6 @@ class StackStacLoaderMixin:
                         item_collection,
                         chunksize=self.dask_chunksize,
                         epsg=self._current_epsg,
-                        resolution=30,
                         errors_as_nodata=(RasterioError(".*"),),
                         assets=resampler_and_assets["assets"],
                         resampling=resampler_and_assets["resampler"],

@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+
 from xarray import DataArray
 
 from .landsat_utils import mask_clouds
