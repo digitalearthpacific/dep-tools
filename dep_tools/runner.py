@@ -59,12 +59,11 @@ class AreasRunner(Runner):
             if output_data is None:
                 self.logger.debug([index, "no output from processor"])
                 continue
-
             try:
                 paths = self.writer.write(output_data, index)
             except Exception as e:
                 # I just put "error" here because it could be more than
-                # a write error due to dask.
+                # a write error due to dask
                 self.logger.error([index, "error", "", e.__traceback__])
                 continue
 

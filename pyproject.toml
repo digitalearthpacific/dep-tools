@@ -24,6 +24,8 @@ retry = "*"
 tqdm = "*"
 xarray = "*"
 rio-stac = "^0.8.0"
+odc-stac = "^0.3.6"
+odc-algo = "^0.2.3"
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.1.0"
