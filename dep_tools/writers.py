@@ -132,7 +132,7 @@ class AzureXrWriter(XrWriterMixin, Writer):
             # so we create new variables for each year x variable combination
             # Note this requires time to represent year, so we should consider
             # doing that here as well (rather than earlier).
-            if len(xr.dims.keys()) > 2:
+            if not isinstance(xr, DataArray) and len(xr.dims.keys()) > 2:
                 xr = (
                     xr.to_array(dim="variables")
                     .stack(z=["time", "variables"])
