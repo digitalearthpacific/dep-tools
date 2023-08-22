@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 from typing import Dict, List, Union
 
+from azure.storage.blob import ContentSettings
 from rio_stac.stac import create_stac_item
 
 from .utils import scale_to_int16, write_to_blob_storage
@@ -169,4 +170,10 @@ def _write_stac(path) -> None:
     item = create_stac_item(blob_url, with_proj=True)
     item_json = json.dumps(item.to_dict(), indent=4)
     stac_url = Path(path).with_suffix(".stac-item.json")
-    write_to_blob_storage(item_json, stac_url)
+    write_to_blob_storage(
+        item_json,
+        stac_url,
+        write_args=dict(
+            content_settings=ContentSettings(content_type="application/json")
+        ),
+    )

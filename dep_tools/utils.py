@@ -187,7 +187,7 @@ def write_to_blob_storage(
             buffer.seek(0)
             blob_client.upload_blob(buffer, overwrite=overwrite)
     elif isinstance(d, str):
-        blob_client.upload_blob(d, overwrite=overwrite)
+        blob_client.upload_blob(d, overwrite=overwrite, **write_args)
     else:
         raise ValueError(
             "You can only write an Xarray DataArray or Dataset, or Geopandas GeoDataFrame"
