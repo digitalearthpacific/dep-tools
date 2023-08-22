@@ -3,10 +3,10 @@ from logging import getLogger, Logger
 
 from dask.distributed import Client
 from dask_gateway import GatewayCluster
-from geopandas import GeoDataFrame
+from geopandas import GeoDataFrame, GeoSeries
 from tqdm import tqdm
 
-from .exceptions import EmptyCollectionError
+from .exceptions import EmptyCollectionError, NoOutputError
 from .loaders import Loader
 from .processors import Processor
 from .writers import Writer
@@ -33,8 +33,9 @@ class Runner(ABC):
 
 
 class AreasRunner(Runner):
-    def __init__(self, tasks: GeoDataFrame, **kwargs):
+    def __init__(self, tasks: GeoDataFrame, continue_on_error: bool = True, **kwargs):
         super().__init__(tasks, **kwargs)
+        self.continue_on_error = continue_on_error
 
     def run(self):
         for index, _ in tqdm(self.tasks.iterrows(), total=self.tasks.shape[0]):
@@ -42,12 +43,16 @@ class AreasRunner(Runner):
 
             try:
                 input_data = self.loader.load(these_areas)
-            except EmptyCollectionError:
+            except EmptyCollectionError as e:
                 self.logger.debug([index, "no items for areas"])
-                continue
+                if self.continue_on_error:
+                    continue
+                raise e
             except Exception as e:
                 self.logger.debug([index, "load error", e])
-                continue
+                if self.continue_on_error:
+                    continue
+                raise e
 
             processor_kwargs = (
                 dict(area=these_areas)
@@ -58,18 +63,24 @@ class AreasRunner(Runner):
                 output_data = self.processor.process(input_data, **processor_kwargs)
             except Exception as e:
                 self.logger.debug([index, "processor error", e])
-                continue
+                if self.continue_on_error:
+                    continue
+                raise e
 
             if output_data is None:
                 self.logger.debug([index, "no output from processor"])
-                continue
+                if self.continue_on_error:
+                    continue
+                raise NoOutputError()
             try:
                 paths = self.writer.write(output_data, index)
             except Exception as e:
                 # I just put "error" here because it could be more than
                 # a write error due to dask.
                 self.logger.error([index, "error", "", e])
-                continue
+                if self.continue_on_error:
+                    continue
+                raise e
 
             self.logger.info([index, "complete", paths])
 
@@ -80,9 +91,15 @@ def run_by_area(
     processor: Processor,
     writer: Writer,
     logger: Logger = getLogger(),
+    **kwargs
 ) -> None:
     AreasRunner(
-        areas, loader=loader, processor=processor, writer=writer, logger=logger
+        areas,
+        loader=loader,
+        processor=processor,
+        writer=writer,
+        logger=logger,
+        **kwargs
     ).run()
 
 

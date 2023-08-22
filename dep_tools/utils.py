@@ -1,8 +1,7 @@
 import io
-from itertools import chain
 import os
 from pathlib import Path
-from typing import Dict, Iterable, List, Union
+from typing import Dict, List, Union
 
 import azure.storage.blob
 from azure.storage.blob import ContainerClient
@@ -20,8 +19,6 @@ import pystac_client
 import rasterio
 from retry import retry
 import rioxarray
-from rio_stac import create_stac_item
-from shapely import buffer, difference
 from shapely.geometry import MultiLineString, LineString, Point
 from shapely.ops import transform
 from tqdm import tqdm
@@ -167,7 +164,7 @@ def download_blob(
 
 @retry(tries=2, delay=2)
 def write_to_blob_storage(
-    d: Union[DataArray, Dataset, GeoDataFrame],
+    d: Union[DataArray, Dataset, GeoDataFrame, str],
     path: Union[str, Path],
     write_args: Dict = dict(),
     overwrite: bool = True,
@@ -189,6 +186,8 @@ def write_to_blob_storage(
             d.to_file(buffer, **write_args)
             buffer.seek(0)
             blob_client.upload_blob(buffer, overwrite=overwrite)
+    elif isinstance(d, str):
+        blob_client.upload_blob(d, overwrite=overwrite)
     else:
         raise ValueError(
             "You can only write an Xarray DataArray or Dataset, or Geopandas GeoDataFrame"

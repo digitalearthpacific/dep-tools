@@ -70,7 +70,6 @@ class LandsatLoaderMixin(object):
         self._exclude_platforms = exclude_platforms
 
     def _get_items(self, area):
-        index_dict = dict(zip(area.index.names, area.index[0]))
         item_collection = search_across_180(
             area,
             collections=["landsat-c2-l2"],
@@ -91,23 +90,25 @@ class LandsatLoaderMixin(object):
         # we don't want to process, since they will be captured in
         # other pathrows (or are areas not covered by our aoi)
 
-        item_collection_for_this_pathrow = [
-            i
-            for i in item_collection
-            if i.properties["landsat:wrs_path"] == f"{index_dict['PATH']:03d}"
-            and i.properties["landsat:wrs_row"] == f"{index_dict['ROW']:03d}"
-        ]
-
-        if len(item_collection_for_this_pathrow) == 0:
-            raise EmptyCollectionError()
-
-        if self.load_tile_pathrow_only:
-            item_collection = item_collection_for_this_pathrow
-
-        if self.epsg is None:
-            self._current_epsg = item_collection_for_this_pathrow[0].properties[
-                "proj:epsg"
+        index_dict = dict(zip(area.index.names, area.index[0]))
+        if "PATH" in index_dict.keys() and "ROW" in index_dict.keys():
+            item_collection_for_this_pathrow = [
+                i
+                for i in item_collection
+                if i.properties["landsat:wrs_path"] == f"{index_dict['PATH'].zfill(3)}"
+                and i.properties["landsat:wrs_row"] == f"{index_dict['ROW'].zfill(3)}"
             ]
+
+            if len(item_collection_for_this_pathrow) == 0:
+                raise EmptyCollectionError()
+
+            if self.load_tile_pathrow_only:
+                item_collection = item_collection_for_this_pathrow
+
+            if self.epsg is None:
+                self._current_epsg = item_collection_for_this_pathrow[0].properties[
+                    "proj:epsg"
+                ]
 
         return item_collection
 

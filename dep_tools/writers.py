@@ -1,6 +1,10 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
+import json
+from pathlib import Path
 from typing import Dict, List, Union
+
+from rio_stac.stac import create_stac_item
 
 from .utils import scale_to_int16, write_to_blob_storage
 from xarray import DataArray, Dataset
@@ -77,6 +81,7 @@ class LocalXrWriter(XrWriterMixin, Writer):
 class AzureXrWriter(XrWriterMixin, Writer):
     split_by_variable: bool = False
     split_by_time: bool = False
+    write_stac: bool = False
 
     def write(
         self, xr: Union[DataArray, Dataset], item_id: Union[str, List]
@@ -152,4 +157,16 @@ class AzureXrWriter(XrWriterMixin, Writer):
                 write_args=dict(driver="COG", compress="LZW"),
                 overwrite=self.overwrite,
             )
+            if self.write_stac:
+                _write_stac(path)
+
             return path
+
+
+def _write_stac(path) -> None:
+    az_prefix = Path("https://deppcpublicstorage.blob.core.windows.net/output")
+    blob_url = az_prefix / path
+    item = create_stac_item(blob_url, with_proj=True)
+    item_json = json.dumps(item.to_dict(), indent=4)
+    stac_url = Path(path).with_suffix(".stac-item.json")
+    write_to_blob_storage(item_json, stac_url)
