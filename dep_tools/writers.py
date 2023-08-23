@@ -159,15 +159,26 @@ class AzureXrWriter(XrWriterMixin, Writer):
                 overwrite=self.overwrite,
             )
             if self.write_stac:
-                _write_stac(path)
+                _write_stac(xr.squeeze(), path)
 
             return path
 
 
-def _write_stac(path) -> None:
+def _write_stac(xr: DataArray, path) -> None:
     az_prefix = Path("https://deppcpublicstorage.blob.core.windows.net/output")
     blob_url = az_prefix / path
-    item = create_stac_item(blob_url, with_proj=True)
+    properties = {}
+    asset_name = "asset"
+    if "stac_properties" in xr.attrs:
+        properties = xr.attrs["stac_properties"]
+        asset_name = properties["asset_name"]
+    item = create_stac_item(
+        blob_url,
+        asset_name=asset_name,
+        asset_roles="data",
+        with_proj=True,
+        properties=properties,
+    )
     item_json = json.dumps(item.to_dict(), indent=4)
     stac_url = Path(path).with_suffix(".stac-item.json")
     write_to_blob_storage(

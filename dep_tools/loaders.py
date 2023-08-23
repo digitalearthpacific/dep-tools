@@ -57,6 +57,13 @@ class StackXrLoader(Loader):
         pass
 
 
+class Sentinel2LoaderMixin(object):
+    def _get_items(self, area):
+        return search_across_180(
+            area, collections=["sentinel-2-l2a"], datetime=self.datetime
+        )
+
+
 class LandsatLoaderMixin(object):
     def __init__(
         self,
@@ -210,6 +217,11 @@ class StackStacLoaderMixin:
             all_touched=True,
             from_disk=True,
         )
+
+
+class Sentinel2OdcLoader(Sentinel2LoaderMixin, OdcLoaderMixin, StackXrLoader):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
 
 class LandsatOdcLoader(LandsatLoaderMixin, OdcLoaderMixin, StackXrLoader):
