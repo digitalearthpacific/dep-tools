@@ -59,9 +59,13 @@ class StackXrLoader(Loader):
 
 class Sentinel2LoaderMixin(object):
     def _get_items(self, area):
-        return search_across_180(
+        item_collection = search_across_180(
             area, collections=["sentinel-2-l2a"], datetime=self.datetime
         )
+        if len(item_collection) == 0:
+            raise EmptyCollectionError()
+
+        return item_collection
 
 
 class LandsatLoaderMixin(object):

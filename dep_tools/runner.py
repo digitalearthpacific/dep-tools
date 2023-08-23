@@ -47,6 +47,8 @@ class AreasRunner(Runner):
                 self.logger.debug([index, "no items for areas"])
                 # not raising this one
                 continue
+                # raise e
+
             except Exception as e:
                 self.logger.debug([index, "load error", e])
                 if self.continue_on_error:
