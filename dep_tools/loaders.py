@@ -98,6 +98,9 @@ class LandsatLoaderMixin(object):
         # other pathrows (or are areas not covered by our aoi)
 
         index_dict = dict(zip(area.index.names, area.index[0]))
+        if len(item_collection) == 0:
+            raise EmptyCollectionError()
+
         if "PATH" in index_dict.keys() and "ROW" in index_dict.keys():
             item_collection_for_this_pathrow = [
                 i

@@ -45,9 +45,8 @@ class AreasRunner(Runner):
                 input_data = self.loader.load(these_areas)
             except EmptyCollectionError as e:
                 self.logger.debug([index, "no items for areas"])
-                if self.continue_on_error:
-                    continue
-                raise e
+                # not raising this one
+                continue
             except Exception as e:
                 self.logger.debug([index, "load error", e])
                 if self.continue_on_error:
