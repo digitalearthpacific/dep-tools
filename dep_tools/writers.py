@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Dict, List, Union
 
 from azure.storage.blob import ContentSettings
+from pystac import Asset, Item
 from rio_stac.stac import create_stac_item
 
 from .namers import ItemPath
@@ -79,7 +80,15 @@ class AzureDsWriter(XrWriterMixin, Writer):
                 overwrite=self.overwrite,
             )
             if self.write_stac:
-                _write_stac(output_da, path, asset_name=variable)
+                stac_id = self.itempath.basename(item_id, variable)
+                collection = self.itempath.item_prefix
+                _write_stac(
+                    output_da,
+                    path,
+                    asset_name=variable,
+                    collection=collection,
+                    id=stac_id,
+                )
             paths.append(path)
 
             return paths
@@ -149,20 +158,8 @@ class AzureXrWriter(XrWriterMixin, Writer):
             return path
 
 
-def _write_stac(xr: Union[DataArray, Dataset], path: str, asset_name: str) -> None:
-    az_prefix = Path("https://deppcpublicstorage.blob.core.windows.net/output")
-    blob_url = az_prefix / path
-    properties = {}
-    asset_name = "asset"
-    if "stac_properties" in xr.attrs:
-        properties = xr.attrs["stac_properties"]
-    item = create_stac_item(
-        str(blob_url),
-        asset_name=asset_name,
-        asset_roles=["data"],
-        with_proj=True,
-        properties=properties,
-    )
+def _write_stac(xr: Union[DataArray, Dataset], path: str, **kwargs) -> None:
+    item = _get_stac_item(xr, path, **kwargs)
     item_json = json.dumps(item.to_dict(), indent=4)
     stac_url = Path(path).with_suffix(".stac-item.json")
     write_to_blob_storage(
@@ -171,4 +168,28 @@ def _write_stac(xr: Union[DataArray, Dataset], path: str, asset_name: str) -> No
         write_args=dict(
             content_settings=ContentSettings(content_type="application/json")
         ),
+    )
+
+
+def _get_stac_item(xr: Union[DataArray, Dataset], path: str, **kwargs) -> Item:
+    az_prefix = Path("https://deppcpublicstorage.blob.core.windows.net/output")
+    blob_url = az_prefix / path
+    properties = {}
+    if "stac_properties" in xr.attrs:
+        properties = (
+            json.loads(xr.attrs["stac_properties"].replace("'", '"'))
+            if isinstance(xr.attrs["stac_properties"], str)
+            else xr.attrs["stac_properties"]
+        )
+
+    # if isinstance(xr, Dataset): assets = { }
+
+    collection_url = "https://stac.staging.auspatious.com/collections/dep_ls_wofs"
+    return create_stac_item(
+        str(blob_url),
+        asset_roles=["data"],
+        with_proj=True,
+        properties=properties,
+        collection_url=collection_url,
+        **kwargs,
     )
