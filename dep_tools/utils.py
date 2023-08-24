@@ -375,5 +375,5 @@ def remove_bad_items(item_collection: ItemCollection) -> ItemCollection:
     first one here is a real file that is just an error in html.
     See https://github.com/microsoft/PlanetaryComputer/discussions/101
     """
-    bad_ids = ["LC08_L2SP_101055_20220612_02_T2"]
+    bad_ids = ["LC08_L2SP_101055_20220612_02_T2", "LC08_L2SR_074072_20221105_02_T1"]
     return ItemCollection([i for i in item_collection if i.id not in bad_ids])
