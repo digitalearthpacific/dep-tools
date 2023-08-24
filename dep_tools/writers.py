@@ -79,7 +79,7 @@ class AzureDsWriter(XrWriterMixin, Writer):
                 overwrite=self.overwrite,
             )
             if self.write_stac:
-                _write_stac(output_da, path)
+                _write_stac(output_da, path, asset_name=variable)
             paths.append(path)
 
             return paths
@@ -149,18 +149,17 @@ class AzureXrWriter(XrWriterMixin, Writer):
             return path
 
 
-def _write_stac(xr: Union[DataArray, Dataset], path) -> None:
+def _write_stac(xr: Union[DataArray, Dataset], path: str, asset_name: str) -> None:
     az_prefix = Path("https://deppcpublicstorage.blob.core.windows.net/output")
     blob_url = az_prefix / path
     properties = {}
     asset_name = "asset"
     if "stac_properties" in xr.attrs:
         properties = xr.attrs["stac_properties"]
-        asset_name = properties["asset_name"]
     item = create_stac_item(
-        blob_url,
+        str(blob_url),
         asset_name=asset_name,
-        asset_roles="data",
+        asset_roles=["data"],
         with_proj=True,
         properties=properties,
     )
