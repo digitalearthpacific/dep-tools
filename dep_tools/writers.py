@@ -52,7 +52,7 @@ class LocalXrWriter(XrWriterMixin, Writer):
         self, xr: Union[DataArray, Dataset], item_id: str, asset_name: str
     ) -> str:
         xr = super().prep(xr)
-        path = itempath.path(item_id, asset_name)
+        path = itempath.path(item_id, asset_name, ".tif")
         xr.squeeze().rio.to_raster(
             raster_path=path,
             compress="LZW",
@@ -135,7 +135,7 @@ class AzureXrWriter(XrWriterMixin, Writer):
                     )
                     .drop_vars(["variables", "time"])
                 )
-            path = self.itempath.path(item_id)
+            path = self.itempath.path(item_id, ".tif")
             write_to_blob_storage(
                 # Squeeze here in case we have e.g. a single time reading
                 xr.squeeze(),
