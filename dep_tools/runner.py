@@ -114,5 +114,9 @@ def run_by_area_dask(
             print(client.dashboard_link)
             run_by_area(**kwargs)
     except ValueError:
-        with Client():
-            run_by_area(**kwargs)
+        run_by_area_dask_local(**kwargs)
+
+
+def run_by_area_dask_local(**kwargs):
+    with Client():
+        run_by_area(**kwargs)

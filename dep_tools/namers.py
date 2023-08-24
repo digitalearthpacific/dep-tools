@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from typing import List, Tuple
 
 
 class ItemPath(ABC):
@@ -28,4 +29,7 @@ class DepItemPath(ItemPath):
         return f"dep_{self.sensor}_{self.dataset_id}_{item_id}_{self.time}_{asset_name}"
 
     def path(self, item_id, asset_name) -> str:
+        if isinstance(item_id, List) or isinstance(item_id, Tuple):
+            item_id = "_".join(item_id)
+
         return f"{self._folder(item_id)}\\{self._basename(item_id, asset_name)}"
