@@ -40,4 +40,4 @@ class DepItemPath(ItemPath):
         return f"{self._folder(item_id)}\\{self.basename(item_id, asset_name)}{ext}"
 
     def log_path(self) -> str:
-        return f"{self._folder_prefix}\\{self.item_prefix}_log.csv"
+        return f"{self._folder_prefix}\\logs\\{self.item_prefix}_{self.time}_log.csv"

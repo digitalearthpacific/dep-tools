@@ -18,7 +18,9 @@ def test_path():
 
 
 def test_log_path():
-    assert testItemPath.log_path() == "dep_ls_wofs\\1-0-1\\dep_ls_wofs_log.csv"
+    assert (
+        testItemPath.log_path() == "dep_ls_wofs\\1-0-1\\logs\\dep_ls_wofs_2045_log.csv"
+    )
 
 
 def test_basename():
