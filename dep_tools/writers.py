@@ -7,6 +7,7 @@ from typing import Dict, List, Union
 from azure.storage.blob import ContentSettings
 from rio_stac.stac import create_stac_item
 
+from .namers import ItemPath
 from .utils import scale_to_int16, write_to_blob_storage
 from xarray import DataArray, Dataset
 
@@ -22,9 +23,7 @@ class Writer(ABC):
 
 @dataclass
 class XrWriterMixin(object):
-    dataset_id: str
-    year: Union[str, None] = None
-    prefix: Union[str, None] = None
+    itempath: ItemPath
     overwrite: bool = False
     convert_to_int16: bool = True
     output_value_multiplier: int = 10000
@@ -43,32 +42,17 @@ class XrWriterMixin(object):
             )
         return xr
 
-    def _get_path(
-        self, item_id, time: Union[str, None] = None, variable: Union[str, None] = None
-    ) -> str:
-        if variable is None:
-            variable = self.dataset_id
-        if time is None:
-            time = self.year
-
-        prefix = f"{self.prefix}/" if self.prefix is not None else ""
-        time = time.replace("/", "_") if time is not None else time
-        suffix = "_".join([str(i) for i in item_id])
-        return (
-            f"{prefix}{self.dataset_id}/{time}/{variable}_{time}_{suffix}.tif"
-            if time is not None
-            else f"{prefix}{self.dataset_id}/{variable}_{suffix}.tif"
-        )
-
 
 class LocalXrWriter(XrWriterMixin, Writer):
     def __init__(self, write_kwargs=dict(), **kwargs):
         super().__init__(**kwargs)
         self.write_kwargs = write_kwargs
 
-    def write(self, xr: Union[DataArray, Dataset], item_id: str) -> str:
+    def write(
+        self, xr: Union[DataArray, Dataset], item_id: str, asset_name: str
+    ) -> str:
         xr = super().prep(xr)
-        path = self._get_path(item_id)
+        path = itempath.path(item_id, asset_name)
         xr.squeeze().rio.to_raster(
             raster_path=path,
             compress="LZW",
@@ -79,23 +63,36 @@ class LocalXrWriter(XrWriterMixin, Writer):
 
 
 @dataclass
+class AzureDsWriter(XrWriterMixin, Writer):
+    write_stac: bool = True
+
+    def write(self, xr: Dataset, item_id: str) -> Union[str, List]:
+        xr = super().prep(xr)
+        paths = []
+        for variable in xr:
+            path = self.itempath.path(item_id, variable)
+            output_da = xr[variable].squeeze()
+            write_to_blob_storage(
+                output_da,
+                path=path,
+                write_args=dict(driver="COG"),
+                overwrite=self.overwrite,
+            )
+            if self.write_stac:
+                _write_stac(output_da, path)
+            paths.append(path)
+
+            return paths
+
+
+@dataclass
 class AzureXrWriter(XrWriterMixin, Writer):
-    split_by_variable: bool = False
-    split_by_time: bool = False
-    write_stac: bool = False
+    write_stac: bool = True
 
     def write(
         self, xr: Union[DataArray, Dataset], item_id: Union[str, List]
     ) -> Union[str, List]:
         xr = super().prep(xr)
-        # If we want to create an output for each year, split results
-        # into a list of da/ds. Useful in theory but in practice it often
-        # made dask jobs unwieldy and caused slowdowns. My current
-        # recommendation is to one run process for each year's work of data,
-        # particularly for larger areas.
-        if self.split_by_time:
-            xr = [xr.sel(time=time) for time in xr.coords["time"]]
-
         # If we want to create an output for each variable, split or further
         # split results into a list of da/ds for each variable
         # or variable x year. This is behaves a little better than splitting
@@ -105,26 +102,14 @@ class AzureXrWriter(XrWriterMixin, Writer):
         # with multiple variables doesn't fit into memory (since as of this
         # writing write_to_blob_storage must first write to an in memory
         # object before shipping to azure bs.
-        if self.split_by_variable:
-            xr = (
-                [xr.to_array().sel(variable=var) for xr in xr for var in xr]
-                if self.split_by_time
-                else [xr.to_array().sel(variable=var) for var in xr]
-            )
+        if isinstance(xr, Dataset):
+            xr = [xr.to_array().sel(variable=var) for var in xr]
 
         if isinstance(xr, List):
             paths = []
             for this_xr in xr:
-                time = (
-                    this_xr.time.values.tolist() if "time" in this_xr.coords else None
-                )
-                variable = (
-                    this_xr.coords["variable"].values
-                    if "variable" in this_xr.coords
-                    else None
-                )
-
-                path = self._get_path(item_id, time, variable)
+                variable = this_xr.coords["variable"].values
+                path = self.itempath.path(item_id, variable)
                 paths.append(path)
                 write_to_blob_storage(
                     this_xr,
@@ -150,7 +135,7 @@ class AzureXrWriter(XrWriterMixin, Writer):
                     )
                     .drop_vars(["variables", "time"])
                 )
-            path = self._get_path(item_id)
+            path = self.itempath.path(item_id)
             write_to_blob_storage(
                 # Squeeze here in case we have e.g. a single time reading
                 xr.squeeze(),
@@ -164,7 +149,7 @@ class AzureXrWriter(XrWriterMixin, Writer):
             return path
 
 
-def _write_stac(xr: DataArray, path) -> None:
+def _write_stac(xr: Union[DataArray, Dataset], path) -> None:
     az_prefix = Path("https://deppcpublicstorage.blob.core.windows.net/output")
     blob_url = az_prefix / path
     properties = {}
