@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Dict, List, Union
 
 from azure.storage.blob import ContentSettings
+import numpy as np
 from pystac import Asset, Item
 from rio_stac.stac import create_stac_item
 
@@ -82,9 +83,12 @@ class AzureDsWriter(XrWriterMixin, Writer):
             if self.write_stac:
                 stac_id = self.itempath.basename(item_id, variable)
                 collection = self.itempath.item_prefix
+                # has to be a datetime datetime object
+                datetime = np.datetime64(xr.attrs["stac_properties"]["datetime"]).item()
                 _write_stac(
                     output_da,
                     path,
+                    input_datetime=datetime,
                     asset_name=variable,
                     collection=collection,
                     id=stac_id,
