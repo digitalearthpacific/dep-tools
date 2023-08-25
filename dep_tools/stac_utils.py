@@ -17,3 +17,5 @@ def set_stac_properties(input_xr, output_xr):
     output_xr.attrs["stac_properties"] = dict(
         start_datetime=start_datetime, end_datetime=end_datetime
     )
+
+    return output
