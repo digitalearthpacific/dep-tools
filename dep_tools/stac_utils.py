@@ -18,4 +18,4 @@ def set_stac_properties(input_xr, output_xr):
         start_datetime=start_datetime, end_datetime=end_datetime
     )
 
-    return output
+    return output_xr
