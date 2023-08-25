@@ -385,5 +385,6 @@ def remove_bad_items(item_collection: ItemCollection) -> ItemCollection:
         "LC08_L2SR_082074_20220724_02_T1",
         "LC09_L2SR_083075_20220402_02_T1",
         "LC08_L2SR_083073_20220917_02_T1",
+        "LC08_L2SR_089064_20201007_02_T2"
     ]
     return ItemCollection([i for i in item_collection if i.id not in bad_ids])
