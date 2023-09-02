@@ -12,7 +12,15 @@ from .writers import Writer
 
 class Task(ABC):
     def __init__(
+<<<<<<< HEAD
         self, loader: Loader, processor: Processor, writer: Writer, logger: Logger
+=======
+        self,
+        loader: Loader,
+        processor: Processor,
+        writer: Writer,
+        logger: Logger = getLogger(),
+>>>>>>> 4c28362 (stubbed out task implementation)
     ):
         self.loader = loader
         self.processor = processor
@@ -25,6 +33,7 @@ class Task(ABC):
 
 
 class AreaTask(Task):
+<<<<<<< HEAD
     def __init__(
         self,
         id: str,
@@ -64,10 +73,27 @@ class LoggingAreaTask(AreaTask):
 
         processor_kwargs = (
             dict(area=self.area) if self.processor.send_area_to_processor else dict()
+=======
+    def run(self, area: GeoDataFrame):
+        index = area.index[0]
+        try:
+            input_data = self.loader.load(area)
+        except EmptyCollectionError as e:
+            self.logger.debug([index, "no items for areas"])
+            raise e
+
+        except Exception as e:
+            self.logger.debug([index, "load error", e])
+            raise e
+
+        processor_kwargs = (
+            dict(area=area) if self.processor.send_area_to_processor else dict()
+>>>>>>> 4c28362 (stubbed out task implementation)
         )
         try:
             output_data = self.processor.process(input_data, **processor_kwargs)
         except Exception as e:
+<<<<<<< HEAD
             self.logger.debug([self.id, "processor error", e])
             raise e
 
@@ -81,3 +107,20 @@ class LoggingAreaTask(AreaTask):
             raise e
 
         self.logger.debug([self.id, "complete", paths])
+=======
+            self.logger.debug([index, "processor error", e])
+            raise e
+
+        if output_data is None:
+            self.logger.debug([index, "no output from processor"])
+            raise NoOutputError()
+        try:
+            paths = self.writer.write(output_data, index)
+        except Exception as e:
+            # I just put "error" here because it could be more than
+            # a write error due to dask.
+            self.logger.error([index, "error", "", e])
+            raise e
+
+        self.logger.info([index, "complete", paths])
+>>>>>>> 4c28362 (stubbed out task implementation)
