@@ -83,12 +83,12 @@ class AzureDsWriter(XrWriterMixin, Writer):
                 roles=["data"],
             )
             assets[variable] = asset
-            #            write_to_blob_storage(
-            #                output_da,
-            #                path=path,
-            #                write_args=dict(driver="COG"),
-            #                overwrite=self.overwrite,
-            #            )
+            write_to_blob_storage(
+                output_da,
+                path=path,
+                write_args=dict(driver="COG"),
+                overwrite=self.overwrite,
+            )
         if self.write_stac:
             stac_id = self.itempath.basename(item_id)  # , variable)
             collection = self.itempath.item_prefix
