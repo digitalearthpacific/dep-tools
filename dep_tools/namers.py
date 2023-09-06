@@ -31,13 +31,17 @@ class DepItemPath(ItemPath):
             item_id = "\\".join(item_id)
         return f"{self._folder_prefix}\\{item_id}\\{self.time}"
 
-    def basename(self, item_id, asset_name) -> str:
+    def basename(self, item_id) -> str:
         if isinstance(item_id, List) or isinstance(item_id, Tuple):
             item_id = "_".join(item_id)
-        return f"{self.item_prefix}_{item_id}_{self.time}_{asset_name}"
+        return f"{self.item_prefix}_{item_id}_{self.time}"  # _{asset_name}"
 
-    def path(self, item_id, asset_name, ext=".tif") -> str:
-        return f"{self._folder(item_id)}\\{self.basename(item_id, asset_name)}{ext}"
+    def path(self, item_id, asset_name=None, ext=".tif") -> str:
+        return (
+            f"{self._folder(item_id)}\\{self.basename(item_id)}_{asset_name}{ext}"
+            if asset_name is not None
+            else f"{self._folder(item_id)}\\{self.basename(item_id)}{ext}"
+        )
 
     def log_path(self) -> str:
         return f"{self._folder_prefix}\\logs\\{self.item_prefix}_{self.time}_log.csv"

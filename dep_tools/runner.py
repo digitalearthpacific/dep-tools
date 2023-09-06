@@ -117,6 +117,6 @@ def run_by_area_dask(
         run_by_area_dask_local(**kwargs)
 
 
-def run_by_area_dask_local(**kwargs):
-    with Client():
+def run_by_area_dask_local(local_cluster_kwargs=dict(), **kwargs):
+    with Client(**local_cluster_kwargs):
         run_by_area(**kwargs)

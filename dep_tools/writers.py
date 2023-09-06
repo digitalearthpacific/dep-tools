@@ -6,7 +6,7 @@ from typing import Dict, List, Union
 
 from azure.storage.blob import ContentSettings
 import numpy as np
-from pystac import Item
+from pystac import Item, Asset
 from rio_stac.stac import create_stac_item
 
 from .namers import DepItemPath
@@ -71,29 +71,38 @@ class AzureDsWriter(XrWriterMixin, Writer):
     def write(self, xr: Dataset, item_id: str) -> Union[str, List]:
         xr = super().prep(xr)
         paths = []
+        assets = {}
         for variable in xr:
-            path = self.itempath.path(item_id, variable)
             output_da = xr[variable].squeeze()
-            write_to_blob_storage(
-                output_da,
-                path=path,
-                write_args=dict(driver="COG"),
-                overwrite=self.overwrite,
-            )
-            if self.write_stac:
-                stac_id = self.itempath.basename(item_id, variable)
-                collection = self.itempath.item_prefix
-                # has to be a datetime datetime object
-                datetime = np.datetime64(xr.attrs["stac_properties"]["datetime"]).item()
-                _write_stac(
-                    output_da,
-                    path,
-                    input_datetime=datetime,
-                    asset_name=variable,
-                    collection=collection,
-                    id=stac_id,
-                )
+            path = self.itempath.path(item_id, variable)
             paths.append(path)
+            az_prefix = Path("https://deppcpublicstorage.blob.core.windows.net/output")
+            asset = Asset(
+                media_type="image/tiff; application=geotiff; profile=cloud-optimized",
+                href=str(az_prefix / path),
+                roles=["data"],
+            )
+            assets[variable] = asset
+            #            write_to_blob_storage(
+            #                output_da,
+            #                path=path,
+            #                write_args=dict(driver="COG"),
+            #                overwrite=self.overwrite,
+            #            )
+        if self.write_stac:
+            stac_id = self.itempath.basename(item_id)  # , variable)
+            collection = self.itempath.item_prefix
+            # has to be a datetime datetime object
+            datetime = np.datetime64(xr.attrs["stac_properties"]["datetime"]).item()
+            _write_stac(
+                xr,
+                paths[0],
+                stac_url=self.itempath.path(item_id, ext=".stac-item.json"),
+                input_datetime=datetime,
+                assets=assets,
+                collection=collection,
+                id=stac_id,
+            )
 
         return paths
 
@@ -162,10 +171,9 @@ class AzureXrWriter(XrWriterMixin, Writer):
             return path
 
 
-def _write_stac(xr: Union[DataArray, Dataset], path: str, **kwargs) -> None:
+def _write_stac(xr: Union[DataArray, Dataset], path: str, stac_url, **kwargs) -> None:
     item = _get_stac_item(xr, path, **kwargs)
     item_json = json.dumps(item.to_dict(), indent=4)
-    stac_url = Path(path).with_suffix(".stac-item.json")
     write_to_blob_storage(
         item_json,
         stac_url,
@@ -175,7 +183,9 @@ def _write_stac(xr: Union[DataArray, Dataset], path: str, **kwargs) -> None:
     )
 
 
-def _get_stac_item(xr: Union[DataArray, Dataset], path: str, **kwargs) -> Item:
+def _get_stac_item(
+    xr: Union[DataArray, Dataset], path: str, collection: str, **kwargs
+) -> Item:
     az_prefix = Path("https://deppcpublicstorage.blob.core.windows.net/output")
     blob_url = az_prefix / path
     properties = {}
@@ -186,9 +196,9 @@ def _get_stac_item(xr: Union[DataArray, Dataset], path: str, **kwargs) -> Item:
             else xr.attrs["stac_properties"]
         )
 
-    # if isinstance(xr, Dataset): assets = { }
-
-    collection_url = "https://stac.staging.auspatious.com/collections/dep_ls_wofs"
+    collection_url = (
+        "https://stac.staging.digitalearthpacific.org/collections/{collection}"
+    )
     return create_stac_item(
         str(blob_url),
         asset_roles=["data"],
