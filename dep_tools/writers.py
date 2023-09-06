@@ -6,10 +6,10 @@ from typing import Dict, List, Union
 
 from azure.storage.blob import ContentSettings
 import numpy as np
-from pystac import Asset, Item
+from pystac import Item
 from rio_stac.stac import create_stac_item
 
-from .namers import ItemPath
+from .namers import DepItemPath
 from .utils import scale_to_int16, write_to_blob_storage
 from xarray import DataArray, Dataset
 
@@ -25,7 +25,7 @@ class Writer(ABC):
 
 @dataclass
 class XrWriterMixin(object):
-    itempath: ItemPath
+    itempath: DepItemPath
     overwrite: bool = False
     convert_to_int16: bool = True
     output_value_multiplier: int = 10000
@@ -95,7 +95,7 @@ class AzureDsWriter(XrWriterMixin, Writer):
                 )
             paths.append(path)
 
-            return paths
+        return paths
 
 
 @dataclass
