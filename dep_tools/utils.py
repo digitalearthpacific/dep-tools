@@ -70,12 +70,12 @@ def search_across_180(gpdf: GeoDataFrame, **kwargs) -> ItemCollection:
     bbox_4326 = gpdf.to_crs(4326).total_bounds
     bbox_crosses_antimeridian = bbox_4326[0] < 0 and bbox_4326[2] > 0
     if bbox_crosses_antimeridian:
-        gpdf_8859 = gpdf.to_crs(8859)
+        gpdf_proj = gpdf.to_crs(gpdf.crs)
         projector = pyproj.Transformer.from_crs(
-            gpdf_8859.crs, pyproj.CRS("EPSG:4326"), always_xy=True
+            gpdf_proj.crs, pyproj.CRS("EPSG:4326"), always_xy=True
         ).transform
 
-        xmin, ymin, xmax, ymax = gpdf_8859.total_bounds
+        xmin, ymin, xmax, ymax = gpdf_proj.total_bounds
         xmin_ll, ymin_ll = transform(projector, Point(xmin, ymin)).coords[0]
         xmax_ll, ymax_ll = transform(projector, Point(xmax, ymax)).coords[0]
 
@@ -85,8 +85,8 @@ def search_across_180(gpdf: GeoDataFrame, **kwargs) -> ItemCollection:
             list(catalog.search(bbox=left_bbox, **kwargs).items())
             + list(catalog.search(bbox=right_bbox, **kwargs).items())
         )
-    else:
-        return catalog.search(bbox=bbox_4326, **kwargs).item_collection()
+
+    return catalog.search(bbox=bbox_4326, **kwargs).item_collection()
 
 
 def scale_and_offset(
