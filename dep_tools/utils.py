@@ -162,6 +162,27 @@ def download_blob(
             dst.write(download_stream.readall())
 
 
+def write_to_local_storage(
+    d: Union[DataArray, Dataset, GeoDataFrame, str],
+    path: Union[str, Path],
+    write_args: Dict = dict(),
+    overwrite: bool = True,
+    **kwargs,  # for compatibiilty only
+) -> None:
+    if isinstance(d, (DataArray, Dataset)):
+        d.rio.to_raster(path, overwrite=overwrite, **write_args)
+    elif isinstance(d, GeoDataFrame):
+        d.to_file(path, overwrite=overwrite, **write_args)
+    elif isinstance(d, str):
+        if overwrite:
+            with open(path, "w") as dst:
+                dst.write(d)
+    else:
+        raise ValueError(
+            "You can only write an Xarray DataArray or Dataset, Geopandas GeoDataFrame, or string"
+        )
+
+
 @retry(tries=2, delay=2)
 def write_to_blob_storage(
     d: Union[DataArray, Dataset, GeoDataFrame, str],

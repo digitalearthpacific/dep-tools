@@ -1,16 +1,14 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-import json
 from pathlib import Path
-from typing import Dict, List, Union
+from typing import Callable, Dict, List, Union
 
-from azure.storage.blob import ContentSettings
 import numpy as np
-from pystac import Item, Asset
-from rio_stac.stac import create_stac_item
+from pystac import Asset
 
 from .namers import DepItemPath
-from .utils import scale_to_int16, write_to_blob_storage
+from .utils import scale_to_int16, write_to_blob_storage, write_to_local_storage
+from .stac_utils import write_stac_local, write_stac_blob_storage
 from xarray import DataArray, Dataset
 
 
@@ -45,27 +43,10 @@ class XrWriterMixin(object):
         return xr
 
 
-class LocalXrWriter(XrWriterMixin, Writer):
-    def __init__(self, write_kwargs=dict(), **kwargs):
-        super().__init__(**kwargs)
-        self.write_kwargs = write_kwargs
-
-    def write(
-        self, xr: Union[DataArray, Dataset], item_id: str, asset_name: str
-    ) -> str:
-        xr = super().prep(xr)
-        path = itempath.path(item_id, asset_name, ".tif")
-        xr.squeeze().rio.to_raster(
-            raster_path=path,
-            compress="LZW",
-            overwrite=self.overwrite,
-            **self.write_kwargs,
-        )
-        return path
-
-
 @dataclass
-class AzureDsWriter(XrWriterMixin, Writer):
+class DsWriter(XrWriterMixin, Writer):
+    write_function: Callable = write_to_blob_storage
+    write_stac_function: Callable = write_stac_blob_storage
     write_stac: bool = True
 
     def write(self, xr: Dataset, item_id: str) -> Union[str, List]:
@@ -76,6 +57,13 @@ class AzureDsWriter(XrWriterMixin, Writer):
             output_da = xr[variable].squeeze()
             path = self.itempath.path(item_id, variable)
             paths.append(path)
+            self.write_function(
+                output_da,
+                path=path,
+                write_args=dict(driver="COG"),
+                overwrite=self.overwrite,
+            )
+            # TODO: This stuff should be moved, just iterate again in write_stac_function
             az_prefix = Path("https://deppcpublicstorage.blob.core.windows.net/output")
             asset = Asset(
                 media_type="image/tiff; application=geotiff; profile=cloud-optimized",
@@ -83,18 +71,12 @@ class AzureDsWriter(XrWriterMixin, Writer):
                 roles=["data"],
             )
             assets[variable] = asset
-            write_to_blob_storage(
-                output_da,
-                path=path,
-                write_args=dict(driver="COG"),
-                overwrite=self.overwrite,
-            )
         if self.write_stac:
             stac_id = self.itempath.basename(item_id)  # , variable)
             collection = self.itempath.item_prefix
             # has to be a datetime datetime object
             datetime = np.datetime64(xr.attrs["stac_properties"]["datetime"]).item()
-            _write_stac(
+            self.write_stac_function(
                 xr,
                 paths[0],
                 stac_url=self.itempath.path(item_id, ext=".stac-item.json"),
@@ -107,6 +89,21 @@ class AzureDsWriter(XrWriterMixin, Writer):
         return paths
 
 
+class LocalDsWriter(DsWriter):
+    def __init__(self, **kwargs):
+        super().__init__(
+            write_function=write_to_local_storage,
+            write_stac_function=write_stac_local,
+            **kwargs,
+        )
+
+
+class AzureDsWriter(DsWriter):
+    pass
+
+
+# This is _only_ here because it's still used in dep-coastlines. I just need
+# some time to migrate over there. (If i get a chance I'll just move it)
 @dataclass
 class AzureXrWriter(XrWriterMixin, Writer):
     write_stac: bool = True
@@ -169,41 +166,3 @@ class AzureXrWriter(XrWriterMixin, Writer):
                 _write_stac(xr.squeeze(), path)
 
             return path
-
-
-def _write_stac(xr: Union[DataArray, Dataset], path: str, stac_url, **kwargs) -> None:
-    item = _get_stac_item(xr, path, **kwargs)
-    item_json = json.dumps(item.to_dict(), indent=4)
-    write_to_blob_storage(
-        item_json,
-        stac_url,
-        write_args=dict(
-            content_settings=ContentSettings(content_type="application/json")
-        ),
-    )
-
-
-def _get_stac_item(
-    xr: Union[DataArray, Dataset], path: str, collection: str, **kwargs
-) -> Item:
-    az_prefix = Path("https://deppcpublicstorage.blob.core.windows.net/output")
-    blob_url = az_prefix / path
-    properties = {}
-    if "stac_properties" in xr.attrs:
-        properties = (
-            json.loads(xr.attrs["stac_properties"].replace("'", '"'))
-            if isinstance(xr.attrs["stac_properties"], str)
-            else xr.attrs["stac_properties"]
-        )
-
-    collection_url = (
-        "https://stac.staging.digitalearthpacific.org/collections/{collection}"
-    )
-    return create_stac_item(
-        str(blob_url),
-        asset_roles=["data"],
-        with_proj=True,
-        properties=properties,
-        collection_url=collection_url,
-        **kwargs,
-    )
