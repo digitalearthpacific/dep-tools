@@ -169,6 +169,12 @@ def write_to_local_storage(
     overwrite: bool = True,
     **kwargs,  # for compatibiilty only
 ) -> None:
+    if isinstance(path, str):
+        path = Path(path)
+
+    # Create the target folder if it doesn't exist
+    path.parent.mkdir(parents=True, exist_ok=True)
+
     if isinstance(d, (DataArray, Dataset)):
         d.rio.to_raster(path, overwrite=overwrite, **write_args)
     elif isinstance(d, GeoDataFrame):
