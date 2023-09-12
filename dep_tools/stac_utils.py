@@ -1,7 +1,6 @@
 import datetime
 
 import numpy as np
-import xarray as xr
 
 
 def set_stac_properties(input_xr, output_xr):
