@@ -65,6 +65,7 @@ def _get_stac_item(
         with_proj=True,
         properties=properties,
         collection_url=collection_url,
+        collection=collection,
         **kwargs,
     )
 
