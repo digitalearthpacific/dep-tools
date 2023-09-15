@@ -65,6 +65,8 @@ class Sentinel2LoaderMixin(object):
         if len(item_collection) == 0:
             raise EmptyCollectionError()
 
+        item_collection = remove_bad_items(item_collection)
+
         return item_collection
 
 

@@ -70,12 +70,12 @@ def search_across_180(gpdf: GeoDataFrame, **kwargs) -> ItemCollection:
     bbox_4326 = gpdf.to_crs(4326).total_bounds
     bbox_crosses_antimeridian = bbox_4326[0] < 0 and bbox_4326[2] > 0
     if bbox_crosses_antimeridian:
-        gpdf_8859 = gpdf.to_crs(8859)
+        gpdf_proj = gpdf.to_crs(gpdf.crs)
         projector = pyproj.Transformer.from_crs(
-            gpdf_8859.crs, pyproj.CRS("EPSG:4326"), always_xy=True
+            gpdf_proj.crs, pyproj.CRS("EPSG:4326"), always_xy=True
         ).transform
 
-        xmin, ymin, xmax, ymax = gpdf_8859.total_bounds
+        xmin, ymin, xmax, ymax = gpdf_proj.total_bounds
         xmin_ll, ymin_ll = transform(projector, Point(xmin, ymin)).coords[0]
         xmax_ll, ymax_ll = transform(projector, Point(xmax, ymax)).coords[0]
 
@@ -85,8 +85,8 @@ def search_across_180(gpdf: GeoDataFrame, **kwargs) -> ItemCollection:
             list(catalog.search(bbox=left_bbox, **kwargs).items())
             + list(catalog.search(bbox=right_bbox, **kwargs).items())
         )
-    else:
-        return catalog.search(bbox=bbox_4326, **kwargs).item_collection()
+
+    return catalog.search(bbox=bbox_4326, **kwargs).item_collection()
 
 
 def scale_and_offset(
@@ -109,6 +109,7 @@ def make_geocube_dask(
         )
 
     return like.map_blocks(rasterize_block, template=like)
+
 
 
 @retry(tries=2, delay=2)
@@ -192,17 +193,19 @@ def gpdf_bounds(gpdf: GeoDataFrame) -> List[float]:
 
 
 def build_vrt(
-    prefix: str,
     bounds: List,
+    prefix: str = "",
+    suffix: str = "",
 ) -> Path:
     blobs = [
         f"/vsiaz/output/{blob.name}"
-        for blob in get_container_client().list_blobs()
-        if blob.name.startswith(prefix)
+        for blob in get_container_client().list_blobs(name_starts_with=prefix)
+        if blob.name.endswith(suffix)
     ]
 
     local_prefix = Path(prefix).stem
     vrt_file = f"data/{local_prefix}.vrt"
+    print(blobs)
     gdal.BuildVRT(vrt_file, blobs, outputBounds=bounds)
     return Path(vrt_file)
 
@@ -317,5 +320,6 @@ def remove_bad_items(item_collection: ItemCollection) -> ItemCollection:
         "LC09_L2SR_083075_20220402_02_T1",
         "LC08_L2SR_083073_20220917_02_T1",
         "LC08_L2SR_089064_20201007_02_T2",
+        "S2B_MSIL2A_20230214T001719_R116_T56MMB_20230214T095023",
     ]
     return ItemCollection([i for i in item_collection if i.id not in bad_ids])

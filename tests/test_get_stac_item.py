@@ -1,6 +1,6 @@
 import rioxarray
 
-from dep_tools.writers import _get_stac_item
+from dep_tools.stac_utils import _get_stac_item
 
 from test_namers import testItemPath, item_id, asset_name
 
