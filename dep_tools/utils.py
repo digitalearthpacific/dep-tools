@@ -3,8 +3,6 @@ import os
 from pathlib import Path
 from typing import Dict, List, Union
 
-import azure.storage.blob
-from azure.storage.blob import ContainerClient
 from dask.distributed import Client, Lock
 import fiona
 from geopandas import GeoDataFrame
@@ -24,6 +22,8 @@ from shapely.ops import transform
 from tqdm import tqdm
 import xarray as xr
 from xarray import DataArray, Dataset
+
+from .azure import get_container_client
 
 
 def shift_negative_longitudes(
@@ -111,57 +111,6 @@ def make_geocube_dask(
     return like.map_blocks(rasterize_block, template=like)
 
 
-def get_container_client(
-    storage_account: str = os.environ["AZURE_STORAGE_ACCOUNT"],
-    container_name: str = "output",
-    credential: str = os.environ["AZURE_STORAGE_SAS_TOKEN"],
-) -> ContainerClient:
-    return azure.storage.blob.ContainerClient(
-        f"https://{storage_account}.blob.core.windows.net",
-        container_name=container_name,
-        credential=credential,
-    )
-
-
-def blob_exists(path: Union[str, Path], **kwargs):
-    container_client = get_container_client(**kwargs)
-    blob_client = container_client.get_blob_client(str(path))
-    return blob_client.exists()
-
-
-def get_blob_path(
-    dataset_id, item_id, prefix=None, time=None, variable=None, ext: str = "tif"
-) -> str:
-    if variable is None:
-        variable = dataset_id
-
-    prefix = f"{prefix}/" if prefix is not None else ""
-    time = str(time).replace("/", "_") if time is not None else time
-    suffix = "_".join([str(i) for i in item_id])
-    return (
-        f"{prefix}{dataset_id}/{time}/{variable}_{time}_{suffix}.{ext}"
-        if time is not None
-        else f"{prefix}{dataset_id}/{variable}_{suffix}.{ext}"
-    )
-
-
-def download_blob(
-    container_client: ContainerClient,
-    dataset: str,
-    year: int,
-    path: str,
-    row: str,
-    local_dir: Path,
-) -> None:
-    remote_path = f"{dataset}/{year}/{dataset}_{year}_{path}_{row}.tif"
-    local_path = f"{local_dir}/{dataset}_{year}_{path}_{row}.tif"
-    blob_client = container_client.get_blob_client(remote_path)
-    if blob_client.exists() and not Path(local_path).exists():
-        with open(local_path, "wb") as dst:
-            download_stream = blob_client.download_blob()
-            dst.write(download_stream.readall())
-
-
 @retry(tries=2, delay=2)
 def write_to_blob_storage(
     d: Union[DataArray, Dataset, GeoDataFrame, str],
@@ -192,24 +141,6 @@ def write_to_blob_storage(
         raise ValueError(
             "You can only write an Xarray DataArray or Dataset, or Geopandas GeoDataFrame"
         )
-
-
-def copy_to_blob_storage(
-    local_path: Path,
-    remote_path: Path,
-    storage_account: str = os.environ["AZURE_STORAGE_ACCOUNT"],
-    credential: str = os.environ["AZURE_STORAGE_SAS_TOKEN"],
-    container_name: str = "output",
-) -> None:
-    container_client = azure.storage.blob.ContainerClient(
-        f"https://{storage_account}.blob.core.windows.net",
-        container_name=container_name,
-        credential=credential,
-    )
-
-    with open(local_path, "rb") as src:
-        blob_client = container_client.get_blob_client(str(remote_path))
-        blob_client.upload_blob(src, overwrite=True)
 
 
 def scale_to_int16(
@@ -385,6 +316,6 @@ def remove_bad_items(item_collection: ItemCollection) -> ItemCollection:
         "LC08_L2SR_082074_20220724_02_T1",
         "LC09_L2SR_083075_20220402_02_T1",
         "LC08_L2SR_083073_20220917_02_T1",
-        "LC08_L2SR_089064_20201007_02_T2"
+        "LC08_L2SR_089064_20201007_02_T2",
     ]
     return ItemCollection([i for i in item_collection if i.id not in bad_ids])
