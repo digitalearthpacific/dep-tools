@@ -23,21 +23,35 @@ class DepItemPath(ItemPath):
 
     def __post_init__(self):
         self.version = self.version.replace(".", "-")
-        self._folder_prefix = f"dep_{self.sensor}_{self.dataset_id}\\{self.version}"
+        self._folder_prefix = f"dep_{self.sensor}_{self.dataset_id}/{self.version}"
         self.item_prefix = f"dep_{self.sensor}_{self.dataset_id}"
 
     def _folder(self, item_id) -> str:
         if isinstance(item_id, List) or isinstance(item_id, Tuple):
-            item_id = "\\".join(item_id)
-        return f"{self._folder_prefix}\\{item_id}\\{self.time}"
+            item_id = "/".join(item_id)
+        return f"{self._folder_prefix}/{item_id}/{self.time}"
 
-    def basename(self, item_id, asset_name) -> str:
+    def basename(self, item_id) -> str:
         if isinstance(item_id, List) or isinstance(item_id, Tuple):
             item_id = "_".join(item_id)
-        return f"{self.item_prefix}_{item_id}_{self.time}_{asset_name}"
+        return f"{self.item_prefix}_{item_id}_{self.time}"  # _{asset_name}"
 
-    def path(self, item_id, asset_name, ext=".tif") -> str:
-        return f"{self._folder(item_id)}\\{self.basename(item_id, asset_name)}{ext}"
+    def path(self, item_id, asset_name=None, ext=".tif") -> str:
+        return (
+            f"{self._folder(item_id)}/{self.basename(item_id)}_{asset_name}{ext}"
+            if asset_name is not None
+            else f"{self._folder(item_id)}/{self.basename(item_id)}{ext}"
+        )
 
     def log_path(self) -> str:
-        return f"{self._folder_prefix}\\logs\\{self.item_prefix}_{self.time}_log.csv"
+        return f"{self._folder_prefix}/logs/{self.item_prefix}_{self.time}_log.csv"
+
+
+class LocalPath(DepItemPath):
+    def __init__(self, local_folder: str, **kwargs):
+        # Need to create an abc for DepItemPath and drop this
+        super().__init__(**kwargs)
+        self._folder_prefix = local_folder
+
+    def _folder(self, item_id) -> str:
+        return self._folder_prefix
