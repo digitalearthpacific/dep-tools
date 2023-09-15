@@ -70,21 +70,33 @@ def _get_stac_item(
     )
 
 
-def set_stac_properties(input_xr, output_xr):
+def set_stac_properties(
+    input_xr: DataArray | Dataset, output_xr: DataArray | Dataset
+) -> Dataset | DataArray:
+    """Sets an attribute called "stac_properties" in the output which is a
+    dictionary containing the following properties for use in stac writing:
+    "start_datetime", "end_datetime", "datetime", and "created". These are
+    set from the input_xr.time coordinate. Typically, `input_xr` would be
+    an array of EO data (e.g. Landsat) containing data over a range of
+    dates (such as a year).
+    """
     start_datetime = np.datetime_as_string(
-        np.datetime64(input_xr.time.min().values, "Y"), unit="ms"
+        np.datetime64(input_xr.time.min().values, "Y"), unit="ms", timezone="UTC"
     )
 
     end_datetime = np.datetime_as_string(
         np.datetime64(input_xr.time.max().values, "Y")
         + np.timedelta64(1, "Y")
-        - np.timedelta64(1, "s")
+        - np.timedelta64(1, "s"),
+        timezone="UTC",
     )
     output_xr.attrs["stac_properties"] = dict(
         start_datetime=start_datetime,
         datetime=start_datetime,
         end_datetime=end_datetime,
-        created=np.datetime_as_string(np.datetime64(datetime.datetime.now())),
+        created=np.datetime_as_string(
+            np.datetime64(datetime.datetime.now()), timezone="UTC"
+        ),
     )
 
     return output_xr
