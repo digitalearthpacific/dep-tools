@@ -47,12 +47,7 @@ def clouds(scl: DataArray, dilate: bool = True) -> DataArray:
     THIN_CIRRUS = 10
     SNOW = 11
 
-    clouds = (
-        (scl == CLOUD_SHADOWS)
-        | (scl == CLOUD_MEDIUM_PROBABILITY)
-        | (scl == CLOUD_HIGH_PROBABILITY)
-        | (scl == THIN_CIRRUS)
-    )
+    clouds = (scl == CLOUD_SHADOWS) | (scl == CLOUD_HIGH_PROBABILITY)
 
     if dilate:
         clouds = mask_cleanup(clouds, [("opening", 2), ("dilation", 3)])
