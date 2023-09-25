@@ -9,10 +9,20 @@ from multiprocessing.dummy import Pool as ThreadPool
 
 
 def get_container_client(
-    storage_account: str = os.environ["AZURE_STORAGE_ACCOUNT"],
+    storage_account: str = os.environ.get("AZURE_STORAGE_ACCOUNT"),
     container_name: str = "output",
-    credential: str = os.environ["AZURE_STORAGE_SAS_TOKEN"],
+    credential: str = os.environ.get("AZURE_STORAGE_SAS_TOKEN"),
 ) -> ContainerClient:
+    if storage_account is None:
+        raise ValueError(
+            "'None' is not a valid value for 'storage_account'. Pass a valid name or set the 'AZURE_STORAGE_ACCOUNT' environment variable"
+        )
+
+    if credential is None:
+        raise ValueError(
+            "'None' is not a valid value for 'credential'. Pass a valid name or set the 'AZURE_STORAGE_SAS_TOKEN' environment variable"
+        )
+
     return azure.storage.blob.ContainerClient(
         f"https://{storage_account}.blob.core.windows.net",
         container_name=container_name,
