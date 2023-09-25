@@ -9,9 +9,9 @@ from multiprocessing.dummy import Pool as ThreadPool
 
 
 def get_container_client(
-    storage_account: str = os.environ["AZURE_STORAGE_ACCOUNT"],
+    storage_account: str = os.environ.get("AZURE_STORAGE_ACCOUNT"),
     container_name: str = "output",
-    credential: str = os.environ["AZURE_STORAGE_SAS_TOKEN"],
+    credential: str = os.environ.get("AZURE_STORAGE_SAS_TOKEN"),
 ) -> ContainerClient:
     return azure.storage.blob.ContainerClient(
         f"https://{storage_account}.blob.core.windows.net",
