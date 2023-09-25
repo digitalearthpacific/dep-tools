@@ -1,10 +1,58 @@
 import datetime
 
+from odc.algo import mask_cleanup
 from xarray import DataArray, concat
+
+from .processors import Processor
+
+
+class S2Processor(Processor):
+    def __init__(
+        self,
+        send_area_to_processor: bool = False,
+        scale_and_offset: bool = True,
+        mask_clouds: bool = True,
+        dilate_mask: bool = False,
+    ) -> None:
+        super().__init__(send_area_to_processor)
+        self.scale_and_offset = scale_and_offset
+        self.mask_clouds = mask_clouds
+        self.dilate_mask = dilate_mask
+
+    def process(self, xr: DataArray) -> DataArray:
+        if self.scale_and_offset:
+            xr = scale_and_offset_s2(xr)
+
+        if self.mask_clouds:
+            xr = xr.where(~clouds(xr.sel(band="SCL"), self.dilate_mask))
+
+        return xr
 
 
 def scale_and_offset_s2(da: DataArray) -> DataArray:
     return harmonize_to_old(da) * 0.0001
+
+
+def clouds(scl: DataArray, dilate: bool = True) -> DataArray:
+    NO_DATA = 0
+    SATURATED_OR_DEFECTIVE = 1
+    DARK_AREA_PIXELS = 2
+    CLOUD_SHADOWS = 3
+    VEGETATION = 4
+    NOT_VEGETATED = 5
+    WATER = 6
+    UNCLASSIFIED = 7
+    CLOUD_MEDIUM_PROBABILITY = 8
+    CLOUD_HIGH_PROBABILITY = 9
+    THIN_CIRRUS = 10
+    SNOW = 11
+
+    clouds = (scl == CLOUD_SHADOWS) | (scl == CLOUD_HIGH_PROBABILITY)
+
+    if dilate:
+        clouds = mask_cleanup(clouds, [("opening", 2), ("dilation", 3)])
+
+    return clouds
 
 
 def harmonize_to_old(data: DataArray) -> DataArray:

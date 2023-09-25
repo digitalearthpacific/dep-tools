@@ -180,7 +180,9 @@ def scale_to_int16(
     int16 data type, with the given nodata value"""
 
     def scale_da(da: DataArray):
-        if da.dtype != "int16" or scale_int16s:
+        # I exclude int64 here as it seems to cause issues
+        int_types = ["int8", "int16", "uint8", "uint16"]
+        if da.dtype not in int_types or scale_int16s:
             da = np.multiply(da, output_multiplier)
 
         return (
