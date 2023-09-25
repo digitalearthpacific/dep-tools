@@ -1,6 +1,6 @@
 import datetime
 import json
-from pathlib import Path
+from urlpath import URL
 from typing import Union
 
 from azure.storage.blob import ContentSettings
@@ -46,7 +46,7 @@ def _get_stac_item(
     remote: bool = True,
     **kwargs,
 ) -> Item:
-    az_prefix = Path("https://deppcpublicstorage.blob.core.windows.net/output")
+    az_prefix = URL("https://deppcpublicstorage.blob.core.windows.net/output")
     blob_url = az_prefix / path if remote else path
     properties = {}
     if "stac_properties" in xr.attrs:
