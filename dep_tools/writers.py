@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from pathlib import Path
+from urlpath import URL
 from typing import Callable, Dict, List, Union
 
 import numpy as np
@@ -64,7 +64,8 @@ class DsWriter(XrWriterMixin, Writer):
                 overwrite=self.overwrite,
             )
             # TODO: This stuff should be moved, just iterate again in write_stac_function
-            az_prefix = Path("https://deppcpublicstorage.blob.core.windows.net/output")
+            # TODO: This is invalid for local file writing...
+            az_prefix = URL("https://deppcpublicstorage.blob.core.windows.net/output")
             asset = Asset(
                 media_type="image/tiff; application=geotiff; profile=cloud-optimized",
                 href=str(az_prefix / path),
@@ -163,6 +164,7 @@ class AzureXrWriter(XrWriterMixin, Writer):
                 overwrite=self.overwrite,
             )
             if self.write_stac:
+                print("This should fail, right? Where's the function?")
                 _write_stac(xr.squeeze(), path)
 
             return path
