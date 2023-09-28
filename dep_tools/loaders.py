@@ -159,7 +159,7 @@ class OdcLoaderMixin:
         )
 
         for name in xr:
-            nodata_value = self.nodata or xr[name].rio.nodata
+            nodata_value = xr[name].rio.nodata if self.nodata is None else self.nodata
             xr[name] = xr[name].where(xr[name] != nodata_value, float("nan"))
 
         return (
