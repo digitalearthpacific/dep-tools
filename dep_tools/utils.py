@@ -1,26 +1,23 @@
 import io
-import os
 from pathlib import Path
 from typing import Dict, List, Union
 
-from dask.distributed import Client, Lock
 import fiona
-from geopandas import GeoDataFrame
-from geocube.api.core import make_geocube
 import numpy as np
-from osgeo import gdal
-import osgeo_utils.gdal2tiles
 import planetary_computer
 import pyproj
-from pystac import ItemCollection
 import pystac_client
 import rasterio
-from retry import retry
 import rioxarray
-from shapely.geometry import MultiLineString, LineString, Point
-from shapely.ops import transform
-from tqdm import tqdm
 import xarray as xr
+from dask.distributed import Client, Lock
+from geocube.api.core import make_geocube
+from geopandas import GeoDataFrame
+from osgeo import gdal
+from pystac import ItemCollection
+from retry import retry
+from shapely.geometry import LineString, MultiLineString, Point
+from shapely.ops import transform
 from xarray import DataArray, Dataset
 
 from .azure import get_container_client
@@ -236,59 +233,6 @@ def build_vrt(
     print(blobs)
     gdal.BuildVRT(vrt_file, blobs, outputBounds=bounds)
     return Path(vrt_file)
-
-
-def create_tiles(
-    color_file: str,
-    prefix: str,
-    bounds: List,
-    remake_mosaic: bool = True,
-    storage_account: str = os.environ["AZURE_STORAGE_ACCOUNT"],
-    credential: str = os.environ["AZURE_STORAGE_SAS_TOKEN"],
-    container_name: str = "output",
-):
-    if remake_mosaic:
-        with Client() as local_client:
-            mosaic_scenes(
-                prefix=prefix,
-                bounds=bounds,
-                client=local_client,
-                scale_factor=1.0 / 1000,
-                overwrite=remake_mosaic,
-            )
-    dst_vrt_file = f"data/{Path(prefix).stem}_rgb.vrt"
-    gdal.DEMProcessing(
-        dst_vrt_file,
-        str(_mosaic_file(prefix)),
-        "color-relief",
-        colorFilename=color_file,
-        addAlpha=True,
-    )
-    dst_name = f"data/tiles/{prefix}"
-    os.makedirs(dst_name, exist_ok=True)
-    max_zoom = 11
-    # First arg is just a dummy so the second arg is not removed (see gdal2tiles code)
-    # I'm using 512 x 512 tiles so there's fewer files to copy over. likewise
-    # for -x
-    osgeo_utils.gdal2tiles.main(
-        [
-            "gdal2tiles.py",
-            "--tilesize=512",
-            "--processes=4",
-            f"--zoom=0-{max_zoom}",
-            "-x",
-            dst_vrt_file,
-            dst_name,
-        ]
-    )
-
-    for local_path in tqdm(Path(dst_name).rglob("*")):
-        if local_path.is_file():
-            remote_path = Path("tiles") / "/".join(local_path.parts[4:])
-            copy_to_blob_storage(
-                local_path, remote_path, storage_account, credential, container_name
-            )
-            local_path.unlink()
 
 
 def _local_prefix(prefix: str) -> str:
