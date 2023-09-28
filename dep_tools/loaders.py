@@ -130,9 +130,10 @@ class LandsatLoaderMixin(object):
 
 
 class OdcLoaderMixin:
-    def __init__(self, odc_load_kwargs, **kwargs):
+    def __init__(self, odc_load_kwargs, nodata_value: float | None = None, **kwargs):
         super().__init__(**kwargs)
         self.odc_load_kwargs = odc_load_kwargs
+        self.nodata = nodata_value
 
     def _get_xr(
         self,
@@ -158,7 +159,8 @@ class OdcLoaderMixin:
         )
 
         for name in xr:
-            xr[name] = xr[name].where(xr[name] != xr[name].rio.nodata, float("nan"))
+            nodata_value = self.nodata or xr[name].rio.nodata
+            xr[name] = xr[name].where(xr[name] != nodata_value, float("nan"))
 
         return (
             xr.to_array(
@@ -216,7 +218,6 @@ class StackStacLoaderMixin:
                 item_collection,
                 chunksize=self.dask_chunksize,
                 epsg=self._current_epsg,
-                resolution=30,
                 errors_as_nodata=(RasterioIOError(".*"),),
                 **self.stack_kwargs,
             )
@@ -229,6 +230,11 @@ class StackStacLoaderMixin:
 
 
 class Sentinel2OdcLoader(Sentinel2LoaderMixin, OdcLoaderMixin, StackXrLoader):
+    def __init__(self, nodata_value=0, **kwargs):
+        super().__init__(nodata_value=nodata_value, **kwargs)
+
+
+class Sentinel2StackLoader(Sentinel2LoaderMixin, StackStacLoaderMixin, StackXrLoader):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
