@@ -20,16 +20,17 @@ class S2Processor(Processor):
         self.dilate_mask = dilate_mask
 
     def process(self, xr: DataArray) -> DataArray:
-        if self.scale_and_offset:
-            xr = scale_and_offset_s2(xr)
-
         if self.mask_clouds:
             xr = xr.where(~clouds(xr.sel(band="SCL"), self.dilate_mask))
+
+        if self.scale_and_offset:
+            xr = scale_and_offset_s2(xr)
 
         return xr
 
 
 def scale_and_offset_s2(da: DataArray) -> DataArray:
+    # TODO: don't scale SCL
     return harmonize_to_old(da) * 0.0001
 
 
