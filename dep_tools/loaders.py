@@ -130,7 +130,12 @@ class LandsatLoaderMixin(object):
 
 
 class OdcLoaderMixin:
-    def __init__(self, odc_load_kwargs, nodata_value: float | None = None, **kwargs):
+    def __init__(
+        self,
+        odc_load_kwargs: dict = dict(),
+        nodata_value: float | None = None,
+        **kwargs,
+    ):
         super().__init__(**kwargs)
         self.odc_load_kwargs = odc_load_kwargs
         self.nodata = nodata_value

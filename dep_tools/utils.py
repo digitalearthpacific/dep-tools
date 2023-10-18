@@ -44,9 +44,16 @@ def shift_negative_longitudes(
 
 
 @retry(tries=10, delay=1)
-def search_across_180(gpdf: GeoDataFrame, **kwargs) -> ItemCollection:
-    """
-    gpdf: A GeoDataFrame.
+def search_across_180(
+    gpdf: GeoDataFrame,
+    client: pystac_client.Client = pystac_client.Client.open(
+        "https://planetarycomputer.microsoft.com/api/stac/v1",
+        modifier=planetary_computer.sign_inplace,
+    ),
+    **kwargs,
+) -> ItemCollection:
+    """gpdf: A GeoDataFrame.
+    client: A pystac_client.Client object.
     **kwargs: Arguments besides bbox and intersects passed to
         pystac_client.Client.search
     """
@@ -59,10 +66,6 @@ def search_across_180(gpdf: GeoDataFrame, **kwargs) -> ItemCollection:
     # intersects, but we can wait to see if that's needed (for the current
     # work I am collecting io-lulc which doesn't have data in areas which
     # aren't near land
-    catalog = pystac_client.Client.open(
-        "https://planetarycomputer.microsoft.com/api/stac/v1",
-        modifier=planetary_computer.sign_inplace,
-    )
 
     bbox_4326 = gpdf.to_crs(4326).total_bounds
     bbox_crosses_antimeridian = bbox_4326[0] < 0 and bbox_4326[2] > 0
@@ -79,11 +82,11 @@ def search_across_180(gpdf: GeoDataFrame, **kwargs) -> ItemCollection:
         left_bbox = [xmin_ll, ymin_ll, 180, ymax_ll]
         right_bbox = [-180, ymin_ll, xmax_ll, ymax_ll]
         return ItemCollection(
-            list(catalog.search(bbox=left_bbox, **kwargs).items())
-            + list(catalog.search(bbox=right_bbox, **kwargs).items())
+            list(client.search(bbox=left_bbox, **kwargs).items())
+            + list(client.search(bbox=right_bbox, **kwargs).items())
         )
 
-    return catalog.search(bbox=bbox_4326, **kwargs).item_collection()
+    return client.search(bbox=bbox_4326, **kwargs).item_collection()
 
 
 def scale_and_offset(
