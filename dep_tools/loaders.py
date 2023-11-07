@@ -1,22 +1,19 @@
 from abc import ABC, abstractmethod
-from typing import Union, List
-
-from geopandas import GeoDataFrame
-from odc.stac import load
-from pystac import ItemCollection
-from rasterio.errors import RasterioIOError, RasterioError
+from typing import List, Union
 
 # I get errors sometimes that `DataArray` has no attribute `rio`  which I _think_
 # is a dask worker issue but it might be possible that `odc.stac` _sometimes_ needs
 # rioxarray loaded ????
 import rioxarray
-
-
+from geopandas import GeoDataFrame
+from odc.stac import load
+from pystac import ItemCollection
+from rasterio.errors import RasterioError, RasterioIOError
 from stackstac import stack
 from xarray import DataArray, concat
 
 from .exceptions import EmptyCollectionError
-from .utils import search_across_180, fix_bad_epsgs, remove_bad_items
+from .utils import fix_bad_epsgs, remove_bad_items, search_across_180
 
 
 class Loader(ABC):
@@ -103,7 +100,11 @@ class LandsatLoaderMixin(object):
         # we don't want to process, since they will be captured in
         # other pathrows (or are areas not covered by our aoi)
 
-        index_dict = dict(zip(area.index.names, area.index[0]))
+        try:
+            index_dict = dict(zip(area.index.names, area.index[0]))
+        except TypeError:
+            index_dict = {}
+
         if len(item_collection) == 0:
             raise EmptyCollectionError()
 
@@ -229,6 +230,40 @@ class StackStacLoaderMixin:
         )
 
 
+class FlatOdcLoaderMixin:
+    def __init__(self, odc_load_kwargs, nodata_value: float | None = None, **kwargs):
+        super().__init__(**kwargs)
+        self.odc_load_kwargs = odc_load_kwargs
+        self.nodata = nodata_value
+
+    def _get_xr(
+        self,
+        items,
+        areas: GeoDataFrame,
+    ) -> DataArray:
+        areas_proj = areas.to_crs(self._current_epsg)
+        bounds = areas_proj.total_bounds.tolist()
+        xr = load(
+            items,
+            resampling={"qa_pixel": "nearest", "*": "average"},
+            crs=self._current_epsg,
+            chunks=self.dask_chunksize,
+            x=(bounds[0], bounds[2]),
+            y=(bounds[1], bounds[3]),
+            **self.odc_load_kwargs,
+            dtype="uint16",
+            group_by="solar_day",
+        )
+
+        for name in xr:
+            nodata_value = xr[name].rio.nodata if self.nodata is None else self.nodata
+            xr[name] = xr[name].where(xr[name] != nodata_value, float("nan"))
+
+            xr.attrs["nodata"] = nodata_value
+
+        return xr
+
+
 class Sentinel2OdcLoader(Sentinel2LoaderMixin, OdcLoaderMixin, StackXrLoader):
     def __init__(self, nodata_value=0, **kwargs):
         super().__init__(nodata_value=nodata_value, **kwargs)
@@ -245,5 +280,10 @@ class LandsatOdcLoader(LandsatLoaderMixin, OdcLoaderMixin, StackXrLoader):
 
 
 class LandsatStackLoader(LandsatLoaderMixin, StackStacLoaderMixin, StackXrLoader):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+
+class FlatLandsatOdcLoader(LandsatLoaderMixin, FlatOdcLoaderMixin, StackXrLoader):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

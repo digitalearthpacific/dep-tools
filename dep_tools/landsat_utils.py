@@ -1,8 +1,8 @@
 from typing import Dict
 
 import planetary_computer
-from odc.algo import mask_cleanup
 import pystac_client
+from odc.algo import mask_cleanup
 from pystac import ItemCollection
 from retry import retry
 from xarray import DataArray
@@ -15,7 +15,10 @@ def mask_clouds(xr: DataArray, dilate: bool = False) -> DataArray:
     for field in mask_bitfields:
         bitmask |= 1 << field
 
-    cloud_mask = xr.sel(band="qa_pixel").astype("uint16") & bitmask != 0
+    try:
+        cloud_mask = xr.sel(band="qa_pixel").astype("uint16") & bitmask != 0
+    except KeyError:
+        cloud_mask = xr.qa_pixel.astype("uint16") & bitmask != 0
 
     if dilate:
         # From Alex @ https://gist.github.com/alexgleith/d9ea655d4e55162e64fe2c9db84284e5
