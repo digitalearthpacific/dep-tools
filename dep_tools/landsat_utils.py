@@ -2,13 +2,13 @@ from typing import Dict
 
 import planetary_computer
 import pystac_client
-from odc.algo import mask_cleanup
+from odc.algo import erase_bad, mask_cleanup
 from pystac import ItemCollection
 from retry import retry
 from xarray import DataArray
 
 
-def mask_clouds(xr: DataArray, dilate: bool = False) -> DataArray:
+def mask_clouds(xr: DataArray, dilate: bool = False, keep_ints: bool = False) -> DataArray:
     # dilated cloud, cirrus, cloud, cloud shadow
     mask_bitfields = [1, 2, 3, 4]
     bitmask = 0
@@ -23,7 +23,11 @@ def mask_clouds(xr: DataArray, dilate: bool = False) -> DataArray:
     if dilate:
         # From Alex @ https://gist.github.com/alexgleith/d9ea655d4e55162e64fe2c9db84284e5
         cloud_mask = mask_cleanup(cloud_mask, [("opening", 2), ("dilation", 3)])
-    return xr.where(~cloud_mask)
+
+    if keep_ints:
+        return erase_bad(xr, cloud_mask)
+    else:
+        return xr.where(~cloud_mask)
 
 
 @retry(tries=10, delay=1)

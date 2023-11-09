@@ -4,7 +4,7 @@ from typing import List, Union
 # I get errors sometimes that `DataArray` has no attribute `rio`  which I _think_
 # is a dask worker issue but it might be possible that `odc.stac` _sometimes_ needs
 # rioxarray loaded ????
-import rioxarray
+import rioxarray  # noqa: F401
 from geopandas import GeoDataFrame
 from odc.stac import load
 from pystac import ItemCollection
@@ -255,11 +255,13 @@ class FlatOdcLoaderMixin:
             group_by="solar_day",
         )
 
-        for name in xr:
-            nodata_value = xr[name].rio.nodata if self.nodata is None else self.nodata
-            xr[name] = xr[name].where(xr[name] != nodata_value, float("nan"))
+        xr.attrs["nodata"] = self.nodata
 
-            xr.attrs["nodata"] = nodata_value
+        # for name in xr:
+        #     nodata_value = xr[name].rio.nodata if self.nodata is None else self.nodata
+        #     xr[name] = xr[name].where(xr[name] != nodata_value, float("nan"))
+
+        #     xr.attrs["nodata"] = nodata_value
 
         return xr
 
