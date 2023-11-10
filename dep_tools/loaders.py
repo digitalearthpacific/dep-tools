@@ -131,10 +131,19 @@ class LandsatLoaderMixin(object):
 
 
 class OdcLoaderMixin:
-    def __init__(self, odc_load_kwargs, nodata_value: float | None = None, **kwargs):
+    def __init__(
+        self,
+        odc_load_kwargs,
+        nodata_value: int | float | None = None,
+        flat_array: bool = False,
+        keep_ints: bool = False,
+        **kwargs,
+    ):
         super().__init__(**kwargs)
         self.odc_load_kwargs = odc_load_kwargs
         self.nodata = nodata_value
+        self.flat_array = flat_array
+        self.keep_ints = keep_ints
 
     def _get_xr(
         self,
@@ -149,6 +158,9 @@ class OdcLoaderMixin:
         # see in the docs.
         areas_proj = areas.to_crs(self._current_epsg)
         bounds = areas_proj.total_bounds.tolist()
+
+        data_type = "uint16" if self.keep_ints else "float32"
+
         xr = load(
             items,
             crs=self._current_epsg,
@@ -156,28 +168,40 @@ class OdcLoaderMixin:
             x=(bounds[0], bounds[2]),
             y=(bounds[1], bounds[3]),
             **self.odc_load_kwargs,
-            dtype="float32",
+            dtype=data_type,
         )
 
-        for name in xr:
-            nodata_value = xr[name].rio.nodata if self.nodata is None else self.nodata
-            xr[name] = xr[name].where(xr[name] != nodata_value, float("nan"))
+        if self.nodata is not None:
+            xr.attrs["nodata"] = self.nodata
 
-        return (
-            xr.to_array(
-                "band"
-            )  # ^^ just to match what stackstac makes, at least for now
-            # stackstac names it stackstac-lkj1928d-l81938d890 or similar,
-            # in places a name is needed (for instance .to_dataset())
-            .rename("data")
-            .rio.write_crs(self._current_epsg)
-            .rio.write_nodata(float("nan"))
-            .rio.clip(
-                areas_proj.geometry,
-                all_touched=True,
-                from_disk=True,
+        if not self.keep_ints:
+            for name in xr:
+                nodata_value = (
+                    xr[name].rio.nodata if self.nodata is None else self.nodata
+                )
+                xr[name] = xr[name].where(xr[name] != nodata_value, float("nan"))
+
+            xr.attrs["nodata"] = float("nan")
+
+        if not self.flat_array:
+            # This creates a "bands" dimension.
+            xr = (
+                xr.to_array(
+                    "band"
+                )  # ^^ just to match what stackstac makes, at least for now
+                # stackstac names it stackstac-lkj1928d-l81938d890 or similar,
+                # in places a name is needed (for instance .to_dataset())
+                .rename("data")
+                .rio.write_crs(self._current_epsg)
+                .rio.write_nodata(float("nan"))
+                .rio.clip(
+                    areas_proj.geometry,
+                    all_touched=True,
+                    from_disk=True,
+                )
             )
-        )
+
+        return xr
 
 
 class StackStacLoaderMixin:
@@ -230,42 +254,6 @@ class StackStacLoaderMixin:
         )
 
 
-class FlatOdcLoaderMixin:
-    def __init__(self, odc_load_kwargs, nodata_value: float | None = None, **kwargs):
-        super().__init__(**kwargs)
-        self.odc_load_kwargs = odc_load_kwargs
-        self.nodata = nodata_value
-
-    def _get_xr(
-        self,
-        items,
-        areas: GeoDataFrame,
-    ) -> DataArray:
-        areas_proj = areas.to_crs(self._current_epsg)
-        bounds = areas_proj.total_bounds.tolist()
-        xr = load(
-            items,
-            resampling={"qa_pixel": "nearest", "*": "average"},
-            crs=self._current_epsg,
-            chunks=self.dask_chunksize,
-            x=(bounds[0], bounds[2]),
-            y=(bounds[1], bounds[3]),
-            **self.odc_load_kwargs,
-            dtype="uint16",
-            group_by="solar_day",
-        )
-
-        xr.attrs["nodata"] = self.nodata
-
-        # for name in xr:
-        #     nodata_value = xr[name].rio.nodata if self.nodata is None else self.nodata
-        #     xr[name] = xr[name].where(xr[name] != nodata_value, float("nan"))
-
-        #     xr.attrs["nodata"] = nodata_value
-
-        return xr
-
-
 class Sentinel2OdcLoader(Sentinel2LoaderMixin, OdcLoaderMixin, StackXrLoader):
     def __init__(self, nodata_value=0, **kwargs):
         super().__init__(nodata_value=nodata_value, **kwargs)
@@ -282,10 +270,5 @@ class LandsatOdcLoader(LandsatLoaderMixin, OdcLoaderMixin, StackXrLoader):
 
 
 class LandsatStackLoader(LandsatLoaderMixin, StackStacLoaderMixin, StackXrLoader):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
-
-class FlatLandsatOdcLoader(LandsatLoaderMixin, FlatOdcLoaderMixin, StackXrLoader):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
