@@ -25,7 +25,7 @@ urlpath = "*"
 xarray = "*"
 rio-stac = "^0.8.0"
 odc-stac = {git = "https://github.com/jessjaco/odc-stac.git", rev = "exception-fix"}
-odc-algo = "^0.2.3"
+odc-algo = {git = "https://github.com/opendatacube/odc-algo.git", rev = "add-rust-geomedian-impl"}
 
 [tool.poetry.group.dev.dependencies]
 black = "^23.1.0"
