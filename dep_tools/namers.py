@@ -26,15 +26,20 @@ class DepItemPath(ItemPath):
         self._folder_prefix = f"dep_{self.sensor}_{self.dataset_id}/{self.version}"
         self.item_prefix = f"dep_{self.sensor}_{self.dataset_id}"
 
-    def _folder(self, item_id) -> str:
+    def _format_item_id(self, item_id) -> str:
         if isinstance(item_id, List) or isinstance(item_id, Tuple):
             item_id = "/".join(item_id)
-        return f"{self._folder_prefix}/{item_id}/{self.time}"
+        if len(item_id.split(",")) == 2:
+            # Create a zero padded len of 3 string separated by a _
+            # e.g. 1_2 becomes 001_002
+            item_id = "_".join([f"{int(i):03d}" for i in item_id.split(",")])
+        return item_id
+
+    def _folder(self, item_id) -> str:
+        return f"{self._folder_prefix}/{self._format_item_id(item_id)}/{self.time}"
 
     def basename(self, item_id) -> str:
-        if isinstance(item_id, List) or isinstance(item_id, Tuple):
-            item_id = "_".join(item_id)
-        return f"{self.item_prefix}_{item_id}_{self.time}"  # _{asset_name}"
+        return f"{self.item_prefix}_{self._format_item_id(item_id)}_{self.time}"  # _{asset_name}"
 
     def path(self, item_id, asset_name=None, ext=".tif") -> str:
         return (
