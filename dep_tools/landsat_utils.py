@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, Tuple
 
 import planetary_computer
 import pystac_client
@@ -8,7 +8,9 @@ from retry import retry
 from xarray import DataArray
 
 
-def mask_clouds(xr: DataArray, dilate: bool = False, keep_ints: bool = False) -> DataArray:
+def mask_clouds(
+    xr: DataArray, dilate: Tuple[int, int] | None = None, keep_ints: bool = False
+) -> DataArray:
     # dilated cloud, cirrus, cloud, cloud shadow
     mask_bitfields = [1, 2, 3, 4]
     bitmask = 0
@@ -20,9 +22,10 @@ def mask_clouds(xr: DataArray, dilate: bool = False, keep_ints: bool = False) ->
     except KeyError:
         cloud_mask = xr.qa_pixel.astype("uint16") & bitmask != 0
 
-    if dilate:
-        # From Alex @ https://gist.github.com/alexgleith/d9ea655d4e55162e64fe2c9db84284e5
-        cloud_mask = mask_cleanup(cloud_mask, [("opening", 2), ("dilation", 3)])
+    if dilate is not None:
+        opening = dilate[0]
+        dilation = dilate[1]
+        cloud_mask = mask_cleanup(cloud_mask, [("opening", opening), ("dilation", dilation)])
 
     if keep_ints:
         return erase_bad(xr, cloud_mask)

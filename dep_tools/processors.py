@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from typing import Tuple
 
 from xarray import DataArray
 
@@ -21,7 +22,7 @@ class LandsatProcessor(Processor):
         send_area_to_processor: bool = False,
         scale_and_offset: bool = True,
         mask_clouds: bool = True,
-        dilate_mask: bool = False,
+        dilate_mask: Tuple[int, int] | None = None,
         keep_ints: bool = False
     ) -> None:
         super().__init__(send_area_to_processor)
