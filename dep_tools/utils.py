@@ -13,6 +13,7 @@ import xarray as xr
 from dask.distributed import Client, Lock
 from geocube.api.core import make_geocube
 from geopandas import GeoDataFrame
+from odc.geo.xr import to_cog, write_cog
 from osgeo import gdal
 from pystac import ItemCollection
 from retry import retry
@@ -113,6 +114,7 @@ def write_to_local_storage(
     path: Union[str, Path],
     write_args: Dict = dict(),
     overwrite: bool = True,
+    use_odc_writer: bool = False,
     **kwargs,  # for compatibiilty only
 ) -> None:
     if isinstance(path, str):
@@ -122,7 +124,11 @@ def write_to_local_storage(
     path.parent.mkdir(parents=True, exist_ok=True)
 
     if isinstance(d, (DataArray, Dataset)):
-        d.rio.to_raster(path, overwrite=overwrite, **write_args)
+        if use_odc_writer:
+            del write_args["driver"]
+            write_cog(d, path, overwrite=overwrite, **write_args)
+        else:
+            d.rio.to_raster(path, overwrite=overwrite, **write_args)
     elif isinstance(d, GeoDataFrame):
         d.to_file(path, overwrite=overwrite, **write_args)
     elif isinstance(d, str):
@@ -141,6 +147,7 @@ def write_to_blob_storage(
     path: Union[str, Path],
     write_args: Dict = dict(),
     overwrite: bool = True,
+    use_odc_writer: bool = False,
     **kwargs,
 ) -> None:
     container_client = get_container_client(**kwargs)
@@ -150,10 +157,18 @@ def write_to_blob_storage(
         return
 
     if isinstance(d, (DataArray, Dataset)):
-        with io.BytesIO() as buffer:
-            d.rio.to_raster(buffer, **write_args)
-            buffer.seek(0)
-            blob_client.upload_blob(buffer, overwrite=overwrite)
+        if use_odc_writer:
+            del write_args["driver"]
+            with io.BytesIO() as buffer:
+                to_cog(d, buffer, **write_args)
+                buffer.seek(0)
+                blob_client.upload_blob(buffer, overwrite=overwrite)
+        else:
+            with io.BytesIO() as buffer:
+                d.rio.to_raster(buffer, **write_args)
+                buffer.seek(0)
+                blob_client.upload_blob(buffer, overwrite=overwrite)
+
     elif isinstance(d, GeoDataFrame):
         with fiona.io.MemoryFile() as buffer:
             d.to_file(buffer, **write_args)

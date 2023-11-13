@@ -1,15 +1,15 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from urlpath import URL
 from typing import Callable, Dict, List, Union
 
 import numpy as np
 from pystac import Asset
+from urlpath import URL
+from xarray import DataArray, Dataset
 
 from .namers import DepItemPath
+from .stac_utils import write_stac_blob_storage, write_stac_local
 from .utils import scale_to_int16, write_to_blob_storage, write_to_local_storage
-from .stac_utils import write_stac_local, write_stac_blob_storage
-from xarray import DataArray, Dataset
 
 
 class Writer(ABC):
@@ -30,6 +30,7 @@ class XrWriterMixin(object):
     scale_int16s: bool = False
     output_nodata: int = -32767
     extra_attrs: Dict = field(default_factory=dict)
+    use_odc_writer: bool = True
 
     def prep(self, xr: Union[DataArray, Dataset]):
         xr.attrs.update(self.extra_attrs)
@@ -62,6 +63,7 @@ class DsWriter(XrWriterMixin, Writer):
                 path=path,
                 write_args=dict(driver="COG"),
                 overwrite=self.overwrite,
+                use_odc_writer=self.use_odc_writer,
             )
             # TODO: This stuff should be moved, just iterate again in write_stac_function
             # TODO: This is invalid for local file writing...
@@ -91,10 +93,11 @@ class DsWriter(XrWriterMixin, Writer):
 
 
 class LocalDsWriter(DsWriter):
-    def __init__(self, **kwargs):
+    def __init__(self, use_odc_writer: bool = False, **kwargs):
         super().__init__(
             write_function=write_to_local_storage,
             write_stac_function=write_stac_local,
+            use_odc_writer=use_odc_writer,
             **kwargs,
         )
 
