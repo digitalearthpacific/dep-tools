@@ -28,7 +28,10 @@ class DepItemPath(ItemPath):
 
     def _format_item_id(self, item_id) -> str:
         if isinstance(item_id, List) or isinstance(item_id, Tuple):
-            item_id = "/".join(item_id)
+            # Assuming we have a list like ('66,23', 'FJ')
+            tile_id = item_id[0]
+            region_id = item_id[1]
+            item_id = f"{self._format_item_id(tile_id)}_{region_id}"
         if len(item_id.split(",")) == 2:
             # Create a zero padded len of 3 string separated by a _
             # e.g. 1_2 becomes 001_002
