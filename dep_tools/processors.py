@@ -43,4 +43,3 @@ class LandsatProcessor(Processor):
             xr = scale_and_offset(xr, scale=[scale], offset=offset)
 
         return xr
-

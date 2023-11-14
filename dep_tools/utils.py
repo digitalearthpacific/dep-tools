@@ -161,11 +161,9 @@ def write_to_blob_storage(
 
     if isinstance(d, (DataArray, Dataset)):
         if use_odc_writer:
-            del write_args["driver"]
-            with io.BytesIO() as buffer:
-                to_cog(d, buffer, **write_args)
-                buffer.seek(0)
-                blob_client.upload_blob(buffer, overwrite=overwrite)
+            if "driver" in write_args:
+                del write_args["driver"]
+            blob_client.upload_blob(to_cog(d, **write_args), overwrite=overwrite)
         else:
             with io.BytesIO() as buffer:
                 d.rio.to_raster(buffer, **write_args)
