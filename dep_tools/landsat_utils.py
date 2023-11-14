@@ -11,10 +11,13 @@ from xarray import DataArray
 def mask_clouds(
     xr: DataArray, dilate: Tuple[int, int] | None = None, keep_ints: bool = False
 ) -> DataArray:
-    # dilated cloud, cirrus, cloud, cloud shadow
-    mask_bitfields = [1, 2, 3, 4]
+    # DILATED_CLOUD = 1
+    # CIRRUS = 2
+    CLOUD = 3
+    CLOUD_SHADOW = 4
+
     bitmask = 0
-    for field in mask_bitfields:
+    for field in [CLOUD, CLOUD_SHADOW]:
         bitmask |= 1 << field
 
     try:
@@ -22,9 +25,9 @@ def mask_clouds(
     except KeyError:
         cloud_mask = xr.qa_pixel.astype("uint16") & bitmask != 0
 
+    opening = dilate[0]
+    dilation = dilate[1]
     if dilate is not None:
-        opening = dilate[0]
-        dilation = dilate[1]
         cloud_mask = mask_cleanup(cloud_mask, [("opening", opening), ("dilation", dilation)])
 
     if keep_ints:

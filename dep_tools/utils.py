@@ -66,7 +66,9 @@ def search_across_180(gpdf: GeoDataFrame, **kwargs) -> ItemCollection:
     )
 
     bbox_4326 = gpdf.to_crs(4326).total_bounds
-    bbox_crosses_antimeridian = bbox_4326[0] < 0 and bbox_4326[2] > 0
+    bbox_crosses_antimeridian = (
+        bbox_4326[0] < 0 and bbox_4326[2] > 0 or bbox_4326[0] < 180 and bbox_4326[2] > 180
+    )
     if bbox_crosses_antimeridian:
         gpdf_proj = gpdf.to_crs(gpdf.crs)
         projector = pyproj.Transformer.from_crs(
@@ -76,6 +78,7 @@ def search_across_180(gpdf: GeoDataFrame, **kwargs) -> ItemCollection:
         xmin, ymin, xmax, ymax = gpdf_proj.total_bounds
         xmin_ll, ymin_ll = transform(projector, Point(xmin, ymin)).coords[0]
         xmax_ll, ymax_ll = transform(projector, Point(xmax, ymax)).coords[0]
+        xmax_ll = xmax_ll - 360 if xmax_ll > 180 else xmax_ll
 
         left_bbox = [xmin_ll, ymin_ll, 180, ymax_ll]
         right_bbox = [-180, ymin_ll, xmax_ll, ymax_ll]
