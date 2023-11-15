@@ -49,7 +49,7 @@ class AreaTask(Task):
         self.writer.write(output_data, self.id)
 
 
-class LoggingAreaTask(AreaTask):
+class ErrorCategoryAreaTask(AreaTask):
     def run(self):
         try:
             input_data = self.loader.load(self.area)
