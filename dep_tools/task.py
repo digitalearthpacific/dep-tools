@@ -12,11 +12,7 @@ from .writers import Writer
 
 class Task(ABC):
     def __init__(
-        self,
-        loader: Loader,
-        processor: Processor,
-        writer: Writer,
-        logger: Logger = getLogger(),
+        self, loader: Loader, processor: Processor, writer: Writer, logger: Logger
     ):
         self.loader = loader
         self.processor = processor
@@ -29,36 +25,59 @@ class Task(ABC):
 
 
 class AreaTask(Task):
-    def run(self, area: GeoDataFrame):
-        index = area.index[0]
+    def __init__(
+        self,
+        id: str,
+        area: GeoDataFrame,
+        loader: Loader,
+        processor: Processor,
+        writer: Writer,
+        logger: Logger = getLogger(),
+        send_area_to_processor: bool = True,
+    ):
+        super().__init__(loader, processor, writer, logger)
+        self.area = area
+        self.send_area_to_processor = send_area_to_processor
+        self.id = id
+
+    def run(self):
+        input_data = self.loader.load(self.area)
+
+        processor_kwargs = (
+            dict(area=self.area) if self.processor.send_area_to_processor else dict()
+        )
+        output_data = self.processor.process(input_data, **processor_kwargs)
+        self.writer.write(output_data, self.id)
+
+
+class LoggingAreaTask(AreaTask):
+    def run(self):
         try:
-            input_data = self.loader.load(area)
+            input_data = self.loader.load(self.area)
         except EmptyCollectionError as e:
-            self.logger.debug([index, "no items for areas"])
+            self.logger.debug([self.id, "no items for areas"])
             raise e
 
         except Exception as e:
-            self.logger.debug([index, "load error", e])
+            self.logger.debug([self.id, "load error", e])
             raise e
 
         processor_kwargs = (
-            dict(area=area) if self.processor.send_area_to_processor else dict()
+            dict(area=self.area) if self.processor.send_area_to_processor else dict()
         )
         try:
             output_data = self.processor.process(input_data, **processor_kwargs)
         except Exception as e:
-            self.logger.debug([index, "processor error", e])
+            self.logger.debug([self.id, "processor error", e])
             raise e
 
         if output_data is None:
-            self.logger.debug([index, "no output from processor"])
+            self.logger.debug([self.id, "no output from processor"])
             raise NoOutputError()
         try:
-            paths = self.writer.write(output_data, index)
+            paths = self.writer.write(output_data, self.id)
         except Exception as e:
-            # I just put "error" here because it could be more than
-            # a write error due to dask.
-            self.logger.error([index, "error", "", e])
+            self.logger.error([self.id, "error", "", e])
             raise e
 
-        self.logger.info([index, "complete", paths])
+        self.logger.debug([self.id, "complete", paths])
