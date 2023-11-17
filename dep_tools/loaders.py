@@ -72,12 +72,13 @@ class LandsatLoaderMixin(object):
         self,
         load_tile_pathrow_only: bool = False,
         exclude_platforms: Union[List, None] = None,
+        only_tier_one: bool = False,
         **kwargs,
     ):
         super().__init__(**kwargs)
         self.load_tile_pathrow_only = load_tile_pathrow_only
-        # e.g. exclude_platforms = ['landsat-7']
         self._exclude_platforms = exclude_platforms
+        self._only_tier_one = only_tier_one
 
     def _get_items(self, area):
         item_collection = search_across_180(
@@ -88,11 +89,20 @@ class LandsatLoaderMixin(object):
         fix_bad_epsgs(item_collection)
         item_collection = remove_bad_items(item_collection)
 
+        # TODO: these can be queries, which means we don't get them back
+        # from the server in the first place.
         if self._exclude_platforms:
             item_collection = [
                 i
                 for i in item_collection
                 if i.properties["platform"] not in self._exclude_platforms
+            ]
+
+        if self._only_tier_one:
+            item_collection = [
+                i
+                for i in item_collection
+                if i.properties["landsat:collection_category"] == "T1"
             ]
 
         # If there are not items in this collection for _this_ pathrow,

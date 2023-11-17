@@ -61,7 +61,7 @@ class DsWriter(XrWriterMixin, Writer):
             self.write_function(
                 output_da,
                 path=path,
-                write_args=dict(driver="COG"),
+                write_args=dict(driver="COG", nodata=output_da.attrs.get("nodata", None)),
                 overwrite=self.overwrite,
                 use_odc_writer=self.use_odc_writer,
             )
