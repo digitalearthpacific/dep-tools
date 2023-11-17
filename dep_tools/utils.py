@@ -48,9 +48,9 @@ def shift_negative_longitudes(
 
 
 @retry(tries=2, delay=1)
-def search_across_180(gpdf: GeoDataFrame, **kwargs) -> ItemCollection:
+def search_across_180(cell: GeoDataFrame, **kwargs) -> ItemCollection:
     """
-    gpdf: A GeoDataFrame.
+    cell: A GeoDataFrame.
     **kwargs: Arguments besides bbox and intersects passed to
         pystac_client.Client.search
     """
@@ -59,7 +59,7 @@ def search_across_180(gpdf: GeoDataFrame, **kwargs) -> ItemCollection:
     # either via the `bbox` or `intersects` parameter. The docs don't really say.
     # Here I split the bbox of the given GeoDataFrame on either side of the
     # 180th meridian and concatenate the results.
-    # An alternative would be to actually cut the gpdf in two pieces and use
+    # An alternative would be to actually cut the cell in two pieces and use
     # intersects, but we can wait to see if that's needed (for the current
     # work I am collecting io-lulc which doesn't have data in areas which
     # aren't near land
@@ -68,11 +68,14 @@ def search_across_180(gpdf: GeoDataFrame, **kwargs) -> ItemCollection:
         modifier=planetary_computer.sign_inplace,
     )
 
-    bbox = gpdf.to_crs(4326).total_bounds
+    bbox = cell.to_crs(4326).total_bounds
+    # If the lower left X coordinate is greater than 180 it needs to shift
     if bbox[0] > 180:
         bbox[0] = bbox[0] - 360
-    if bbox[2] > 180:
-        bbox[2] = bbox[2] - 360
+        # If the upper right X coordinate is greater than 180 it needs to shift
+        # but only if the lower left one did too... otherwise we split it below
+        if bbox[2] > 180:
+            bbox[2] = bbox[2] - 360
 
     bbox_crosses_antimeridian = (
         bbox[0] < 0 and bbox[2] > 0 or bbox[0] < 180 and bbox[2] > 180
