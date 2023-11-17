@@ -5,7 +5,6 @@ from typing import Dict, List, Union
 import fiona
 import numpy as np
 import planetary_computer
-import pyproj
 import pystac_client
 import rasterio
 import rioxarray
@@ -17,8 +16,7 @@ from odc.geo.xr import to_cog, write_cog
 from osgeo import gdal
 from pystac import ItemCollection
 from retry import retry
-from shapely.geometry import LineString, MultiLineString, Point
-from shapely.ops import transform
+from shapely.geometry import LineString, MultiLineString
 from xarray import DataArray, Dataset
 
 from azure.storage.blob import ContainerClient
@@ -49,7 +47,7 @@ def shift_negative_longitudes(
     return LineString([(((pt[0] + 360) % 360), pt[1]) for pt in geometry.coords])
 
 
-@retry(tries=10, delay=1)
+@retry(tries=2, delay=1)
 def search_across_180(gpdf: GeoDataFrame, **kwargs) -> ItemCollection:
     """
     gpdf: A GeoDataFrame.
@@ -70,22 +68,19 @@ def search_across_180(gpdf: GeoDataFrame, **kwargs) -> ItemCollection:
         modifier=planetary_computer.sign_inplace,
     )
 
-    bbox_4326 = gpdf.to_crs(4326).total_bounds
+    bbox = gpdf.to_crs(4326).total_bounds
+    if bbox[0] > 180:
+        bbox[0] = bbox[0] - 360
+    if bbox[2] > 180:
+        bbox[2] = bbox[2] - 360
+
     bbox_crosses_antimeridian = (
-        bbox_4326[0] < 0
-        and bbox_4326[2] > 0
-        or bbox_4326[0] < 180
-        and bbox_4326[2] > 180
+        bbox[0] < 0 and bbox[2] > 0 or bbox[0] < 180 and bbox[2] > 180
     )
     if bbox_crosses_antimeridian:
-        gpdf_proj = gpdf.to_crs(gpdf.crs)
-        projector = pyproj.Transformer.from_crs(
-            gpdf_proj.crs, pyproj.CRS("EPSG:4326"), always_xy=True
-        ).transform
+        xmin_ll, ymin_ll = bbox[0], bbox[1]
+        xmax_ll, ymax_ll = bbox[2], bbox[3]
 
-        xmin, ymin, xmax, ymax = gpdf_proj.total_bounds
-        xmin_ll, ymin_ll = transform(projector, Point(xmin, ymin)).coords[0]
-        xmax_ll, ymax_ll = transform(projector, Point(xmax, ymax)).coords[0]
         xmax_ll = xmax_ll - 360 if xmax_ll > 180 else xmax_ll
 
         left_bbox = [xmin_ll, ymin_ll, 180, ymax_ll]
@@ -94,8 +89,8 @@ def search_across_180(gpdf: GeoDataFrame, **kwargs) -> ItemCollection:
             list(catalog.search(bbox=left_bbox, **kwargs).items())
             + list(catalog.search(bbox=right_bbox, **kwargs).items())
         )
-
-    return catalog.search(bbox=bbox_4326, **kwargs).item_collection()
+    else:
+        return catalog.search(bbox=bbox, **kwargs).item_collection()
 
 
 def scale_and_offset(
@@ -261,7 +256,6 @@ def build_vrt(
 
     local_prefix = Path(prefix).stem
     vrt_file = f"data/{local_prefix}.vrt"
-    print(blobs)
     gdal.BuildVRT(vrt_file, blobs, outputBounds=bounds)
     return Path(vrt_file)
 
