@@ -26,24 +26,24 @@ class DepItemPath(ItemPath):
         self._folder_prefix = f"dep_{self.sensor}_{self.dataset_id}/{self.version}"
         self.item_prefix = f"dep_{self.sensor}_{self.dataset_id}"
 
-    def _format_item_id(self, item_id) -> str:
+    def _format_item_id(self, item_id, join_str="/") -> str:
         if isinstance(item_id, List) or isinstance(item_id, Tuple):
             # Assuming we have a list like ('66,23', 'FJ')
             tile_id = item_id[0]
             region_id = item_id[1]
             # Recursion is fun!
-            item_id = f"{self._format_item_id(tile_id)}/{region_id}"
-        if len(item_id.split(",")) == 2:
+            item_parts = [self._format_item_id(tile_id), region_id]
+        elif len(item_id.split(",")) == 2:
             # Create a zero padded len of 3 string separated by a _
             # e.g. 1_2 becomes 001/002
-            item_id = "/".join([f"{int(i):03d}" for i in item_id.split(",")])
-        return item_id
+            item_parts = [f"{int(i):03d}" for i in item_id.split(",")]
+        return join_str.join(item_parts)
 
     def _folder(self, item_id) -> str:
         return f"{self._folder_prefix}/{self._format_item_id(item_id)}/{self.time}"
 
     def basename(self, item_id) -> str:
-        return f"{self.item_prefix}_{self._format_item_id(item_id)}_{self.time}"  # _{asset_name}"
+        return f"{self.item_prefix}_{self._format_item_id(item_id, join_str='_')}_{self.time}"  # _{asset_name}"
 
     def path(self, item_id, asset_name=None, ext=".tif") -> str:
         return (
