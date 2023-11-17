@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from typing import Callable, Dict, List, Union
 
@@ -7,6 +8,7 @@ from pystac import Asset
 from urlpath import URL
 from xarray import DataArray, Dataset
 
+from .azure import get_container_client
 from .namers import DepItemPath
 from .stac_utils import write_stac_blob_storage, write_stac_local
 from .utils import scale_to_int16, write_to_blob_storage, write_to_local_storage
@@ -54,27 +56,40 @@ class DsWriter(XrWriterMixin, Writer):
         xr = super().prep(xr)
         paths = []
         assets = {}
-        for variable in xr:
-            output_da = xr[variable].squeeze()
-            path = self.itempath.path(item_id, variable)
-            paths.append(path)
-            self.write_function(
-                output_da,
-                path=path,
-                write_args=dict(driver="COG", nodata=output_da.attrs.get("nodata", None)),
-                overwrite=self.overwrite,
-                use_odc_writer=self.use_odc_writer,
-            )
-            # TODO: This stuff should be moved, just iterate again in write_stac_function
-            # TODO: This is invalid for local file writing...
-            az_prefix = URL("https://deppcpublicstorage.blob.core.windows.net/output")
-            asset = Asset(
-                media_type="image/tiff; application=geotiff; profile=cloud-optimized",
-                href=str(az_prefix / path),
-                roles=["data"],
-            )
-            assets[variable] = asset
+        client = get_container_client()
+
+        # Use a threadpool to write all at once
+        with ThreadPoolExecutor() as executor:
+            futures = []
+            for variable in xr:
+                output_da = xr[variable].squeeze()
+                path = self.itempath.path(item_id, variable)
+                paths.append(path)
+                futures.append(
+                    executor.submit(
+                        self.write_function,
+                        output_da,
+                        path=path,
+                        write_args=dict(
+                            driver="COG", nodata=output_da.attrs.get("nodata", None)
+                        ),
+                        overwrite=self.overwrite,
+                        use_odc_writer=self.use_odc_writer,
+                        client=client,
+                    )
+                )
+            for future in futures:
+                future.result()
+
         if self.write_stac:
+            assets = {
+                variable: Asset(
+                    media_type="image/tiff; application=geotiff; profile=cloud-optimized",
+                    href=str(URL("https://deppcpublicstorage.blob.core.windows.net/output") / path),
+                    roles=["data"],
+                )
+                for variable, path in zip(xr, paths)
+            }
             stac_id = self.itempath.basename(item_id)  # , variable)
             collection = self.itempath.item_prefix
             # has to be a datetime datetime object
