@@ -21,7 +21,12 @@ from shapely.geometry import LineString, MultiLineString, Point
 from shapely.ops import transform
 from xarray import DataArray, Dataset
 
+from azure.storage.blob import ContainerClient
+
 from .azure import get_container_client
+
+# Set the timeout to five minutes, which is an extremely long time
+TIMEOUT_SECONDS = 60 * 5
 
 
 def shift_negative_longitudes(
@@ -67,7 +72,10 @@ def search_across_180(gpdf: GeoDataFrame, **kwargs) -> ItemCollection:
 
     bbox_4326 = gpdf.to_crs(4326).total_bounds
     bbox_crosses_antimeridian = (
-        bbox_4326[0] < 0 and bbox_4326[2] > 0 or bbox_4326[0] < 180 and bbox_4326[2] > 180
+        bbox_4326[0] < 0
+        and bbox_4326[2] > 0
+        or bbox_4326[0] < 180
+        and bbox_4326[2] > 180
     )
     if bbox_crosses_antimeridian:
         gpdf_proj = gpdf.to_crs(gpdf.crs)
@@ -150,11 +158,14 @@ def write_to_blob_storage(
     write_args: Dict = dict(),
     overwrite: bool = True,
     use_odc_writer: bool = False,
+    client: ContainerClient = None,
     **kwargs,
 ) -> None:
-    container_client = get_container_client(**kwargs)
-
-    blob_client = container_client.get_blob_client(str(path))
+    # Allowing for a shared container client, which might be
+    # more efficient. If not provided, get one.
+    if client is None:
+        client = get_container_client()
+    blob_client = client.get_blob_client(str(path))
     if not overwrite and blob_client.exists():
         return
 
@@ -162,12 +173,17 @@ def write_to_blob_storage(
         if use_odc_writer:
             if "driver" in write_args:
                 del write_args["driver"]
-            blob_client.upload_blob(to_cog(d, **write_args), overwrite=overwrite)
+            binary_data = to_cog(d, **write_args)
+            blob_client.upload_blob(
+                binary_data, overwrite=overwrite, connection_timeout=TIMEOUT_SECONDS
+            )
         else:
             with io.BytesIO() as buffer:
                 d.rio.to_raster(buffer, **write_args)
                 buffer.seek(0)
-                blob_client.upload_blob(buffer, overwrite=overwrite)
+                blob_client.upload_blob(
+                    buffer, overwrite=overwrite, connection_timeout=TIMEOUT_SECONDS
+                )
 
     elif isinstance(d, GeoDataFrame):
         with fiona.io.MemoryFile() as buffer:
