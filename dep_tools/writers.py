@@ -94,7 +94,7 @@ class DsWriter(XrWriterMixin, Writer):
             collection = self.itempath.item_prefix
             # has to be a datetime datetime object
             datetime = np.datetime64(xr.attrs["stac_properties"]["datetime"]).item()
-            self.write_stac_function(
+            stac_path = self.write_stac_function(
                 xr,
                 paths[0],
                 stac_url=self.itempath.path(item_id, ext=".stac-item.json"),
@@ -103,6 +103,7 @@ class DsWriter(XrWriterMixin, Writer):
                 collection=collection,
                 id=stac_id,
             )
+            paths.append(stac_path)
 
         return paths
 
