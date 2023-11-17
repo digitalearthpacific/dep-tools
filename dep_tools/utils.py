@@ -144,7 +144,6 @@ def write_to_local_storage(
         )
 
 
-@retry(tries=2, delay=2)
 def write_to_blob_storage(
     d: Union[DataArray, Dataset, GeoDataFrame, str],
     path: Union[str, Path],
