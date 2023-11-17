@@ -73,12 +73,14 @@ class LandsatLoaderMixin(object):
         load_tile_pathrow_only: bool = False,
         exclude_platforms: Union[List, None] = None,
         only_tier_one: bool = False,
+        fall_back_to_tier_two: bool = False,
         **kwargs,
     ):
         super().__init__(**kwargs)
         self.load_tile_pathrow_only = load_tile_pathrow_only
         self._exclude_platforms = exclude_platforms
         self._only_tier_one = only_tier_one
+        self._fall_back_to_tier_two = fall_back_to_tier_two
 
     def _get_items(self, area):
         item_collection = search_across_180(
@@ -116,7 +118,11 @@ class LandsatLoaderMixin(object):
             index_dict = {}
 
         if len(item_collection) == 0:
-            raise EmptyCollectionError()
+            if self._fall_back_to_tier_two:
+                self._only_tier_one = False
+                return self._get_items(area)
+            else:
+                raise EmptyCollectionError()
 
         if "PATH" in index_dict.keys() and "ROW" in index_dict.keys():
             item_collection_for_this_pathrow = [
