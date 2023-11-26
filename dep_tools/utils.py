@@ -161,7 +161,7 @@ def write_to_blob_storage(
     # Allowing for a shared container client, which might be
     # more efficient. If not provided, get one.
     if client is None:
-        client = get_container_client()
+        client = get_container_client(**kwargs)
     blob_client = client.get_blob_client(str(path))
     if not overwrite and blob_client.exists():
         return
