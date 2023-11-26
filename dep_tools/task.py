@@ -33,11 +33,13 @@ class AreaTask(Task):
         writer: Writer,
         logger: Logger = getLogger(),
         send_area_to_processor: bool = True,
+        multithreaded: bool = True,
     ):
         super().__init__(loader, processor, writer, logger)
         self.area = area
         self.send_area_to_processor = send_area_to_processor
         self.id = id
+        self.multithreaded = multithreaded
 
     def run(self):
         input_data = self.loader.load(self.area)
@@ -46,7 +48,7 @@ class AreaTask(Task):
             dict(area=self.area) if self.processor.send_area_to_processor else dict()
         )
         output_data = self.processor.process(input_data, **processor_kwargs)
-        paths = self.writer.write(output_data, self.id)
+        paths = self.writer.write(output_data, self.id, multithreaded=self.multithreaded)
         return paths
 
 
