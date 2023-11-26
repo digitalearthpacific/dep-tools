@@ -1,4 +1,4 @@
-from typing import Dict, Tuple
+from typing import Dict, Iterable, Tuple
 
 import planetary_computer
 import pystac_client
@@ -9,10 +9,20 @@ from xarray import DataArray
 
 
 def mask_clouds(
-    xr: DataArray, dilate: Tuple[int, int] | None = None, keep_ints: bool = False
+    xr: DataArray, filters: Iterable[Tuple[str, int]] | None = None, keep_ints: bool = False
 ) -> DataArray:
-    # DILATED_CLOUD = 1
-    # CIRRUS = 2
+    """
+    Mask clouds in Landsat data.
+
+    Args:
+        xr: DataArray containing Landsat data including the `qa_pixel` band.
+        filters: List of filters to apply to the cloud mask. Each filter is a tuple of
+            (filter name, filter size). Valid filter names are 'opening' and 'dilation'.
+            If None, no filters will be applied.
+            For example: [("closing", 10),("opening", 2),("dilation", 2)]
+        keep_ints: If True, return the masked data as integers. Otherwise, return
+            the masked data as floats.
+    """
     CLOUD = 3
     CLOUD_SHADOW = 4
 
@@ -25,10 +35,8 @@ def mask_clouds(
     except KeyError:
         cloud_mask = xr.qa_pixel.astype("uint16") & bitmask != 0
 
-    opening = dilate[0]
-    dilation = dilate[1]
-    if dilate is not None:
-        cloud_mask = mask_cleanup(cloud_mask, [("opening", opening), ("dilation", dilation)])
+    if filters is not None:
+        cloud_mask = mask_cleanup(cloud_mask, filters)
 
     if keep_ints:
         return erase_bad(xr, cloud_mask)
