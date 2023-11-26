@@ -36,7 +36,8 @@ class DepItemPath(ItemPath):
         elif len(item_id.split(",")) == 2:
             # Create a zero padded len of 3 string separated by a _
             # e.g. 1_2 becomes 001/002
-            item_parts = [f"{int(i):03d}" for i in item_id.split(",")]
+            # or just pass through strings if they're stringy
+            item_parts = [s.zfill(3) if s.isnumeric() else s for s in item_id.split(',')]
         return join_str.join(item_parts)
 
     def _folder(self, item_id) -> str:
