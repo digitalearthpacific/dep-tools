@@ -37,41 +37,52 @@ class AreasRunner(Runner):
         super().__init__(tasks, **kwargs)
         self.continue_on_error = continue_on_error
 
-    def run_one(self, index):
-        these_areas = self.tasks.loc[[index]]
-
-        # Search for items and lazy load them
-        input_data = self.loader.load(these_areas)
-
-        processor_kwargs = (
-            dict(area=these_areas)
-            if self.processor.send_area_to_processor
-            else dict()
-        )
-        # Run the data processing
-        output_data = self.processor.process(input_data, **processor_kwargs)
-
-        if output_data is None:
-            raise NoOutputError("No data was returned from the processor")
-
-        # Write the data to disk/blob store/whatever
-        return self.writer.write(output_data, index)
-
     def run(self):
         for index, _ in tqdm(self.tasks.iterrows(), total=self.tasks.shape[0]):
+            these_areas = self.tasks.loc[[index]]
+
             try:
-                # Here's where the work happens
-                paths = self.run_one(index)
-                self.logger.info([index, "complete", paths])
+                input_data = self.loader.load(these_areas)
             except EmptyCollectionError:
                 self.logger.debug([index, "no items for areas"])
+                # not raising this one
                 continue
+
             except Exception as e:
-                if not self.continue_on_error:
-                    self.logger.debug([index, f"ignoring error, {e}"])
-                    raise e
-                else:
-                    self.logger.error([index, "error", "", e])
+                self.logger.debug([index, "load error", e])
+                if self.continue_on_error:
+                    continue
+                raise e
+
+            processor_kwargs = (
+                dict(area=these_areas)
+                if self.processor.send_area_to_processor
+                else dict()
+            )
+            try:
+                output_data = self.processor.process(input_data, **processor_kwargs)
+            except Exception as e:
+                self.logger.debug([index, "processor error", e])
+                if self.continue_on_error:
+                    continue
+                raise e
+
+            if output_data is None:
+                self.logger.debug([index, "no output from processor"])
+                if self.continue_on_error:
+                    continue
+                raise NoOutputError()
+            try:
+                paths = self.writer.write(output_data, index)
+            except Exception as e:
+                # I just put "error" here because it could be more than
+                # a write error due to dask.
+                self.logger.error([index, "error", "", e])
+                if self.continue_on_error:
+                    continue
+                raise e
+
+            self.logger.info([index, "complete", paths])
 
 
 def run_by_area(
