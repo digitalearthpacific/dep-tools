@@ -15,6 +15,8 @@ from xarray import DataArray, concat
 from .exceptions import EmptyCollectionError
 from .utils import fix_bad_epsgs, remove_bad_items, search_across_180
 
+LANDSAT_PLATFORMS = ["landsat-5", "landsat-7", "landsat-8", "landsat-9"]
+
 
 class Loader(ABC):
     """A loader loads data."""
@@ -83,46 +85,47 @@ class LandsatLoaderMixin(object):
         self._fall_back_to_tier_two = fall_back_to_tier_two
 
     def _get_items(self, area):
+        # TODO: move path/row filtering to the query
+        # query = {
+        #     "landsat:wrs_path": {"eq": PATH},
+        #     "landsat:wrs_row": {"eq": ROW}
+        # }
+        query = {}
+        if self._exclude_platforms is not None:
+            # I don't know the syntax for `not in`, so I'm using `in` instead
+            query["platform"] = {"in": [p for p in LANDSAT_PLATFORMS if p not in self._exclude_platforms]}
+
+        if self._only_tier_one:
+            query["landsat:collection_category"] = {"eq": "T1"}
+
+        # Do the search
         item_collection = search_across_180(
             area,
             collections=["landsat-c2-l2"],
             datetime=self.datetime,
+            query=query
         )
+
+        # Fix a few issues with STAC items
         fix_bad_epsgs(item_collection)
         item_collection = remove_bad_items(item_collection)
 
-        # TODO: these can be queries, which means we don't get them back
-        # from the server in the first place.
-        if self._exclude_platforms:
-            item_collection = [
-                i
-                for i in item_collection
-                if i.properties["platform"] not in self._exclude_platforms
-            ]
-
-        if self._only_tier_one:
-            item_collection = [
-                i
-                for i in item_collection
-                if i.properties["landsat:collection_category"] == "T1"
-            ]
-
-        # If there are not items in this collection for _this_ pathrow,
-
-        # we don't want to process, since they will be captured in
-        # other pathrows (or are areas not covered by our aoi)
-
-        try:
-            index_dict = dict(zip(area.index.names, area.index[0]))
-        except TypeError:
-            index_dict = {}
-
+        # Check for an empty item list
         if len(item_collection) == 0:
-            if self._fall_back_to_tier_two:
+            # If we're only looking for tier one items, try falling back to both T1 and T2
+            if self._only_tier_one and self._fall_back_to_tier_two:
                 self._only_tier_one = False
                 return self._get_items(area)
             else:
                 raise EmptyCollectionError()
+
+        # Filtering by path/row...
+        # Not lifting this into a query parameter yet as I'm not sure
+        # how it's used. - Alex Nov 2023
+        try:
+            index_dict = dict(zip(area.index.names, area.index[0]))
+        except TypeError:
+            index_dict = {}
 
         if "PATH" in index_dict.keys() and "ROW" in index_dict.keys():
             item_collection_for_this_pathrow = [
@@ -149,7 +152,7 @@ class LandsatLoaderMixin(object):
 class OdcLoaderMixin:
     def __init__(
         self,
-        odc_load_kwargs,
+        odc_load_kwargs=dict(),
         nodata_value: int | float | None = None,
         flat_array: bool = False,
         keep_ints: bool = False,

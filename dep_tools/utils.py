@@ -9,6 +9,7 @@ import pystac_client
 import rasterio
 import rioxarray
 import xarray as xr
+from azure.storage.blob import ContainerClient
 from dask.distributed import Client, Lock
 from geocube.api.core import make_geocube
 from geopandas import GeoDataFrame
@@ -18,8 +19,6 @@ from pystac import ItemCollection
 from retry import retry
 from shapely.geometry import LineString, MultiLineString
 from xarray import DataArray, Dataset
-
-from azure.storage.blob import ContainerClient
 
 from .azure import get_container_client
 
@@ -63,7 +62,7 @@ def search_across_180(cell: GeoDataFrame, **kwargs) -> ItemCollection:
     # intersects, but we can wait to see if that's needed (for the current
     # work I am collecting io-lulc which doesn't have data in areas which
     # aren't near land
-    catalog = pystac_client.Client.open(
+    client = pystac_client.Client.open(
         "https://planetarycomputer.microsoft.com/api/stac/v1",
         modifier=planetary_computer.sign_inplace,
     )
@@ -89,11 +88,11 @@ def search_across_180(cell: GeoDataFrame, **kwargs) -> ItemCollection:
         left_bbox = [xmin_ll, ymin_ll, 180, ymax_ll]
         right_bbox = [-180, ymin_ll, xmax_ll, ymax_ll]
         return ItemCollection(
-            list(catalog.search(bbox=left_bbox, **kwargs).items())
-            + list(catalog.search(bbox=right_bbox, **kwargs).items())
+            list(client.search(bbox=left_bbox, **kwargs).items())
+            + list(client.search(bbox=right_bbox, **kwargs).items())
         )
     else:
-        return catalog.search(bbox=bbox, **kwargs).item_collection()
+        return client.search(bbox=bbox, **kwargs).item_collection()
 
 
 def scale_and_offset(
