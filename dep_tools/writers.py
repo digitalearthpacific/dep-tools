@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
+from functools import partial
 from typing import Callable, Dict, List, Union
 
 import numpy as np
@@ -49,60 +50,51 @@ class XrWriterMixin(object):
 @dataclass
 class DsWriter(XrWriterMixin, Writer):
     write_function: Callable = write_to_blob_storage
+    write_multithreaded: bool = False
     write_stac_function: Callable = write_stac_blob_storage
     write_stac: bool = True
 
-    def write(self, xr: Dataset, item_id: str, multithreaded: bool = False) -> Union[str, List]:
+    def write(self, xr: Dataset, item_id: str) -> str | List:
         xr = super().prep(xr)
         paths = []
         assets = {}
         client = get_container_client()
 
-        if multithreaded:
+        def get_write_partial(variable: str) -> Callable:
+            output_da = xr[variable].squeeze()
+            path = self.itempath.path(item_id, variable)
+            paths.append(path)
+
+            return partial(
+                self.write_function,
+                output_da,
+                path=path,
+                write_args=dict(driver="COG"),
+                overwrite=self.overwrite,
+                use_odc_writer=self.use_odc_writer,
+                client=client,
+            )
+
+        if self.write_multithreaded:
             # Use a threadpool to write all at once
             with ThreadPoolExecutor() as executor:
                 futures = []
                 for variable in xr:
-                    output_da = xr[variable].squeeze()
-                    path = self.itempath.path(item_id, variable)
-                    paths.append(path)
-                    futures.append(
-                        executor.submit(
-                            self.write_function,
-                            output_da,
-                            path=path,
-                            write_args=dict(
-                                driver="COG", nodata=output_da.attrs.get("nodata", None)
-                            ),
-                            overwrite=self.overwrite,
-                            use_odc_writer=self.use_odc_writer,
-                            client=client,
-                        )
-                    )
+                    futures.append(executor.submit(get_write_partial(variable)))
                 for future in futures:
                     future.result()
         else:
             for variable in xr:
-                output_da = xr[variable].squeeze()
-                path = self.itempath.path(item_id, variable)
-                paths.append(path)
-
-                self.write_function(
-                    output_da,
-                    path=path,
-                    write_args=dict(
-                        driver="COG", nodata=output_da.attrs.get("nodata", None)
-                    ),
-                    overwrite=self.overwrite,
-                    use_odc_writer=self.use_odc_writer,
-                    client=client,
-                )
+                get_write_partial(variable)()
 
         if self.write_stac:
             assets = {
                 variable: Asset(
                     media_type="image/tiff; application=geotiff; profile=cloud-optimized",
-                    href=str(URL("https://deppcpublicstorage.blob.core.windows.net/output") / path),
+                    href=str(
+                        URL("https://deppcpublicstorage.blob.core.windows.net/output")
+                        / path
+                    ),
                     roles=["data"],
                 )
                 for variable, path in zip(xr, paths)

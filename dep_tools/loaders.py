@@ -10,7 +10,7 @@ from odc.stac import load
 from pystac import ItemCollection
 from rasterio.errors import RasterioError, RasterioIOError
 from stackstac import stack
-from xarray import DataArray, concat
+from xarray import DataArray, Dataset, concat
 
 from .exceptions import EmptyCollectionError
 from .utils import fix_bad_epsgs, remove_bad_items, search_across_180
@@ -93,24 +93,22 @@ class LandsatLoaderMixin(object):
         query = {}
         if self._exclude_platforms is not None:
             # I don't know the syntax for `not in`, so I'm using `in` instead
-            query["platform"] = {"in": [p for p in LANDSAT_PLATFORMS if p not in self._exclude_platforms]}
+            query["platform"] = {
+                "in": [p for p in LANDSAT_PLATFORMS if p not in self._exclude_platforms]
+            }
 
         if self._only_tier_one:
             query["landsat:collection_category"] = {"eq": "T1"}
 
         # Do the search
         item_collection = search_across_180(
-            area,
-            collections=["landsat-c2-l2"],
-            datetime=self.datetime,
-            query=query
+            area, collections=["landsat-c2-l2"], datetime=self.datetime, query=query
         )
 
         # Fix a few issues with STAC items
         fix_bad_epsgs(item_collection)
         item_collection = remove_bad_items(item_collection)
 
-        # Check for an empty item list
         if len(item_collection) == 0:
             # If we're only looking for tier one items, try falling back to both T1 and T2
             if self._only_tier_one and self._fall_back_to_tier_two:
@@ -149,26 +147,24 @@ class LandsatLoaderMixin(object):
         return item_collection
 
 
-class OdcLoaderMixin:
+class OdcLoaderMixin(object):
     def __init__(
         self,
         odc_load_kwargs=dict(),
         nodata_value: int | float | None = None,
-        flat_array: bool = False,
+        load_as_dataset: bool = False,
         keep_ints: bool = False,
-        **kwargs,
     ):
-        super().__init__(**kwargs)
         self.odc_load_kwargs = odc_load_kwargs
         self.nodata = nodata_value
-        self.flat_array = flat_array
+        self.load_as_dataset = load_as_dataset
         self.keep_ints = keep_ints
 
     def _get_xr(
         self,
         items,
         areas: GeoDataFrame,
-    ) -> DataArray:
+    ) -> DataArray | Dataset:
         # For most EO data native dtype is int. Loading as such saves space but
         # the only more-or-less universally accepted nodata value is nan,
         # which is not available for int types. So we need to load as float and
@@ -202,7 +198,7 @@ class OdcLoaderMixin:
 
             xr.attrs["nodata"] = float("nan")
 
-        if not self.flat_array:
+        if not self.load_as_dataset:
             # This creates a "bands" dimension.
             xr = (
                 xr.to_array(
