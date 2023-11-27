@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 from functools import partial
-from typing import Callable, Dict, List, Union
+from typing import Callable, Dict, Hashable, List, Union
 
 import numpy as np
 from pystac import Asset
@@ -60,7 +60,7 @@ class DsWriter(XrWriterMixin, Writer):
         assets = {}
         client = get_container_client()
 
-        def get_write_partial(variable: str) -> Callable:
+        def get_write_partial(variable: Hashable) -> Callable:
             output_da = xr[variable].squeeze()
             path = self.itempath.path(item_id, variable)
             paths.append(path)
@@ -78,9 +78,9 @@ class DsWriter(XrWriterMixin, Writer):
         if self.write_multithreaded:
             # Use a threadpool to write all at once
             with ThreadPoolExecutor() as executor:
-                futures = []
-                for variable in xr:
-                    futures.append(executor.submit(get_write_partial(variable)))
+                futures = [
+                    executor.submit(get_write_partial(variable)) for variable in xr
+                ]
                 for future in futures:
                     future.result()
         else:
