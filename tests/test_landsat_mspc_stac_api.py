@@ -27,7 +27,7 @@ def test_hobart_all(hobart_area):
     loader = LandsatOdcLoader(
         datetime=DATETIME,
         exclude_platforms=None,
-        only_tier_one=True,
+        only_tier_one=False,
         fall_back_to_tier_two=False,
     )
 

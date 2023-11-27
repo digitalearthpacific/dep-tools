@@ -154,7 +154,9 @@ class OdcLoaderMixin(object):
         nodata_value: int | float | None = None,
         load_as_dataset: bool = False,
         keep_ints: bool = False,
+        **kwargs,
     ):
+        super().__init__(**kwargs)
         self.odc_load_kwargs = odc_load_kwargs
         self.nodata = nodata_value
         self.load_as_dataset = load_as_dataset
