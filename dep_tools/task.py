@@ -32,11 +32,9 @@ class AreaTask(Task):
         processor: Processor,
         writer: Writer,
         logger: Logger = getLogger(),
-        send_area_to_processor: bool = True,
     ):
         super().__init__(loader, processor, writer, logger)
         self.area = area
-        self.send_area_to_processor = send_area_to_processor
         self.id = id
 
     def run(self):
