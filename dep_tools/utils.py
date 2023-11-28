@@ -5,22 +5,25 @@ from typing import Dict, List, Union
 import fiona
 import numpy as np
 import planetary_computer
-import pyproj
 import pystac_client
 import rasterio
 import rioxarray
 import xarray as xr
+from azure.storage.blob import ContainerClient
 from dask.distributed import Client, Lock
 from geocube.api.core import make_geocube
 from geopandas import GeoDataFrame
+from odc.geo.xr import to_cog, write_cog
 from osgeo import gdal
 from pystac import ItemCollection
 from retry import retry
-from shapely.geometry import LineString, MultiLineString, Point
-from shapely.ops import transform
+from shapely.geometry import LineString, MultiLineString
 from xarray import DataArray, Dataset
 
 from .azure import get_container_client
+
+# Set the timeout to five minutes, which is an extremely long time
+TIMEOUT_SECONDS = 60 * 5
 
 
 def shift_negative_longitudes(
@@ -43,10 +46,10 @@ def shift_negative_longitudes(
     return LineString([(((pt[0] + 360) % 360), pt[1]) for pt in geometry.coords])
 
 
-@retry(tries=10, delay=1)
-def search_across_180(gpdf: GeoDataFrame, **kwargs) -> ItemCollection:
+@retry(tries=2, delay=1)
+def search_across_180(region: GeoDataFrame, **kwargs) -> ItemCollection:
     """
-    gpdf: A GeoDataFrame.
+    region: A GeoDataFrame.
     **kwargs: Arguments besides bbox and intersects passed to
         pystac_client.Client.search
     """
@@ -55,35 +58,41 @@ def search_across_180(gpdf: GeoDataFrame, **kwargs) -> ItemCollection:
     # either via the `bbox` or `intersects` parameter. The docs don't really say.
     # Here I split the bbox of the given GeoDataFrame on either side of the
     # 180th meridian and concatenate the results.
-    # An alternative would be to actually cut the gpdf in two pieces and use
+    # An alternative would be to actually cut the region in two pieces and use
     # intersects, but we can wait to see if that's needed (for the current
     # work I am collecting io-lulc which doesn't have data in areas which
     # aren't near land
-    catalog = pystac_client.Client.open(
+    client = pystac_client.Client.open(
         "https://planetarycomputer.microsoft.com/api/stac/v1",
         modifier=planetary_computer.sign_inplace,
     )
 
-    bbox_4326 = gpdf.to_crs(4326).total_bounds
-    bbox_crosses_antimeridian = bbox_4326[0] < 0 and bbox_4326[2] > 0
-    if bbox_crosses_antimeridian:
-        gpdf_proj = gpdf.to_crs(gpdf.crs)
-        projector = pyproj.Transformer.from_crs(
-            gpdf_proj.crs, pyproj.CRS("EPSG:4326"), always_xy=True
-        ).transform
+    bbox = region.to_crs(4326).total_bounds
+    # If the lower left X coordinate is greater than 180 it needs to shift
+    if bbox[0] > 180:
+        bbox[0] = bbox[0] - 360
+        # If the upper right X coordinate is greater than 180 it needs to shift
+        # but only if the lower left one did too... otherwise we split it below
+        if bbox[2] > 180:
+            bbox[2] = bbox[2] - 360
 
-        xmin, ymin, xmax, ymax = gpdf_proj.total_bounds
-        xmin_ll, ymin_ll = transform(projector, Point(xmin, ymin)).coords[0]
-        xmax_ll, ymax_ll = transform(projector, Point(xmax, ymax)).coords[0]
+    bbox_crosses_antimeridian = (
+        bbox[0] < 0 and bbox[2] > 0 or bbox[0] < 180 and bbox[2] > 180
+    )
+    if bbox_crosses_antimeridian:
+        xmin_ll, ymin_ll = bbox[0], bbox[1]
+        xmax_ll, ymax_ll = bbox[2], bbox[3]
+
+        xmax_ll = xmax_ll - 360 if xmax_ll > 180 else xmax_ll
 
         left_bbox = [xmin_ll, ymin_ll, 180, ymax_ll]
         right_bbox = [-180, ymin_ll, xmax_ll, ymax_ll]
         return ItemCollection(
-            list(catalog.search(bbox=left_bbox, **kwargs).items())
-            + list(catalog.search(bbox=right_bbox, **kwargs).items())
+            list(client.search(bbox=left_bbox, **kwargs).items())
+            + list(client.search(bbox=right_bbox, **kwargs).items())
         )
-
-    return catalog.search(bbox=bbox_4326, **kwargs).item_collection()
+    else:
+        return client.search(bbox=bbox, **kwargs).item_collection()
 
 
 def scale_and_offset(
@@ -113,6 +122,7 @@ def write_to_local_storage(
     path: Union[str, Path],
     write_args: Dict = dict(),
     overwrite: bool = True,
+    use_odc_writer: bool = False,
     **kwargs,  # for compatibiilty only
 ) -> None:
     if isinstance(path, str):
@@ -122,7 +132,11 @@ def write_to_local_storage(
     path.parent.mkdir(parents=True, exist_ok=True)
 
     if isinstance(d, (DataArray, Dataset)):
-        d.rio.to_raster(path, overwrite=overwrite, **write_args)
+        if use_odc_writer:
+            del write_args["driver"]
+            write_cog(d, path, overwrite=overwrite, **write_args)
+        else:
+            d.rio.to_raster(path, overwrite=overwrite, **write_args)
     elif isinstance(d, GeoDataFrame):
         d.to_file(path, overwrite=overwrite, **write_args)
     elif isinstance(d, str):
@@ -135,25 +149,39 @@ def write_to_local_storage(
         )
 
 
-@retry(tries=2, delay=2)
 def write_to_blob_storage(
     d: Union[DataArray, Dataset, GeoDataFrame, str],
     path: Union[str, Path],
     write_args: Dict = dict(),
     overwrite: bool = True,
+    use_odc_writer: bool = False,
+    client: ContainerClient = None,
     **kwargs,
 ) -> None:
-    container_client = get_container_client(**kwargs)
-
-    blob_client = container_client.get_blob_client(str(path))
+    # Allowing for a shared container client, which might be
+    # more efficient. If not provided, get one.
+    if client is None:
+        client = get_container_client(**kwargs)
+    blob_client = client.get_blob_client(str(path))
     if not overwrite and blob_client.exists():
         return
 
     if isinstance(d, (DataArray, Dataset)):
-        with io.BytesIO() as buffer:
-            d.rio.to_raster(buffer, **write_args)
-            buffer.seek(0)
-            blob_client.upload_blob(buffer, overwrite=overwrite)
+        if use_odc_writer:
+            if "driver" in write_args:
+                del write_args["driver"]
+            binary_data = to_cog(d, **write_args)
+            blob_client.upload_blob(
+                binary_data, overwrite=overwrite, connection_timeout=TIMEOUT_SECONDS
+            )
+        else:
+            with io.BytesIO() as buffer:
+                d.rio.to_raster(buffer, **write_args)
+                buffer.seek(0)
+                blob_client.upload_blob(
+                    buffer, overwrite=overwrite, connection_timeout=TIMEOUT_SECONDS
+                )
+
     elif isinstance(d, GeoDataFrame):
         with fiona.io.MemoryFile() as buffer:
             d.to_file(buffer, **write_args)
@@ -230,7 +258,6 @@ def build_vrt(
 
     local_prefix = Path(prefix).stem
     vrt_file = f"data/{local_prefix}.vrt"
-    print(blobs)
     gdal.BuildVRT(vrt_file, blobs, outputBounds=bounds)
     return Path(vrt_file)
 
@@ -292,6 +319,7 @@ def remove_bad_items(item_collection: ItemCollection) -> ItemCollection:
         "LC09_L2SR_083075_20220402_02_T1",
         "LC08_L2SR_083073_20220917_02_T1",
         "LC08_L2SR_089064_20201007_02_T2",
+        "LC08_L2SR_074073_20221105_02_T1",
         "S2B_MSIL2A_20230214T001719_R116_T56MMB_20230214T095023",
     ]
     return ItemCollection([i for i in item_collection if i.id not in bad_ids])

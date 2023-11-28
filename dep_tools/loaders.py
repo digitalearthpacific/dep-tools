@@ -1,22 +1,21 @@
 from abc import ABC, abstractmethod
-from typing import Union, List
-
-from geopandas import GeoDataFrame
-from odc.stac import load
-from pystac import ItemCollection
-from rasterio.errors import RasterioIOError, RasterioError
+from typing import List, Union
 
 # I get errors sometimes that `DataArray` has no attribute `rio`  which I _think_
 # is a dask worker issue but it might be possible that `odc.stac` _sometimes_ needs
 # rioxarray loaded ????
-import rioxarray
-
-
+import rioxarray  # noqa: F401
+from geopandas import GeoDataFrame
+from odc.stac import load
+from pystac import ItemCollection
+from rasterio.errors import RasterioError, RasterioIOError
 from stackstac import stack
-from xarray import DataArray, concat
+from xarray import DataArray, Dataset, concat
 
 from .exceptions import EmptyCollectionError
-from .utils import search_across_180, fix_bad_epsgs, remove_bad_items
+from .utils import fix_bad_epsgs, remove_bad_items, search_across_180
+
+LANDSAT_PLATFORMS = ["landsat-5", "landsat-7", "landsat-8", "landsat-9"]
 
 
 class Loader(ABC):
@@ -75,37 +74,56 @@ class LandsatLoaderMixin(object):
         self,
         load_tile_pathrow_only: bool = False,
         exclude_platforms: Union[List, None] = None,
+        only_tier_one: bool = False,
+        fall_back_to_tier_two: bool = False,
         **kwargs,
     ):
         super().__init__(**kwargs)
         self.load_tile_pathrow_only = load_tile_pathrow_only
-        # e.g. exclude_platforms = ['landsat-7']
         self._exclude_platforms = exclude_platforms
+        self._only_tier_one = only_tier_one
+        self._fall_back_to_tier_two = fall_back_to_tier_two
 
     def _get_items(self, area):
+        # TODO: move path/row filtering to the query
+        # query = {
+        #     "landsat:wrs_path": {"eq": PATH},
+        #     "landsat:wrs_row": {"eq": ROW}
+        # }
+        query = {}
+        if self._exclude_platforms is not None:
+            # I don't know the syntax for `not in`, so I'm using `in` instead
+            query["platform"] = {
+                "in": [p for p in LANDSAT_PLATFORMS if p not in self._exclude_platforms]
+            }
+
+        if self._only_tier_one:
+            query["landsat:collection_category"] = {"eq": "T1"}
+
+        # Do the search
         item_collection = search_across_180(
-            area,
-            collections=["landsat-c2-l2"],
-            datetime=self.datetime,
+            area, collections=["landsat-c2-l2"], datetime=self.datetime, query=query
         )
+
+        # Fix a few issues with STAC items
         fix_bad_epsgs(item_collection)
         item_collection = remove_bad_items(item_collection)
 
-        if self._exclude_platforms:
-            item_collection = [
-                i
-                for i in item_collection
-                if i.properties["platform"] not in self._exclude_platforms
-            ]
-
-        # If there are not items in this collection for _this_ pathrow,
-
-        # we don't want to process, since they will be captured in
-        # other pathrows (or are areas not covered by our aoi)
-
-        index_dict = dict(zip(area.index.names, area.index[0]))
         if len(item_collection) == 0:
-            raise EmptyCollectionError()
+            # If we're only looking for tier one items, try falling back to both T1 and T2
+            if self._only_tier_one and self._fall_back_to_tier_two:
+                self._only_tier_one = False
+                return self._get_items(area)
+            else:
+                raise EmptyCollectionError()
+
+        # Filtering by path/row...
+        # Not lifting this into a query parameter yet as I'm not sure
+        # how it's used. - Alex Nov 2023
+        try:
+            index_dict = dict(zip(area.index.names, area.index[0]))
+        except TypeError:
+            index_dict = {}
 
         if "PATH" in index_dict.keys() and "ROW" in index_dict.keys():
             item_collection_for_this_pathrow = [
@@ -129,17 +147,26 @@ class LandsatLoaderMixin(object):
         return item_collection
 
 
-class OdcLoaderMixin:
-    def __init__(self, odc_load_kwargs, nodata_value: float | None = None, **kwargs):
+class OdcLoaderMixin(object):
+    def __init__(
+        self,
+        odc_load_kwargs=dict(),
+        nodata_value: int | float | None = None,
+        load_as_dataset: bool = False,
+        keep_ints: bool = False,
+        **kwargs,
+    ):
         super().__init__(**kwargs)
         self.odc_load_kwargs = odc_load_kwargs
         self.nodata = nodata_value
+        self.load_as_dataset = load_as_dataset
+        self.keep_ints = keep_ints
 
     def _get_xr(
         self,
         items,
         areas: GeoDataFrame,
-    ) -> DataArray:
+    ) -> DataArray | Dataset:
         # For most EO data native dtype is int. Loading as such saves space but
         # the only more-or-less universally accepted nodata value is nan,
         # which is not available for int types. So we need to load as float and
@@ -148,6 +175,9 @@ class OdcLoaderMixin:
         # see in the docs.
         areas_proj = areas.to_crs(self._current_epsg)
         bounds = areas_proj.total_bounds.tolist()
+
+        data_type = "uint16" if self.keep_ints else "float32"
+
         xr = load(
             items,
             crs=self._current_epsg,
@@ -155,28 +185,40 @@ class OdcLoaderMixin:
             x=(bounds[0], bounds[2]),
             y=(bounds[1], bounds[3]),
             **self.odc_load_kwargs,
-            dtype="float32",
+            dtype=data_type,
         )
 
-        for name in xr:
-            nodata_value = xr[name].rio.nodata if self.nodata is None else self.nodata
-            xr[name] = xr[name].where(xr[name] != nodata_value, float("nan"))
+        if self.nodata is not None:
+            xr.attrs["nodata"] = self.nodata
 
-        return (
-            xr.to_array(
-                "band"
-            )  # ^^ just to match what stackstac makes, at least for now
-            # stackstac names it stackstac-lkj1928d-l81938d890 or similar,
-            # in places a name is needed (for instance .to_dataset())
-            .rename("data")
-            .rio.write_crs(self._current_epsg)
-            .rio.write_nodata(float("nan"))
-            .rio.clip(
-                areas_proj.geometry,
-                all_touched=True,
-                from_disk=True,
+        if not self.keep_ints:
+            for name in xr:
+                nodata_value = (
+                    xr[name].rio.nodata if self.nodata is None else self.nodata
+                )
+                xr[name] = xr[name].where(xr[name] != nodata_value, float("nan"))
+
+            xr.attrs["nodata"] = float("nan")
+
+        if not self.load_as_dataset:
+            # This creates a "bands" dimension.
+            xr = (
+                xr.to_array(
+                    "band"
+                )  # ^^ just to match what stackstac makes, at least for now
+                # stackstac names it stackstac-lkj1928d-l81938d890 or similar,
+                # in places a name is needed (for instance .to_dataset())
+                .rename("data")
+                .rio.write_crs(self._current_epsg)
+                .rio.write_nodata(float("nan"))
+                .rio.clip(
+                    areas_proj.geometry,
+                    all_touched=True,
+                    from_disk=True,
+                )
             )
-        )
+
+        return xr
 
 
 class StackStacLoaderMixin:

@@ -1,13 +1,14 @@
 import datetime
 import json
-from urlpath import URL
 from typing import Union
 
-from azure.storage.blob import ContentSettings
 import numpy as np
 from pystac import Item
 from rio_stac.stac import create_stac_item
+from urlpath import URL
 from xarray import DataArray, Dataset
+
+from azure.storage.blob import ContentSettings
 
 from .utils import write_to_blob_storage, write_to_local_storage
 
@@ -28,6 +29,8 @@ def write_stac(
             content_settings=ContentSettings(content_type="application/json")
         ),
     )
+
+    return stac_url
 
 
 def write_stac_local(xr: Union[DataArray, Dataset], path: str, stac_url, **kwargs):

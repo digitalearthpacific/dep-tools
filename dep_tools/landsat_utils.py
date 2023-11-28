@@ -1,26 +1,47 @@
-from typing import Dict
+from typing import Dict, Iterable, Tuple
 
 import planetary_computer
-from odc.algo import mask_cleanup
 import pystac_client
+from odc.algo import erase_bad, mask_cleanup
 from pystac import ItemCollection
 from retry import retry
 from xarray import DataArray
 
 
-def mask_clouds(xr: DataArray, dilate: bool = False) -> DataArray:
-    # dilated cloud, cirrus, cloud, cloud shadow
-    mask_bitfields = [1, 2, 3, 4]
+def mask_clouds(
+    xr: DataArray, filters: Iterable[Tuple[str, int]] | None = None, keep_ints: bool = False
+) -> DataArray:
+    """
+    Mask clouds in Landsat data.
+
+    Args:
+        xr: DataArray containing Landsat data including the `qa_pixel` band.
+        filters: List of filters to apply to the cloud mask. Each filter is a tuple of
+            (filter name, filter size). Valid filter names are 'opening' and 'dilation'.
+            If None, no filters will be applied.
+            For example: [("closing", 10),("opening", 2),("dilation", 2)]
+        keep_ints: If True, return the masked data as integers. Otherwise, return
+            the masked data as floats.
+    """
+    CLOUD = 3
+    CLOUD_SHADOW = 4
+
     bitmask = 0
-    for field in mask_bitfields:
+    for field in [CLOUD, CLOUD_SHADOW]:
         bitmask |= 1 << field
 
-    cloud_mask = xr.sel(band="qa_pixel").astype("uint16") & bitmask != 0
+    try:
+        cloud_mask = xr.sel(band="qa_pixel").astype("uint16") & bitmask != 0
+    except KeyError:
+        cloud_mask = xr.qa_pixel.astype("uint16") & bitmask != 0
 
-    if dilate:
-        # From Alex @ https://gist.github.com/alexgleith/d9ea655d4e55162e64fe2c9db84284e5
-        cloud_mask = mask_cleanup(cloud_mask, [("opening", 2), ("dilation", 3)])
-    return xr.where(~cloud_mask)
+    if filters is not None:
+        cloud_mask = mask_cleanup(cloud_mask, filters)
+
+    if keep_ints:
+        return erase_bad(xr, cloud_mask)
+    else:
+        return xr.where(~cloud_mask)
 
 
 @retry(tries=10, delay=1)

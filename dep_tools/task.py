@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from logging import getLogger, Logger
+from logging import Logger, getLogger
 
 from geopandas import GeoDataFrame
 
@@ -46,7 +46,8 @@ class AreaTask(Task):
             dict(area=self.area) if self.processor.send_area_to_processor else dict()
         )
         output_data = self.processor.process(input_data, **processor_kwargs)
-        self.writer.write(output_data, self.id)
+        paths = self.writer.write(output_data, self.id)
+        return paths
 
 
 class ErrorCategoryAreaTask(AreaTask):
@@ -75,8 +76,11 @@ class ErrorCategoryAreaTask(AreaTask):
             raise NoOutputError()
         try:
             paths = self.writer.write(output_data, self.id)
+            # Return the list of paths that were written
         except Exception as e:
             self.logger.error([self.id, "error", "", e])
             raise e
 
         self.logger.debug([self.id, "complete", paths])
+
+        return paths

@@ -1,9 +1,9 @@
 from abc import ABC, abstractmethod
-from logging import getLogger, Logger
+from logging import Logger, getLogger
 
 from dask.distributed import Client
 from dask_gateway import GatewayCluster
-from geopandas import GeoDataFrame, GeoSeries
+from geopandas import GeoDataFrame
 from tqdm import tqdm
 
 from .exceptions import EmptyCollectionError, NoOutputError
@@ -43,11 +43,10 @@ class AreasRunner(Runner):
 
             try:
                 input_data = self.loader.load(these_areas)
-            except EmptyCollectionError as e:
+            except EmptyCollectionError:
                 self.logger.debug([index, "no items for areas"])
                 # not raising this one
                 continue
-                # raise e
 
             except Exception as e:
                 self.logger.debug([index, "load error", e])

@@ -1,6 +1,6 @@
 import datetime
 
-from odc.algo import mask_cleanup
+from odc.algo import erase_bad, mask_cleanup
 from xarray import DataArray, concat
 
 from .processors import Processor
@@ -13,15 +13,17 @@ class S2Processor(Processor):
         scale_and_offset: bool = True,
         mask_clouds: bool = True,
         dilate_mask: bool = False,
+        keep_ints: bool = False,
     ) -> None:
         super().__init__(send_area_to_processor)
         self.scale_and_offset = scale_and_offset
         self.mask_clouds = mask_clouds
         self.dilate_mask = dilate_mask
+        self.keep_ints = keep_ints
 
     def process(self, xr: DataArray) -> DataArray:
         if self.mask_clouds:
-            xr = xr.where(~clouds(xr.sel(band="SCL"), self.dilate_mask))
+            xr = mask_clouds(xr, dilate=self.dilate_mask, keep_ints=self.keep_ints)
 
         if self.scale_and_offset:
             xr = scale_and_offset_s2(xr)
@@ -34,26 +36,39 @@ def scale_and_offset_s2(da: DataArray) -> DataArray:
     return harmonize_to_old(da) * 0.0001
 
 
-def clouds(scl: DataArray, dilate: bool = True) -> DataArray:
-    NO_DATA = 0
-    SATURATED_OR_DEFECTIVE = 1
-    DARK_AREA_PIXELS = 2
+def mask_clouds(
+    xr: DataArray, dilate: bool = True, keep_ints: bool = False
+) -> DataArray:
+    # NO_DATA = 0
+    # SATURATED_OR_DEFECTIVE = 1
+    # DARK_AREA_PIXELS = 2
     CLOUD_SHADOWS = 3
-    VEGETATION = 4
-    NOT_VEGETATED = 5
-    WATER = 6
-    UNCLASSIFIED = 7
-    CLOUD_MEDIUM_PROBABILITY = 8
+    # VEGETATION = 4
+    # NOT_VEGETATED = 5
+    # WATER = 6
+    # UNCLASSIFIED = 7
+    # CLOUD_MEDIUM_PROBABILITY = 8
     CLOUD_HIGH_PROBABILITY = 9
-    THIN_CIRRUS = 10
-    SNOW = 11
+    # THIN_CIRRUS = 10
+    # SNOW = 11
 
-    clouds = (scl == CLOUD_SHADOWS) | (scl == CLOUD_HIGH_PROBABILITY)
+    bitmask = 0
+    for field in [CLOUD_SHADOWS, CLOUD_HIGH_PROBABILITY]:
+        bitmask |= 1 << field
+
+    try:
+        cloud_mask = xr.sel(band="SCL").astype("uint16") & bitmask != 0
+    except KeyError:
+        cloud_mask = xr.SCL.astype("uint16") & bitmask != 0
 
     if dilate:
-        clouds = mask_cleanup(clouds, [("opening", 2), ("dilation", 3)])
+        # From Alex @ https://gist.github.com/alexgleith/d9ea655d4e55162e64fe2c9db84284e5
+        cloud_mask = mask_cleanup(cloud_mask, [("opening", 2), ("dilation", 3)])
 
-    return clouds
+    if keep_ints:
+        return erase_bad(xr, cloud_mask)
+    else:
+        return xr.where(~cloud_mask)
 
 
 def harmonize_to_old(data: DataArray) -> DataArray:
