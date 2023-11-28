@@ -5,12 +5,14 @@ import pystac_client
 from odc.algo import erase_bad, mask_cleanup
 from pystac import ItemCollection
 from retry import retry
-from xarray import DataArray
+from xarray import DataArray, Dataset
 
 
 def mask_clouds(
-    xr: DataArray, filters: Iterable[Tuple[str, int]] | None = None, keep_ints: bool = False
-) -> DataArray:
+    xr: DataArray | Dataset,
+    filters: Iterable[Tuple[str, int]] | None = None,
+    keep_ints: bool = False,
+) -> DataArray | Dataset:
     """
     Mask clouds in Landsat data.
 
