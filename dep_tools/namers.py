@@ -20,6 +20,7 @@ class DepItemPath(ItemPath):
     dataset_id: str
     version: str
     time: str
+    zero_pad_numbers: bool = False
 
     def __post_init__(self):
         self.version = self.version.replace(".", "-")
@@ -38,9 +39,12 @@ class DepItemPath(ItemPath):
             item_parts = item_id.split(",")
         else:
             item_parts = [item_id]
-        return join_str.join(
-            [str(i).zfill(3) if str(i).isnumeric() else str(i) for i in item_parts]
-        )
+
+        item_parts = [
+            str(i).zfill(3) if str(i).isnumeric() and self.zero_pad_numbers else str(i)
+            for i in item_parts
+        ]
+        return join_str.join(item_parts)
 
     def _folder(self, item_id) -> str:
         return f"{self._folder_prefix}/{self._format_item_id(item_id)}/{self.time}"
