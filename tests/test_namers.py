@@ -27,3 +27,19 @@ def test_basename():
 
 def set_item_prefix():
     assert testItemPath.item_prefix == "dep_ls_wofs"
+
+
+def test_format_item_id_iterable():
+    assert testItemPath._format_item_id(("66", "23"), "_") == "066_023"
+
+
+def test_format_item_id_iterable_int():
+    assert testItemPath._format_item_id((66, 23), "_") == "066_023"
+
+
+def test_format_item_id_list_as_string():
+    assert testItemPath._format_item_id("001,002", "_") == "001_002"
+
+
+def test_format_item_id_string():
+    assert testItemPath._format_item_id("66", "_") == "066"
