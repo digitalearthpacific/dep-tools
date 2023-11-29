@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Iterable
 
 
 # Should probably be renamed to AssetPath at earliest opportunity
@@ -50,7 +49,7 @@ class DepItemPath(ItemPath):
         return f"{self._folder_prefix}/{self._format_item_id(item_id)}/{self.time}"
 
     def basename(self, item_id) -> str:
-        return f"{self.item_prefix}_{self._format_item_id(item_id, join_str='_')}_{self.time}"  # _{asset_name}"
+        return f"{self.item_prefix}_{self._format_item_id(item_id, join_str='_')}_{self.time}"
 
     def path(self, item_id, asset_name=None, ext=".tif") -> str:
         return (
@@ -58,6 +57,9 @@ class DepItemPath(ItemPath):
             if asset_name is not None
             else f"{self._folder(item_id)}/{self.basename(item_id)}{ext}"
         )
+
+    def stac_path(self, item_id):
+        return self.path(item_id, ext=".stac-item.json")
 
     def log_path(self) -> str:
         return f"{self._folder_prefix}/logs/{self.item_prefix}_{self.time}_log.csv"
