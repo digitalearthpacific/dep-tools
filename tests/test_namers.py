@@ -5,6 +5,7 @@ dataset_id = "wofs"
 version = "1.0.1"
 time = "2045"
 testItemPath = DepItemPath(sensor, dataset_id, version, time)
+paddedItemPath = DepItemPath(sensor, dataset_id, version, time, zero_pad_numbers=True)
 
 item_id = "001,002"
 asset_name = "mean"
@@ -27,3 +28,35 @@ def test_basename():
 
 def set_item_prefix():
     assert testItemPath.item_prefix == "dep_ls_wofs"
+
+
+def test_padded_format_item_id_iterable():
+    assert paddedItemPath._format_item_id(("66", "23"), "_") == "066_023"
+
+
+def test_padded_format_item_id_iterable_int():
+    assert paddedItemPath._format_item_id((66, 23), "_") == "066_023"
+
+
+def test_padded_format_item_id_list_as_string():
+    assert paddedItemPath._format_item_id("001,002", "_") == "001_002"
+
+
+def test_padded_format_item_id_string():
+    assert paddedItemPath._format_item_id("66", "_") == "066"
+
+
+def test_format_item_id_iterable():
+    assert testItemPath._format_item_id(("66", "23"), "_") == "66_23"
+
+
+def test_format_item_id_iterable_int():
+    assert testItemPath._format_item_id((66, 23), "_") == "66_23"
+
+
+def test_format_item_id_list_as_string():
+    assert testItemPath._format_item_id("001,002", "_") == "001_002"
+
+
+def test_format_item_id_string():
+    assert testItemPath._format_item_id("66", "_") == "66"
