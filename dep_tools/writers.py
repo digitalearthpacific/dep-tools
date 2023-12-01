@@ -9,6 +9,8 @@ from pystac import Asset
 from urlpath import URL
 from xarray import DataArray, Dataset
 
+from azure.storage.blob import ContainerClient
+
 from .azure import get_container_client
 from .namers import DepItemPath
 from .stac_utils import write_stac_blob_storage, write_stac_local
@@ -34,6 +36,7 @@ class XrWriterMixin(object):
     output_nodata: int = -32767
     extra_attrs: Dict = field(default_factory=dict)
     use_odc_writer: bool = True
+    client: ContainerClient = None
 
     def prep(self, xr: Union[DataArray, Dataset]):
         xr.attrs.update(self.extra_attrs)
@@ -50,15 +53,14 @@ class XrWriterMixin(object):
 @dataclass
 class DsWriter(XrWriterMixin, Writer):
     write_function: Callable = write_to_blob_storage
-    write_multithreaded: bool = False
     write_stac_function: Callable = write_stac_blob_storage
     write_stac: bool = True
+    write_multithreaded: bool = False
 
     def write(self, xr: Dataset, item_id: str) -> str | List:
         xr = super().prep(xr)
         paths = []
         assets = {}
-        client = get_container_client()
 
         def get_write_partial(variable: Hashable) -> Callable:
             output_da = xr[variable].squeeze()
@@ -72,7 +74,7 @@ class DsWriter(XrWriterMixin, Writer):
                 write_args=dict(driver="COG"),
                 overwrite=self.overwrite,
                 use_odc_writer=self.use_odc_writer,
-                client=client,
+                client=self.client,
             )
 
         if self.write_multithreaded:
@@ -128,4 +130,10 @@ class LocalDsWriter(DsWriter):
 
 
 class AzureDsWriter(DsWriter):
-    pass
+    def __init__(self, **kwargs):
+        super().__init__(
+            write_function=write_to_blob_storage,
+            write_stac_function=write_stac_blob_storage,
+            **kwargs,
+        )
+        self.client = get_container_client()
