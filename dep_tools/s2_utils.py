@@ -1,43 +1,14 @@
 import datetime
+from typing import Iterable, Tuple
 
 from odc.algo import erase_bad, mask_cleanup
 from xarray import DataArray, concat
 
-from .processors import Processor
-
-
-class S2Processor(Processor):
-    def __init__(
-        self,
-        send_area_to_processor: bool = False,
-        scale_and_offset: bool = True,
-        mask_clouds: bool = True,
-        dilate_mask: bool = False,
-        keep_ints: bool = False,
-    ) -> None:
-        super().__init__(send_area_to_processor)
-        self.scale_and_offset = scale_and_offset
-        self.mask_clouds = mask_clouds
-        self.dilate_mask = dilate_mask
-        self.keep_ints = keep_ints
-
-    def process(self, xr: DataArray) -> DataArray:
-        if self.mask_clouds:
-            xr = mask_clouds(xr, dilate=self.dilate_mask, keep_ints=self.keep_ints)
-
-        if self.scale_and_offset:
-            xr = scale_and_offset_s2(xr)
-
-        return xr
-
-
-def scale_and_offset_s2(da: DataArray) -> DataArray:
-    # TODO: don't scale SCL
-    return harmonize_to_old(da) * 0.0001
-
 
 def mask_clouds(
-    xr: DataArray, dilate: bool = True, keep_ints: bool = False
+    xr: DataArray,
+    filters: Iterable[Tuple[str, int]] | None = None,
+    keep_ints: bool = False,
 ) -> DataArray:
     # NO_DATA = 0
     # SATURATED_OR_DEFECTIVE = 1
@@ -61,9 +32,8 @@ def mask_clouds(
     except KeyError:
         cloud_mask = xr.SCL.astype("uint16") & bitmask != 0
 
-    if dilate:
-        # From Alex @ https://gist.github.com/alexgleith/d9ea655d4e55162e64fe2c9db84284e5
-        cloud_mask = mask_cleanup(cloud_mask, [("opening", 2), ("dilation", 3)])
+    if filters is not None:
+        cloud_mask = mask_cleanup(cloud_mask, filters)
 
     if keep_ints:
         return erase_bad(xr, cloud_mask)
