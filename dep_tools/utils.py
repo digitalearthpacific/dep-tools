@@ -155,7 +155,7 @@ def write_to_blob_storage(
     write_args: Dict = dict(),
     overwrite: bool = True,
     use_odc_writer: bool = False,
-    client: ContainerClient = None,
+    client: ContainerClient | None = None,
     **kwargs,
 ) -> None:
     # Allowing for a shared container client, which might be
