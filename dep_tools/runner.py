@@ -15,13 +15,13 @@ from .writers import Writer
 class Runner(ABC):
     def __init__(
         self,
-        tasks,
+        ids: list[str],
         loader: Loader,
         processor: Processor,
         writer: Writer,
         logger: Logger = getLogger(),
     ):
-        self.tasks = tasks
+        self.ids = ids
         self.loader = loader
         self.processor = processor
         self.writer = writer

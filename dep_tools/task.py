@@ -8,11 +8,19 @@ from .loaders import Loader
 from .processors import Processor
 from .writers import Writer
 
+task_id = str
+
 
 class Task(ABC):
     def __init__(
-        self, loader: Loader, processor: Processor, writer: Writer, logger: Logger
+        self,
+        task_id: task_id,
+        loader: Loader,
+        processor: Processor,
+        writer: Writer,
+        logger: Logger,
     ):
+        self.id = task_id
         self.loader = loader
         self.processor = processor
         self.writer = writer
@@ -26,7 +34,7 @@ class Task(ABC):
 class AreaTask(Task):
     def __init__(
         self,
-        id: str,
+        id: task_id,
         area: GeoDataFrame,
         loader: Loader,
         processor: Processor,
@@ -82,3 +90,34 @@ class ErrorCategoryAreaTask(AreaTask):
         self.logger.debug([self.id, "complete", paths])
 
         return paths
+
+
+class MultiAreaTask(ABC):
+    def __init__(
+        self,
+        ids: list[task_id],
+        areas: GeoDataFrame,
+        task_class: type[AreaTask],
+        loader: Loader,
+        processor: Processor,
+        writer: Writer,
+        logger: Logger = getLogger(),
+    ):
+        self.ids = ids
+        self.areas = areas
+        self.loader = loader
+        self.processor = processor
+        self.writer = writer
+        self.logger = logger
+        self.task_class = task_class
+
+    def run(self):
+        for id in self.ids:
+            self.task_class(
+                id,
+                self.areas.loc[[id]],
+                self.loader,
+                self.processor,
+                self.writer,
+                self.logger,
+            ).run()

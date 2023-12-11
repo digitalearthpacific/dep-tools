@@ -99,6 +99,8 @@ class SentinelPystacSearcher(PystacSearcher):
             kwargs.pop("collections")
         return super().__init__(client, query, collections=["sentinel-2-l2a"])
 
+class LandsatPystacSearcher(PystacSearcher):
+    def __init__(self, client, **kwargs)
 
 class Sentinel2LoaderMixin(object):
     def _get_items(self, area):
