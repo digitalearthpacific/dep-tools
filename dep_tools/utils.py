@@ -1,4 +1,5 @@
 import io
+from itertools import chain
 from pathlib import Path
 from typing import Dict, List, Union
 
@@ -9,6 +10,7 @@ import pystac_client
 import rasterio
 import rioxarray
 import xarray as xr
+from antimeridian import fix_polygon
 from azure.storage.blob import ContainerClient
 from dask.distributed import Client, Lock
 from geocube.api.core import make_geocube
@@ -17,7 +19,7 @@ from odc.geo.xr import to_cog, write_cog
 from osgeo import gdal
 from pystac import ItemCollection
 from retry import retry
-from shapely.geometry import LineString, MultiLineString
+from shapely.geometry import LineString, MultiLineString, box
 from xarray import DataArray, Dataset
 
 from .azure import get_container_client
@@ -46,8 +48,11 @@ def shift_negative_longitudes(
     return LineString([(((pt[0] + 360) % 360), pt[1]) for pt in geometry.coords])
 
 
+# retry is for search timeouts which occasionally occur
 @retry(tries=2, delay=1)
-def search_across_180(region: GeoDataFrame, **kwargs) -> ItemCollection:
+def search_across_180(
+    region: GeoDataFrame, client: pystac_client.Client | None = None, **kwargs
+) -> ItemCollection:
     """
     region: A GeoDataFrame.
     **kwargs: Arguments besides bbox and intersects passed to
@@ -62,37 +67,23 @@ def search_across_180(region: GeoDataFrame, **kwargs) -> ItemCollection:
     # intersects, but we can wait to see if that's needed (for the current
     # work I am collecting io-lulc which doesn't have data in areas which
     # aren't near land
-    client = pystac_client.Client.open(
-        "https://planetarycomputer.microsoft.com/api/stac/v1",
-        modifier=planetary_computer.sign_inplace,
-    )
-
-    bbox = region.to_crs(4326).total_bounds
-    # If the lower left X coordinate is greater than 180 it needs to shift
-    if bbox[0] > 180:
-        bbox[0] = bbox[0] - 360
-        # If the upper right X coordinate is greater than 180 it needs to shift
-        # but only if the lower left one did too... otherwise we split it below
-        if bbox[2] > 180:
-            bbox[2] = bbox[2] - 360
-
-    bbox_crosses_antimeridian = (
-        bbox[0] < 0 and bbox[2] > 0 or bbox[0] < 180 and bbox[2] > 180
-    )
-    if bbox_crosses_antimeridian:
-        xmin_ll, ymin_ll = bbox[0], bbox[1]
-        xmax_ll, ymax_ll = bbox[2], bbox[3]
-
-        xmax_ll = xmax_ll - 360 if xmax_ll > 180 else xmax_ll
-
-        left_bbox = [xmin_ll, ymin_ll, 180, ymax_ll]
-        right_bbox = [-180, ymin_ll, xmax_ll, ymax_ll]
-        return ItemCollection(
-            list(client.search(bbox=left_bbox, **kwargs).items())
-            + list(client.search(bbox=right_bbox, **kwargs).items())
+    if client is None:
+        client = pystac_client.Client.open(
+            "https://planetarycomputer.microsoft.com/api/stac/v1",
+            modifier=planetary_computer.sign_inplace,
         )
-    else:
-        return client.search(bbox=bbox, **kwargs).item_collection()
+
+    polygons = fix_polygon(box(*region.to_crs(4326).total_bounds))
+    if polygons.geom_type == "MultiPolygon":
+        polygons = list(polygons.geoms)
+        return ItemCollection(
+            chain(
+                client.search(bbox=polygons.geoms[0].bounds, **kwargs).items(),
+                client.search(bbox=polygons.geoms[1].bounds, **kwargs).items(),
+            )
+        )
+
+    return client.search(bbox=polygons.bounds, **kwargs).item_collection()
 
 
 def scale_and_offset(
@@ -155,7 +146,7 @@ def write_to_blob_storage(
     write_args: Dict = dict(),
     overwrite: bool = True,
     use_odc_writer: bool = False,
-    client: ContainerClient = None,
+    client: ContainerClient | None = None,
     **kwargs,
 ) -> None:
     # Allowing for a shared container client, which might be
@@ -320,6 +311,7 @@ def remove_bad_items(item_collection: ItemCollection) -> ItemCollection:
         "LC08_L2SR_083073_20220917_02_T1",
         "LC08_L2SR_089064_20201007_02_T2",
         "LC08_L2SR_074073_20221105_02_T1",
+        "LC09_L2SR_073073_20231109_02_T2",
         "S2B_MSIL2A_20230214T001719_R116_T56MMB_20230214T095023",
     ]
     return ItemCollection([i for i in item_collection if i.id not in bad_ids])

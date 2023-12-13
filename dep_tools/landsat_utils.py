@@ -1,10 +1,7 @@
 from typing import Dict, Iterable, Tuple
 
-import planetary_computer
-import pystac_client
+import geopandas as gpd
 from odc.algo import erase_bad, mask_cleanup
-from pystac import ItemCollection
-from retry import retry
 from xarray import DataArray, Dataset
 
 
@@ -46,18 +43,10 @@ def mask_clouds(
         return xr.where(~cloud_mask)
 
 
-@retry(tries=10, delay=1)
-def item_collection_for_pathrow(
-    path: int, row: int, search_args: Dict
-) -> ItemCollection:
-    catalog = pystac_client.Client.open(
-        "https://planetarycomputer.microsoft.com/api/stac/v1",
-        modifier=planetary_computer.sign_inplace,
+def pathrow_with_greatest_area(shapes: gpd.GeoDataFrame) -> Tuple[str, str]:
+    pathrows = gpd.read_file(
+        "https://d9-wret.s3.us-west-2.amazonaws.com/assets/palladium/production/s3fs-public/atoms/files/WRS2_descending_0.zip"
     )
-    return catalog.search(
-        **search_args,
-        query=[
-            #           f"landsat:wrs_path={path:03d}",
-            #           f"landsat:wrs_row={row:03d}",
-        ],
-    ).item_collection()
+    intersection = shapes.overlay(pathrows, how="intersection")
+    row_with_greatest_area = intersection.iloc[[intersection.geometry.area.idxmax()]]
+    return (row_with_greatest_area.PATH.item(), row_with_greatest_area.ROW.item())

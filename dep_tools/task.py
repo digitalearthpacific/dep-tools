@@ -41,9 +41,8 @@ class AreaTask(Task):
         writer: Writer,
         logger: Logger = getLogger(),
     ):
-        super().__init__(loader, processor, writer, logger)
+        super().__init__(id, loader, processor, writer, logger)
         self.area = area
-        self.id = id
 
     def run(self):
         input_data = self.loader.load(self.area)
@@ -61,11 +60,11 @@ class ErrorCategoryAreaTask(AreaTask):
         try:
             input_data = self.loader.load(self.area)
         except EmptyCollectionError as e:
-            self.logger.debug([self.id, "no items for areas"])
+            self.logger.info([self.id, "no items for areas"])
             raise e
 
         except Exception as e:
-            self.logger.debug([self.id, "load error", e])
+            self.logger.info([self.id, "load error", e])
             raise e
 
         processor_kwargs = (
@@ -74,11 +73,11 @@ class ErrorCategoryAreaTask(AreaTask):
         try:
             output_data = self.processor.process(input_data, **processor_kwargs)
         except Exception as e:
-            self.logger.debug([self.id, "processor error", e])
+            self.logger.info([self.id, "processor error", e])
             raise e
 
         if output_data is None:
-            self.logger.debug([self.id, "no output from processor"])
+            self.logger.info([self.id, "no output from processor"])
             raise NoOutputError()
         try:
             paths = self.writer.write(output_data, self.id)
@@ -87,7 +86,7 @@ class ErrorCategoryAreaTask(AreaTask):
             self.logger.error([self.id, "error", "", e])
             raise e
 
-        self.logger.debug([self.id, "complete", paths])
+        self.logger.info([self.id, "complete", paths])
 
         return paths
 

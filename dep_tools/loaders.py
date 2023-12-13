@@ -24,20 +24,15 @@ class Loader(ABC):
     def __init__(self):
         pass
 
+    @abstractmethod
     def load(self, area):
         pass
 
 
-class StackXrLoader(Loader):
-    """An abstract base class for Loaders which support loading pystac Item
+class StacXrLoader(Loader):
+    """A base class for Loaders which support loading pystac Item
     Collections into Xarray DataArray or Dataset objects.
     """
-
-    def __init__(self, epsg=None, datetime=None, dask_chunksize=None):
-        self.epsg = epsg
-        self.datetime = datetime
-        self.dask_chunksize = dask_chunksize
-        self._current_epsg = epsg
 
     def load(self, area) -> DataArray:
         items = self._get_items(area)
@@ -54,50 +49,6 @@ class StackXrLoader(Loader):
         area: GeoDataFrame,
     ) -> DataArray:
         pass
-
-
-class SearchLoader(Loader):
-    def __init__(self, searcher, loader):
-        self.searcher = searcher
-        self.loader = loader
-
-    def load(self, area):
-        return self.loader.load(self.searcher.search(area))
-
-
-class Searcher(ABC):
-    def __init__(self):
-        pass
-
-    def search(self, area):
-        pass
-
-
-class PystacSearcher(Searcher):
-    def __init__(self, client, query, **kwargs):
-        self._client = client
-        self._query = query
-        self._kwargs = kwargs
-
-    def search(self, area):
-        bbox = area.to_crs(4326).total_bounds
-        item_collection = self._client.search(
-            bbox=bbox, query=self._query, **self._kwargs
-        ).item_collection()
-
-        if len(item_collection) == 0:
-            raise EmptyCollectionError()
-
-        item_collection = remove_bad_items(item_collection)
-
-        return item_collection
-
-
-class SentinelPystacSearcher(PystacSearcher):
-    def __init__(self, client, query, **kwargs):
-        if "collections" in kwargs.keys():
-            kwargs.pop("collections")
-        return super().__init__(client, query, collections=["sentinel-2-l2a"])
 
 
 class Sentinel2LoaderMixin(object):
@@ -315,21 +266,21 @@ class StackStacLoaderMixin:
         )
 
 
-class Sentinel2OdcLoader(Sentinel2LoaderMixin, OdcLoaderMixin, StackXrLoader):
+class Sentinel2OdcLoader(Sentinel2LoaderMixin, OdcLoaderMixin, StacXrLoader):
     def __init__(self, nodata_value=0, **kwargs):
         super().__init__(nodata_value=nodata_value, **kwargs)
 
 
-class Sentinel2StackLoader(Sentinel2LoaderMixin, StackStacLoaderMixin, StackXrLoader):
+class Sentinel2StackLoader(Sentinel2LoaderMixin, StackStacLoaderMixin, StacXrLoader):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
 
-class LandsatOdcLoader(LandsatLoaderMixin, OdcLoaderMixin, StackXrLoader):
+class LandsatOdcLoader(LandsatLoaderMixin, OdcLoaderMixin, StacXrLoader):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
 
-class LandsatStackLoader(LandsatLoaderMixin, StackStacLoaderMixin, StackXrLoader):
+class LandsatStackLoader(LandsatLoaderMixin, StackStacLoaderMixin, StacXrLoader):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

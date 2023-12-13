@@ -4,9 +4,12 @@ from typing import List, Union
 # I get errors sometimes that `DataArray` has no attribute `rio`  which I _think_
 # is a dask worker issue but it might be possible that `odc.stac` _sometimes_ needs
 # rioxarray loaded ????
+import antimeridian
 import rioxarray  # noqa: F401
 from geopandas import GeoDataFrame
-from odc.stac import load
+import odc.stac
+from odc.geo.geobox import GeoBox
+import pystac_client
 from pystac import ItemCollection
 from rasterio.errors import RasterioError, RasterioIOError
 from stackstac import stack
@@ -15,8 +18,6 @@ from xarray import DataArray, Dataset, concat
 from .exceptions import EmptyCollectionError
 from .utils import fix_bad_epsgs, remove_bad_items, search_across_180
 
-LANDSAT_PLATFORMS = ["landsat-5", "landsat-7", "landsat-8", "landsat-9"]
-
 
 class Loader(ABC):
     """A loader loads data."""
@@ -24,20 +25,39 @@ class Loader(ABC):
     def __init__(self):
         pass
 
+    @abstractmethod
     def load(self, area):
         pass
+
+
+class StacLoader(Loader):
+    @abstractmethod
+    def load(self, items, area):
+        pass
+
+
+class Searcher(ABC):
+    def __init__(self):
+        pass
+
+    @abstractmethod
+    def search(self, area):
+        pass
+
+
+class SearchLoader(Loader):
+    def __init__(self, searcher: Searcher, loader: StacLoader):
+        self.searcher = searcher
+        self.loader = loader
+
+    def load(self, area):
+        return self.loader.load(self.searcher.search(area), area)
 
 
 class StackXrLoader(Loader):
     """An abstract base class for Loaders which support loading pystac Item
     Collections into Xarray DataArray or Dataset objects.
     """
-
-    def __init__(self, epsg=None, datetime=None, dask_chunksize=None):
-        self.epsg = epsg
-        self.datetime = datetime
-        self.dask_chunksize = dask_chunksize
-        self._current_epsg = epsg
 
     def load(self, area) -> DataArray:
         items = self._get_items(area)
@@ -56,66 +76,40 @@ class StackXrLoader(Loader):
         pass
 
 
-class SearchLoader(Loader):
-    def __init__(self, searcher, loader):
-        self.searcher = searcher
-        self.loader = loader
-
-    def load(self, area):
-        return self.loader.load(self.searcher.search(area))
-
-
-class Searcher(ABC):
-    def __init__(self):
-        pass
-
-    def search(self, area):
-        pass
-
-
 class PystacSearcher(Searcher):
-    def __init__(self, client, query, **kwargs):
+    def __init__(self, client: pystac_client.Client | None = None, **kwargs):
         self._client = client
-        self._query = query
         self._kwargs = kwargs
 
     def search(self, area):
-        bbox = area.to_crs(4326).total_bounds
-        item_collection = self._client.search(
-            bbox=bbox, query=self._query, **self._kwargs
-        ).item_collection()
+        item_collection = search_across_180(
+            region=area, client=self._client, **self._kwargs
+        )
 
         if len(item_collection) == 0:
             raise EmptyCollectionError()
 
+        fix_bad_epsgs(item_collection)
         item_collection = remove_bad_items(item_collection)
 
         return item_collection
 
 
 class SentinelPystacSearcher(PystacSearcher):
-    def __init__(self, client, query, **kwargs):
+    def __init__(self, client, **kwargs):
         if "collections" in kwargs.keys():
             kwargs.pop("collections")
-        return super().__init__(client, query, collections=["sentinel-2-l2a"])
+        super().__init__(client, collections=["sentinel-2-l2a"], **kwargs)
+
 
 class LandsatPystacSearcher(PystacSearcher):
-    def __init__(self, client, **kwargs)
-
-class Sentinel2LoaderMixin(object):
-    def _get_items(self, area):
-        item_collection = search_across_180(
-            area, collections=["sentinel-2-l2a"], datetime=self.datetime
-        )
-        if len(item_collection) == 0:
-            raise EmptyCollectionError()
-
-        item_collection = remove_bad_items(item_collection)
-
-        return item_collection
+    def __init__(self, client, **kwargs):
+        if "collections" in kwargs.keys():
+            kwargs.pop("collections")
+        super().__init__(client, collections=["landsat-c2-l2"], **kwargs)
 
 
-class LandsatLoaderMixin(object):
+class LandsatSearcher(PystacSearcher):
     def __init__(
         self,
         load_tile_pathrow_only: bool = False,
@@ -130,42 +124,36 @@ class LandsatLoaderMixin(object):
         self._only_tier_one = only_tier_one
         self._fall_back_to_tier_two = fall_back_to_tier_two
 
-    def _get_items(self, area):
-        # TODO: move path/row filtering to the query
-        # query = {
-        #     "landsat:wrs_path": {"eq": PATH},
-        #     "landsat:wrs_row": {"eq": ROW}
-        # }
-        query = {}
+        self.query = {}
         if self._exclude_platforms is not None:
             # I don't know the syntax for `not in`, so I'm using `in` instead
-            query["platform"] = {
-                "in": [p for p in LANDSAT_PLATFORMS if p not in self._exclude_platforms]
+            landsat_platforms = ["landsat-5", "landsat-7", "landsat-8", "landsat-9"]
+            self.query["platform"] = {
+                "in": [p for p in landsat_platforms if p not in self._exclude_platforms]
             }
 
         if self._only_tier_one:
-            query["landsat:collection_category"] = {"eq": "T1"}
+            self.query["landsat:collection_category"] = {"eq": "T1"}
 
-        # Do the search
-        item_collection = search_across_180(
-            area, collections=["landsat-c2-l2"], datetime=self.datetime, query=query
-        )
-
-        # Fix a few issues with STAC items
-        fix_bad_epsgs(item_collection)
-        item_collection = remove_bad_items(item_collection)
-
-        if len(item_collection) == 0:
+    def search(self, area):
+        try:
+            return super().search(area)
+        except EmptyCollectionError:
             # If we're only looking for tier one items, try falling back to both T1 and T2
             if self._only_tier_one and self._fall_back_to_tier_two:
                 self._only_tier_one = False
-                return self._get_items(area)
+                return self.search(area)
             else:
                 raise EmptyCollectionError()
 
         # Filtering by path/row...
         # Not lifting this into a query parameter yet as I'm not sure
         # how it's used. - Alex Nov 2023
+        # TODO: move path/row filtering to the query
+        # query = {
+        #     "landsat:wrs_path": {"eq": PATH},
+        #     "landsat:wrs_row": {"eq": ROW}
+        # }
         try:
             index_dict = dict(zip(area.index.names, area.index[0]))
         except TypeError:
@@ -193,81 +181,20 @@ class LandsatLoaderMixin(object):
         return item_collection
 
 
-class OdcLoaderMixin(object):
-    def __init__(
-        self,
-        odc_load_kwargs=dict(),
-        nodata_value: int | float | None = None,
-        load_as_dataset: bool = False,
-        keep_ints: bool = False,
-        **kwargs,
-    ):
-        super().__init__(**kwargs)
-        self.odc_load_kwargs = odc_load_kwargs
-        self.nodata = nodata_value
-        self.load_as_dataset = load_as_dataset
-        self.keep_ints = keep_ints
+class OdcLoader(StacLoader):
+    def __init__(self, **kwargs):
+        super().__init__()
+        self._kwargs = kwargs
 
-    def _get_xr(
-        self,
-        items,
-        areas: GeoDataFrame,
-    ) -> DataArray | Dataset:
-        # For most EO data native dtype is int. Loading as such saves space but
-        # the only more-or-less universally accepted nodata value is nan,
-        # which is not available for int types. So we need to load as float and
-        # then replace existing nodata values (usually 0) with nan. At least
-        # I _think_ all this is necessary and there's not an easier way I didn't
-        # see in the docs.
-        areas_proj = areas.to_crs(self._current_epsg)
-        bounds = areas_proj.total_bounds.tolist()
-
-        data_type = "uint16" if self.keep_ints else "float32"
-
-        xr = load(
+    def load(self, items, area) -> DataArray | Dataset:
+        return odc.stac.load(
             items,
-            crs=self._current_epsg,
-            chunks=self.dask_chunksize,
-            x=(bounds[0], bounds[2]),
-            y=(bounds[1], bounds[3]),
-            **self.odc_load_kwargs,
-            dtype=data_type,
+            geopolygon=area.to_crs(4326),
+            **self._kwargs,
         )
 
-        if self.nodata is not None:
-            xr.attrs["nodata"] = self.nodata
 
-        if not self.keep_ints:
-            for name in xr:
-                nodata_value = (
-                    xr[name].rio.nodata if self.nodata is None else self.nodata
-                )
-                xr[name] = xr[name].where(xr[name] != nodata_value, float("nan"))
-
-            xr.attrs["nodata"] = float("nan")
-
-        if not self.load_as_dataset:
-            # This creates a "bands" dimension.
-            xr = (
-                xr.to_array(
-                    "band"
-                )  # ^^ just to match what stackstac makes, at least for now
-                # stackstac names it stackstac-lkj1928d-l81938d890 or similar,
-                # in places a name is needed (for instance .to_dataset())
-                .rename("data")
-                .rio.write_crs(self._current_epsg)
-                .rio.write_nodata(float("nan"))
-                .rio.clip(
-                    areas_proj.geometry,
-                    all_touched=True,
-                    from_disk=True,
-                )
-            )
-
-        return xr
-
-
-class StackStacLoaderMixin:
+class StackStacLoader(StacLoader):
     def __init__(
         self, stack_kwargs=dict(resolution=30), resamplers_and_assets=None, **kwargs
     ):
@@ -275,9 +202,9 @@ class StackStacLoaderMixin:
         self.stack_kwargs = stack_kwargs
         self.resamplers_and_assets = resamplers_and_assets
 
-    def _get_xr(
+    def load(
         self,
-        item_collection: ItemCollection,
+        items,
         areas: GeoDataFrame,
     ) -> DataArray:
         areas_proj = areas.to_crs(self._current_epsg)
@@ -285,7 +212,7 @@ class StackStacLoaderMixin:
             s = concat(
                 [
                     stack(
-                        item_collection,
+                        items,
                         chunksize=self.dask_chunksize,
                         epsg=self._current_epsg,
                         errors_as_nodata=(RasterioError(".*"),),
@@ -303,7 +230,7 @@ class StackStacLoaderMixin:
             )
         else:
             s = stack(
-                item_collection,
+                items,
                 chunksize=self.dask_chunksize,
                 epsg=self._current_epsg,
                 errors_as_nodata=(RasterioIOError(".*"),),
@@ -315,23 +242,3 @@ class StackStacLoaderMixin:
             all_touched=True,
             from_disk=True,
         )
-
-
-class Sentinel2OdcLoader(Sentinel2LoaderMixin, OdcLoaderMixin, StackXrLoader):
-    def __init__(self, nodata_value=0, **kwargs):
-        super().__init__(nodata_value=nodata_value, **kwargs)
-
-
-class Sentinel2StackLoader(Sentinel2LoaderMixin, StackStacLoaderMixin, StackXrLoader):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
-
-class LandsatOdcLoader(LandsatLoaderMixin, OdcLoaderMixin, StackXrLoader):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
-
-class LandsatStackLoader(LandsatLoaderMixin, StackStacLoaderMixin, StackXrLoader):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
