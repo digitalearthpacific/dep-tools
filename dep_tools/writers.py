@@ -33,7 +33,7 @@ class XrWriterMixin(object):
     scale_int16s: bool = False
     output_nodata: int = -32767
     extra_attrs: Dict = field(default_factory=dict)
-    use_odc_writer: bool = True
+    use_odc_writer: bool = False
 
     def prep(self, xr: Union[DataArray, Dataset]):
         xr.attrs.update(self.extra_attrs)

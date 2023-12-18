@@ -78,8 +78,8 @@ def search_across_180(
         polygons = list(polygons.geoms)
         return ItemCollection(
             chain(
-                client.search(bbox=polygons.geoms[0].bounds, **kwargs).items(),
-                client.search(bbox=polygons.geoms[1].bounds, **kwargs).items(),
+                client.search(bbox=polygons[0].bounds, **kwargs).items(),
+                client.search(bbox=polygons[1].bounds, **kwargs).items(),
             )
         )
 

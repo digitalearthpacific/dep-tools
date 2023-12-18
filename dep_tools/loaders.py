@@ -112,33 +112,6 @@ class LandsatLoaderMixin(object):
             else:
                 raise EmptyCollectionError()
 
-        # Filtering by path/row...
-        # Not lifting this into a query parameter yet as I'm not sure
-        # how it's used. - Alex Nov 2023
-        try:
-            index_dict = dict(zip(area.index.names, area.index[0]))
-        except TypeError:
-            index_dict = {}
-
-        if "PATH" in index_dict.keys() and "ROW" in index_dict.keys():
-            item_collection_for_this_pathrow = [
-                i
-                for i in item_collection
-                if i.properties["landsat:wrs_path"] == f"{index_dict['PATH'].zfill(3)}"
-                and i.properties["landsat:wrs_row"] == f"{index_dict['ROW'].zfill(3)}"
-            ]
-
-            if len(item_collection_for_this_pathrow) == 0:
-                raise EmptyCollectionError()
-
-            if self.load_tile_pathrow_only:
-                item_collection = item_collection_for_this_pathrow
-
-            if self.epsg is None:
-                self._current_epsg = item_collection_for_this_pathrow[0].properties[
-                    "proj:epsg"
-                ]
-
         return item_collection
 
 

@@ -1,14 +1,13 @@
 from abc import ABC, abstractmethod
+from statistics import mode
 from typing import List, Union
 
 # I get errors sometimes that `DataArray` has no attribute `rio`  which I _think_
 # is a dask worker issue but it might be possible that `odc.stac` _sometimes_ needs
 # rioxarray loaded ????
-import antimeridian
 import rioxarray  # noqa: F401
 from geopandas import GeoDataFrame
 import odc.stac
-from odc.geo.geobox import GeoBox
 import pystac_client
 from pystac import ItemCollection
 from rasterio.errors import RasterioError, RasterioIOError
@@ -52,28 +51,6 @@ class SearchLoader(Loader):
 
     def load(self, area):
         return self.loader.load(self.searcher.search(area), area)
-
-
-class StackXrLoader(Loader):
-    """An abstract base class for Loaders which support loading pystac Item
-    Collections into Xarray DataArray or Dataset objects.
-    """
-
-    def load(self, area) -> DataArray:
-        items = self._get_items(area)
-        return self._get_xr(items, area)
-
-    @abstractmethod
-    def _get_items(self, area) -> ItemCollection:
-        pass
-
-    @abstractmethod
-    def _get_xr(
-        self,
-        items,
-        area: GeoDataFrame,
-    ) -> DataArray:
-        pass
 
 
 class PystacSearcher(Searcher):
@@ -192,6 +169,26 @@ class OdcLoader(StacLoader):
             geopolygon=area.to_crs(4326),
             **self._kwargs,
         )
+
+
+class DeluxeOdcLoader(OdcLoader):
+    def __init__(
+        self,
+        clip_to_area: bool = False,
+        **kwargs,
+    ):
+        super().__init__(**kwargs)
+        self._clip_to_area = clip_to_area
+
+    def load(self, items, area) -> Dataset | DataArray:
+        ds = super().load(items, area)
+
+        if self._clip_to_area:
+            ds = ds.rio.clip(
+                area.to_crs(ds.odc.crs).geometry, all_touched=True, from_disk=True
+            )
+
+        return ds
 
 
 class StackStacLoader(StacLoader):
