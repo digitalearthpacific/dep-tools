@@ -175,6 +175,7 @@ def write_to_blob_storage(
 
     elif isinstance(d, GeoDataFrame):
         with fiona.io.MemoryFile() as buffer:
+            breakpoint()
             d.to_file(buffer, **write_args)
             buffer.seek(0)
             blob_client.upload_blob(buffer, overwrite=overwrite)

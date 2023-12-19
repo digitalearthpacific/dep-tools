@@ -101,6 +101,7 @@ class MultiAreaTask(ABC):
         processor: Processor,
         writer: Writer,
         logger: Logger = getLogger(),
+        fail_on_error: bool = True,
     ):
         self.ids = ids
         self.areas = areas
@@ -109,14 +110,20 @@ class MultiAreaTask(ABC):
         self.writer = writer
         self.logger = logger
         self.task_class = task_class
+        self.fail_on_error = fail_on_error
 
     def run(self):
         for id in self.ids:
-            self.task_class(
-                id,
-                self.areas.loc[[id]],
-                self.loader,
-                self.processor,
-                self.writer,
-                self.logger,
-            ).run()
+            try:
+                self.task_class(
+                    id,
+                    self.areas.loc[[id]],
+                    self.loader,
+                    self.processor,
+                    self.writer,
+                    self.logger,
+                ).run()
+            except Exception as e:
+                if self.fail_on_error:
+                    raise e
+                continue
