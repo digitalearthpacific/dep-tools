@@ -81,9 +81,8 @@ class ErrorCategoryAreaTask(AreaTask):
             raise NoOutputError()
         try:
             paths = self.writer.write(output_data, self.id)
-            # Return the list of paths that were written
         except Exception as e:
-            self.logger.error([self.id, "error", "", e])
+            self.logger.error([self.id, "error", e])
             raise e
 
         self.logger.info([self.id, "complete", paths])
