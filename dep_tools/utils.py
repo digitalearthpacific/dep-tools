@@ -58,32 +58,38 @@ def search_across_180(
     **kwargs: Arguments besides bbox and intersects passed to
         pystac_client.Client.search
     """
-
-    # pystac_client doesn't appear to be able to handle non-geographic data,
-    # either via the `bbox` or `intersects` parameter. The docs don't really say.
-    # Here I split the bbox of the given GeoDataFrame on either side of the
-    # 180th meridian and concatenate the results.
-    # An alternative would be to actually cut the region in two pieces and use
-    # intersects, but we can wait to see if that's needed (for the current
-    # work I am collecting io-lulc which doesn't have data in areas which
-    # aren't near land
     if client is None:
         client = pystac_client.Client.open(
             "https://planetarycomputer.microsoft.com/api/stac/v1",
             modifier=planetary_computer.sign_inplace,
         )
 
-    polygons = fix_polygon(box(*region.to_crs(4326).total_bounds))
-    if polygons.geom_type == "MultiPolygon":
-        polygons = list(polygons.geoms)
-        return ItemCollection(
-            chain(
-                client.search(bbox=polygons[0].bounds, **kwargs).items(),
-                client.search(bbox=polygons[1].bounds, **kwargs).items(),
-            )
-        )
+    bbox = region.to_crs(4326).total_bounds
+    # If the lower left X coordinate is greater than 180 it needs to shift
+    if bbox[0] > 180:
+        bbox[0] = bbox[0] - 360
+        # If the upper right X coordinate is greater than 180 it needs to shift
+        # but only if the lower left one did too... otherwise we split it below
+        if bbox[2] > 180:
+            bbox[2] = bbox[2] - 360
 
-    return client.search(bbox=polygons.bounds, **kwargs).item_collection()
+    bbox_crosses_antimeridian = (
+        bbox[0] < 0 and bbox[2] > 0 or bbox[0] < 180 and bbox[2] > 180
+    )
+    if bbox_crosses_antimeridian:
+        xmax_ll, ymin_ll = bbox[0], bbox[1]
+        xmin_ll, ymax_ll = bbox[2], bbox[3]
+
+        xmax_ll = xmax_ll - 360 if xmax_ll > 180 else xmax_ll
+
+        left_bbox = [xmin_ll, ymin_ll, 180, ymax_ll]
+        right_bbox = [-180, ymin_ll, xmax_ll, ymax_ll]
+        return ItemCollection(
+            list(client.search(bbox=left_bbox, **kwargs).items())
+            + list(client.search(bbox=right_bbox, **kwargs).items())
+        )
+    else:
+        return client.search(bbox=bbox, **kwargs).item_collection()
 
 
 def scale_and_offset(
@@ -313,6 +319,7 @@ def remove_bad_items(item_collection: ItemCollection) -> ItemCollection:
         "LC08_L2SR_089064_20201007_02_T2",
         "LC08_L2SR_074073_20221105_02_T1",
         "LC09_L2SR_073073_20231109_02_T2",
+        "LC08_L2SR_075066_20231030_02_T1",
         "S2B_MSIL2A_20230214T001719_R116_T56MMB_20230214T095023",
     ]
     return ItemCollection([i for i in item_collection if i.id not in bad_ids])

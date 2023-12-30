@@ -54,8 +54,14 @@ class SearchLoader(Loader):
 
 
 class PystacSearcher(Searcher):
-    def __init__(self, client: pystac_client.Client | None = None, **kwargs):
+    def __init__(
+        self,
+        client: pystac_client.Client | None = None,
+        raise_empty_collection_error: bool = True,
+        **kwargs,
+    ):
         self._client = client
+        self._raise_errors = raise_empty_collection_error
         self._kwargs = kwargs
 
     def search(self, area):
@@ -63,13 +69,44 @@ class PystacSearcher(Searcher):
             region=area, client=self._client, **self._kwargs
         )
 
-        if len(item_collection) == 0:
+        if len(item_collection) == 0 and self._raise_errors:
             raise EmptyCollectionError()
 
         fix_bad_epsgs(item_collection)
         item_collection = remove_bad_items(item_collection)
 
         return item_collection
+
+
+import geopandas as gpd
+from shapely.geometry import box
+
+
+def bbox_across_180(area):
+    bbox = area.to_crs(4326).total_bounds
+    # If the lower left X coordinate is greater than 180 it needs to shift
+    if bbox[0] > 180:
+        bbox[0] = bbox[0] - 360
+        # If the upper right X coordinate is greater than 180 it needs to shift
+        # but only if the lower left one did too... otherwise we split it below
+        if bbox[2] > 180:
+            bbox[2] = bbox[2] - 360
+
+    # These are Pacific specific tests!
+    bbox_crosses_antimeridian = (bbox[0] < 0 and bbox[2] > 0) or (
+        bbox[0] < 180 and bbox[2] > 180
+    )
+    if bbox_crosses_antimeridian:
+        xmax_ll, ymin_ll = bbox[0], bbox[1]
+        xmin_ll, ymax_ll = bbox[2], bbox[3]
+
+        xmax_ll = xmax_ll - 360 if xmax_ll > 180 else xmax_ll
+
+        left_bbox = [xmin_ll, ymin_ll, 180, ymax_ll]
+        right_bbox = [-180, ymin_ll, xmax_ll, ymax_ll]
+        return (left_bbox, right_bbox)
+    else:
+        return bbox
 
 
 class SentinelPystacSearcher(PystacSearcher):
@@ -84,6 +121,43 @@ class LandsatPystacSearcher(PystacSearcher):
         if "collections" in kwargs.keys():
             kwargs.pop("collections")
         super().__init__(client, collections=["landsat-c2-l2"], **kwargs)
+
+
+class PathrowPystacSearcher(LandsatPystacSearcher):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self._landsat_pathrows = gpd.read_file(
+            "https://d9-wret.s3.us-west-2.amazonaws.com/assets/palladium/production/s3fs-public/atoms/files/WRS2_descending_0.zip"
+        )
+
+    def _get_pathrows(self, area):
+        bbox = bbox_across_180(area)
+        if len(bbox) == 2:
+            return self._landsat_pathrows[
+                self._landsat_pathrows.intersects(box(*bbox[0]))
+                | self._landsat_pathrows.intersects(box(*bbox[1]))
+            ]
+
+        return self._landsat_pathrows[self._landsat_pathrows.intersects(box(*bbox))]
+
+    def search(self, area):
+        pathrows = self._get_pathrows(area)
+
+        # because this search is by bbox, it will get items that are not in
+        # these pathrows
+        items = super().search(pathrows)
+
+        return ItemCollection(
+            pathrows.apply(
+                lambda row: [
+                    i
+                    for i in items
+                    if i.properties["landsat:wrs_path"] == str(row["PATH"]).zfill(3)
+                    and i.properties["landsat:wrs_row"] == str(row["ROW"]).zfill(3)
+                ],
+                axis=1,
+            ).sum()
+        )
 
 
 class LandsatSearcher(PystacSearcher):
