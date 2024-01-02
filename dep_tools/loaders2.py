@@ -81,8 +81,10 @@ class PystacSearcher(Searcher):
 import geopandas as gpd
 from shapely.geometry import box
 
+BBOX = list[float]
 
-def bbox_across_180(area):
+
+def bbox_across_180(area: gpd.GeoDataFrame) -> BBOX | tuple[BBOX, BBOX]:
     bbox = area.to_crs(4326).total_bounds
     # If the lower left X coordinate is greater than 180 it needs to shift
     if bbox[0] > 180:
@@ -102,11 +104,11 @@ def bbox_across_180(area):
 
         xmax_ll = xmax_ll - 360 if xmax_ll > 180 else xmax_ll
 
-        left_bbox = [xmin_ll, ymin_ll, 180, ymax_ll]
-        right_bbox = [-180, ymin_ll, xmax_ll, ymax_ll]
+        left_bbox = BBOX([xmin_ll, ymin_ll, 180, ymax_ll])
+        right_bbox = BBOX([-180, ymin_ll, xmax_ll, ymax_ll])
         return (left_bbox, right_bbox)
     else:
-        return bbox
+        return BBOX(bbox)
 
 
 class SentinelPystacSearcher(PystacSearcher):
@@ -132,7 +134,7 @@ class PathrowPystacSearcher(LandsatPystacSearcher):
 
     def _get_pathrows(self, area):
         bbox = bbox_across_180(area)
-        if len(bbox) == 2:
+        if isinstance(bbox, tuple):
             return self._landsat_pathrows[
                 self._landsat_pathrows.intersects(box(*bbox[0]))
                 | self._landsat_pathrows.intersects(box(*bbox[1]))

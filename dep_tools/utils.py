@@ -49,7 +49,7 @@ def shift_negative_longitudes(
 
 
 # retry is for search timeouts which occasionally occur
-@retry(tries=2, delay=1)
+@retry(tries=5, delay=1)
 def search_across_180(
     region: GeoDataFrame, client: pystac_client.Client | None = None, **kwargs
 ) -> ItemCollection:
