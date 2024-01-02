@@ -15,7 +15,7 @@ from stackstac import stack
 from xarray import DataArray, Dataset, concat
 
 from .exceptions import EmptyCollectionError
-from .utils import fix_bad_epsgs, remove_bad_items, search_across_180
+from .utils import fix_bad_epsgs, remove_bad_items, bbox_across_180, search_across_180
 
 
 class Loader(ABC):
@@ -76,39 +76,6 @@ class PystacSearcher(Searcher):
         item_collection = remove_bad_items(item_collection)
 
         return item_collection
-
-
-import geopandas as gpd
-from shapely.geometry import box
-
-BBOX = list[float]
-
-
-def bbox_across_180(area: gpd.GeoDataFrame) -> BBOX | tuple[BBOX, BBOX]:
-    bbox = area.to_crs(4326).total_bounds
-    # If the lower left X coordinate is greater than 180 it needs to shift
-    if bbox[0] > 180:
-        bbox[0] = bbox[0] - 360
-        # If the upper right X coordinate is greater than 180 it needs to shift
-        # but only if the lower left one did too... otherwise we split it below
-        if bbox[2] > 180:
-            bbox[2] = bbox[2] - 360
-
-    # These are Pacific specific tests!
-    bbox_crosses_antimeridian = (bbox[0] < 0 and bbox[2] > 0) or (
-        bbox[0] < 180 and bbox[2] > 180
-    )
-    if bbox_crosses_antimeridian:
-        xmax_ll, ymin_ll = bbox[0], bbox[1]
-        xmin_ll, ymax_ll = bbox[2], bbox[3]
-
-        xmax_ll = xmax_ll - 360 if xmax_ll > 180 else xmax_ll
-
-        left_bbox = BBOX([xmin_ll, ymin_ll, 180, ymax_ll])
-        right_bbox = BBOX([-180, ymin_ll, xmax_ll, ymax_ll])
-        return (left_bbox, right_bbox)
-    else:
-        return BBOX(bbox)
 
 
 class SentinelPystacSearcher(PystacSearcher):
@@ -198,40 +165,6 @@ class LandsatSearcher(PystacSearcher):
                 return self.search(area)
             else:
                 raise EmptyCollectionError()
-
-        # Filtering by path/row...
-        # Not lifting this into a query parameter yet as I'm not sure
-        # how it's used. - Alex Nov 2023
-        # TODO: move path/row filtering to the query
-        # query = {
-        #     "landsat:wrs_path": {"eq": PATH},
-        #     "landsat:wrs_row": {"eq": ROW}
-        # }
-        try:
-            index_dict = dict(zip(area.index.names, area.index[0]))
-        except TypeError:
-            index_dict = {}
-
-        if "PATH" in index_dict.keys() and "ROW" in index_dict.keys():
-            item_collection_for_this_pathrow = [
-                i
-                for i in item_collection
-                if i.properties["landsat:wrs_path"] == f"{index_dict['PATH'].zfill(3)}"
-                and i.properties["landsat:wrs_row"] == f"{index_dict['ROW'].zfill(3)}"
-            ]
-
-            if len(item_collection_for_this_pathrow) == 0:
-                raise EmptyCollectionError()
-
-            if self.load_tile_pathrow_only:
-                item_collection = item_collection_for_this_pathrow
-
-            if self.epsg is None:
-                self._current_epsg = item_collection_for_this_pathrow[0].properties[
-                    "proj:epsg"
-                ]
-
-        return item_collection
 
 
 class OdcLoader(StacLoader):

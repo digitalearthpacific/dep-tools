@@ -10,7 +10,6 @@ import pystac_client
 import rasterio
 import rioxarray
 import xarray as xr
-from antimeridian import fix_polygon
 from azure.storage.blob import ContainerClient
 from dask.distributed import Client, Lock
 from geocube.api.core import make_geocube
@@ -48,6 +47,36 @@ def shift_negative_longitudes(
     return LineString([(((pt[0] + 360) % 360), pt[1]) for pt in geometry.coords])
 
 
+BBOX = list[float]
+
+
+def bbox_across_180(region: GeoDataFrame) -> BBOX | tuple[BBOX, BBOX]:
+    bbox = region.to_crs(4326).total_bounds
+    # If the lower left X coordinate is greater than 180 it needs to shift
+    if bbox[0] > 180:
+        bbox[0] = bbox[0] - 360
+        # If the upper right X coordinate is greater than 180 it needs to shift
+        # but only if the lower left one did too... otherwise we split it below
+        if bbox[2] > 180:
+            bbox[2] = bbox[2] - 360
+
+    # These are Pacific specific tests!
+    bbox_crosses_antimeridian = (bbox[0] < 0 and bbox[2] > 0) or (
+        bbox[0] < 180 and bbox[2] > 180
+    )
+    if bbox_crosses_antimeridian:
+        xmax_ll, ymin_ll = bbox[0], bbox[1]
+        xmin_ll, ymax_ll = bbox[2], bbox[3]
+
+        xmax_ll = xmax_ll - 360 if xmax_ll > 180 else xmax_ll
+
+        left_bbox = BBOX([xmin_ll, ymin_ll, 180, ymax_ll])
+        right_bbox = BBOX([-180, ymin_ll, xmax_ll, ymax_ll])
+        return (left_bbox, right_bbox)
+    else:
+        return BBOX(bbox)
+
+
 # retry is for search timeouts which occasionally occur
 @retry(tries=5, delay=1)
 def search_across_180(
@@ -64,29 +93,11 @@ def search_across_180(
             modifier=planetary_computer.sign_inplace,
         )
 
-    bbox = region.to_crs(4326).total_bounds
-    # If the lower left X coordinate is greater than 180 it needs to shift
-    if bbox[0] > 180:
-        bbox[0] = bbox[0] - 360
-        # If the upper right X coordinate is greater than 180 it needs to shift
-        # but only if the lower left one did too... otherwise we split it below
-        if bbox[2] > 180:
-            bbox[2] = bbox[2] - 360
-
-    bbox_crosses_antimeridian = (
-        bbox[0] < 0 and bbox[2] > 0 or bbox[0] < 180 and bbox[2] > 180
-    )
-    if bbox_crosses_antimeridian:
-        xmax_ll, ymin_ll = bbox[0], bbox[1]
-        xmin_ll, ymax_ll = bbox[2], bbox[3]
-
-        xmax_ll = xmax_ll - 360 if xmax_ll > 180 else xmax_ll
-
-        left_bbox = [xmin_ll, ymin_ll, 180, ymax_ll]
-        right_bbox = [-180, ymin_ll, xmax_ll, ymax_ll]
+    bbox = bbox_across_180(region)
+    if isinstance(bbox, tuple):
         return ItemCollection(
-            list(client.search(bbox=left_bbox, **kwargs).items())
-            + list(client.search(bbox=right_bbox, **kwargs).items())
+            list(client.search(bbox=box(*bbox[0]), **kwargs).items())
+            + list(client.search(bbox=box(*bbox[1]), **kwargs).items())
         )
     else:
         return client.search(bbox=bbox, **kwargs).item_collection()
