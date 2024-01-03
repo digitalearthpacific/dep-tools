@@ -1,15 +1,13 @@
 from abc import ABC, abstractmethod
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import field
 from functools import partial
 from typing import Callable, Dict, Hashable, List, Union
 
 import numpy as np
+from azure.storage.blob import ContainerClient
 from pystac import Asset
 from urlpath import URL
 from xarray import DataArray, Dataset
-
-from azure.storage.blob import ContainerClient
 
 from .azure import get_container_client
 from .namers import DepItemPath
@@ -33,7 +31,7 @@ class XrWriterMixin(object):
         output_value_multiplier: int = 10000,
         scale_int16s: bool = False,
         output_nodata: int = -32767,
-        extra_attrs: Dict = field(default_factory=dict),
+        extra_attrs: Dict = {},
     ):
         self.convert_to_int16 = convert_to_int16
         self.output_value_multiplier = output_value_multiplier
@@ -67,7 +65,7 @@ class DsWriter(XrWriterMixin, Writer):
         output_value_multiplier: int = 10000,
         scale_int16s: bool = False,
         output_nodata: int = -32767,
-        extra_attrs: Dict = field(default_factory=dict),
+        extra_attrs: Dict = {},
     ):
         self.itempath = itempath
         self.use_odc_writer = use_odc_writer
@@ -157,7 +155,7 @@ class LocalDsWriter(DsWriter):
         output_value_multiplier: int = 10000,
         scale_int16s: bool = False,
         output_nodata: int = -32767,
-        extra_attrs: Dict = field(default_factory=dict),
+        extra_attrs: Dict = {},
     ):
         super().__init__(
             itempath=itempath,
@@ -188,7 +186,7 @@ class AzureDsWriter(DsWriter):
         output_value_multiplier: int = 10000,
         scale_int16s: bool = False,
         output_nodata: int = -32767,
-        extra_attrs: Dict = field(default_factory=dict),
+        extra_attrs: Dict = {},
     ):
         self.client = get_container_client() if client is None else client
         write_function = partial(write_to_blob_storage, client=client)
