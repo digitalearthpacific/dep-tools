@@ -91,7 +91,10 @@ class SimpleLoggingAreaTask(AreaTask):
         self.logger.info(f"Found {len(input_data.time)} timesteps to load")
 
         self.logger.info("Preparing to process data")
-        output_data = self.processor.process(input_data)
+        processor_kwargs = {}
+        if self.processor.send_area_to_processor:
+            processor_kwargs["area"] = self.area
+        output_data = self.processor.process(input_data, **processor_kwargs)
         self.logger.info(f"Processed data will have a result of shape: {[output_data.dims[d] for d in ['x', 'y']]}")
 
         self.logger.info("Processing and writing data...")
