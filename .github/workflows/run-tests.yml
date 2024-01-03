@@ -1,0 +1,59 @@
+name: Run tests
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  # Probably should add a release process to publish a package we install
+  # one day...
+  # release:
+  #   types:
+  #     - created
+
+jobs:
+  linting:
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check linting
+        uses: rickstaa/action-black@v1
+        id: action_black
+        with:
+          black_args: "--check dep_tools"
+
+  testing:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/osgeo/gdal:ubuntu-full-3.7.3
+      volumes:
+        - ${{ github.workspace }}:/github/workspace
+    steps:
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install dependencies and run tests
+        run: |
+          apt-get update && apt-get install -y \
+            python3-pip \
+            python3-dev \
+            git \
+            libpq-dev \
+            ca-certificates \
+            build-essential
+          pip3 install --upgrade pip setuptools wheel poetry
+          pip3 install .
+
+      - name: Run tests
+        run: |
+            pip3 install pytest
+            cd /github/workspace
+            pytest tests
