@@ -1,11 +1,12 @@
-import pystac_client
 import warnings
 
 from geopandas import GeoDataFrame, read_file
+import pystac_client
 
 from dep_tools.exceptions import EmptyCollectionError
 from dep_tools.utils import (
     fix_bad_epsgs,
+    items_in_pathrows,
     pathrows_in_area,
     remove_bad_items,
     search_across_180,
@@ -29,7 +30,7 @@ class PystacSearcher(Searcher):
 
     This is written to be used with the "Task" framework. If you just want to search
     for stac items and handle the antimeridian correctly, use
-    dep_tools.utils.search_across_180.
+    :func:`dep_tools.utils.search_across_180`.
 
     Args:
         client: A search client.
@@ -91,7 +92,7 @@ class LandsatPystacSearcher(PystacSearcher):
             warnings.warn(
                 "`query` argument being ignored. To send a query directly, use `PystacSearcher`."
             )
-        self.query = {}
+        self.query = dict(collections=["landsat-c2-l2"])
         if self._exclude_platforms is not None:
             landsat_platforms = ["landsat-5", "landsat-7", "landsat-8", "landsat-9"]
             self.query["platform"] = {
@@ -121,5 +122,8 @@ class LandsatPystacSearcher(PystacSearcher):
                 items = self.search(search_area)
             else:
                 raise EmptyCollectionError()
+
+        if self._search_intersecting_pathrows:
+            items = items_in_pathrows(search_area)
 
         return items
