@@ -167,25 +167,16 @@ class OdcLoaderMixin(object):
         items,
         areas: GeoDataFrame,
     ) -> DataArray | Dataset:
-        # For most EO data native dtype is int. Loading as such saves space but
-        # the only more-or-less universally accepted nodata value is nan,
-        # which is not available for int types. So we need to load as float and
-        # then replace existing nodata values (usually 0) with nan. At least
-        # I _think_ all this is necessary and there's not an easier way I didn't
-        # see in the docs.
-        areas_proj = areas.to_crs(self._current_epsg)
-        bounds = areas_proj.total_bounds.tolist()
-
         data_type = "uint16" if self.keep_ints else "float32"
 
         xr = load(
             items,
+            geopolygon=areas,
             crs=self._current_epsg,
             chunks=self.dask_chunksize,
-            x=(bounds[0], bounds[2]),
-            y=(bounds[1], bounds[3]),
-            **self.odc_load_kwargs,
             dtype=data_type,
+            nodata=self.nodata,
+            **self.odc_load_kwargs,
         )
 
         if self.nodata is not None:
@@ -212,7 +203,7 @@ class OdcLoaderMixin(object):
                 .rio.write_crs(self._current_epsg)
                 .rio.write_nodata(float("nan"))
                 .rio.clip(
-                    areas_proj.geometry,
+                    areas.to_crs(self._current_epsg).geometry,
                     all_touched=True,
                     from_disk=True,
                 )
