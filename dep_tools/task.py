@@ -85,7 +85,7 @@ class ErrorCategoryAreaTask(AreaTask):
 
 
 class SimpleLoggingAreaTask(AreaTask):
-    def run(self):
+    def run(self, load_data_before_writing=False):
         self.logger.info("Preparing to load data")
         input_data = self.loader.load(self.area)
         self.logger.info(f"Found {len(input_data.time)} timesteps to load")
@@ -99,7 +99,15 @@ class SimpleLoggingAreaTask(AreaTask):
             f"Processed data will have a result of shape: {[output_data.dims[d] for d in ['x', 'y']]}"
         )
 
-        self.logger.info("Processing and writing data...")
+        if load_data_before_writing:
+            self.logger.info("Loading data into memory and processing")
+            output_data = output_data.compute()
+            self.logger.info("Data processed and loaded")
+
+            self.logger.info("Writing data")
+        else:
+            self.logger.info("Processing and writing data...")
+
         paths = self.writer.write(output_data, self.id)
         self.logger.info(f"Succesfully wrote data to {len(paths)} paths")
 
