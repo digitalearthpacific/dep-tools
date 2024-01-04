@@ -1,8 +1,12 @@
-from typing import Dict, Iterable, Tuple
+from typing import Iterable, Tuple
 
-import geopandas as gpd
+from geopandas import read_file, GeoDataFrame
 from odc.algo import erase_bad, mask_cleanup
+from pystac import ItemCollection
+from shapely.geometry import box
 from xarray import DataArray, Dataset
+
+from dep_tools.utils import bbox_across_180
 
 
 def mask_clouds(
@@ -43,8 +47,40 @@ def mask_clouds(
         return xr.where(~cloud_mask)
 
 
-def pathrow_with_greatest_area(shapes: gpd.GeoDataFrame) -> Tuple[str, str]:
-    pathrows = gpd.read_file(
+def pathrows_in_area(area: GeoDataFrame, pathrows: GeoDataFrame | None):
+    if pathrows is None:
+        pathrows = GeoDataFrame(
+            read_file(
+                "https://d9-wret.s3.us-west-2.amazonaws.com/assets/palladium/production/s3fs-public/atoms/files/WRS2_descending_0.zip"
+            )
+        )
+    bbox = bbox_across_180(area)
+    if isinstance(bbox, tuple):
+        return pathrows[
+            pathrows.intersects(box(*bbox[0])) | pathrows.intersects(box(*bbox[1]))
+        ]
+
+    return pathrows[pathrows.intersects(box(*bbox))]
+
+
+def items_in_pathrows(
+    items: ItemCollection, some_pathrows: GeoDataFrame
+) -> ItemCollection:
+    return ItemCollection(
+        some_pathrows.apply(
+            lambda row: [
+                i
+                for i in items
+                if i.properties["landsat:wrs_path"] == str(row["PATH"]).zfill(3)
+                and i.properties["landsat:wrs_row"] == str(row["ROW"]).zfill(3)
+            ],
+            axis=1,
+        ).sum()
+    )
+
+
+def pathrow_with_greatest_area(shapes: GeoDataFrame) -> Tuple[str, str]:
+    pathrows = read_file(
         "https://d9-wret.s3.us-west-2.amazonaws.com/assets/palladium/production/s3fs-public/atoms/files/WRS2_descending_0.zip"
     )
     intersection = shapes.overlay(pathrows, how="intersection")
