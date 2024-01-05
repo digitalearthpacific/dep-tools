@@ -38,7 +38,7 @@ class SearchLoader(Loader):
 class OdcLoader(StacLoader):
     def __init__(
         self,
-        load_as_dataset: bool = False,
+        load_as_dataset: bool = True,
         clip_to_area: bool = False,
         **kwargs,
     ):

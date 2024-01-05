@@ -1,0 +1,41 @@
+from re import search
+import geopandas as gpd
+from pystac_client import Client
+import pytest
+from shapely.geometry import box
+
+from dep_tools.landsat_utils import pathrows_in_area, items_in_pathrows
+from dep_tools.searchers import LandsatPystacSearcher
+
+# From https://github.com/microsoft/PlanetaryComputer/issues/296
+
+DATETIME = "2022-09/2022-10"
+COLLECTIONS = ["landsat-c2-l2"]
+BBOX = [179.1, -17.7, 179.95, -17.0]
+
+
+@pytest.fixture()
+def near_antimeridian_area() -> gpd.GeoDataFrame:
+    return gpd.GeoDataFrame(
+        geometry=[box(*BBOX)],
+        crs="EPSG:4326",
+    )
+
+
+@pytest.fixture
+def mspc_client():
+    return Client.open("https://planetarycomputer.microsoft.com/api/stac/v1")
+
+
+def test_pathrows_in_area(near_antimeridian_area):
+    pathrows = pathrows_in_area(near_antimeridian_area)
+    assert pathrows.PR.tolist() == ["073072", "074072"]
+
+
+def test_search_for_stac_items_with_bad_geoms(near_antimeridian_area):
+    searcher = LandsatPystacSearcher(
+        datetime=DATETIME, search_intersecting_pathrows=True
+    )
+
+    items = searcher.search(near_antimeridian_area)
+    assert len(items) == 12

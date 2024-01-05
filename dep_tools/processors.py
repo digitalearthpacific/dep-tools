@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from xarray import DataArray
+from xarray import DataArray, Dataset
 
 from .landsat_utils import mask_clouds as mask_clouds_landsat
 from .s2_utils import harmonize_to_old
@@ -30,7 +30,7 @@ class LandsatProcessor(Processor):
         self.mask_clouds = mask_clouds
         self.mask_kwargs = mask_clouds_kwargs
 
-    def process(self, xr: DataArray) -> DataArray:
+    def process(self, xr: DataArray | Dataset) -> DataArray | Dataset:
         if self.mask_clouds:
             xr = mask_clouds_landsat(xr, **self.mask_kwargs)
         if self.scale_and_offset:

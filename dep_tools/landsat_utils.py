@@ -9,6 +9,37 @@ from xarray import DataArray, Dataset
 from dep_tools.utils import bbox_across_180
 
 
+def cloud_mask(
+    xr: DataArray | Dataset, filters: Iterable[Tuple[str, int]] | None = None
+) -> DataArray | Dataset:
+    """Get the cloud mask for landsat data.
+
+    Args:
+        xr: DataArray containing Landsat data including the `qa_pixel` band.
+        filters: List of filters to apply to the cloud mask. Each filter is a tuple of
+            (filter name, filter size). Valid filter names are 'opening' and 'dilation'.
+            If None, no filters will be applied.
+            For example: [("closing", 10),("opening", 2),("dilation", 2)]
+
+    """
+    CLOUD = 3
+    CLOUD_SHADOW = 4
+
+    bitmask = 0
+    for field in [CLOUD, CLOUD_SHADOW]:
+        bitmask |= 1 << field
+
+    try:
+        cloud_mask = xr.sel(band="qa_pixel").astype("uint16") & bitmask != 0
+    except KeyError:
+        cloud_mask = xr.qa_pixel.astype("uint16") & bitmask != 0
+
+    if filters is not None:
+        cloud_mask = mask_cleanup(cloud_mask, filters)
+
+    return cloud_mask
+
+
 def mask_clouds(
     xr: DataArray | Dataset,
     filters: Iterable[Tuple[str, int]] | None = None,
@@ -26,28 +57,16 @@ def mask_clouds(
         keep_ints: If True, return the masked data as integers. Otherwise, return
             the masked data as floats.
     """
-    CLOUD = 3
-    CLOUD_SHADOW = 4
 
-    bitmask = 0
-    for field in [CLOUD, CLOUD_SHADOW]:
-        bitmask |= 1 << field
-
-    try:
-        cloud_mask = xr.sel(band="qa_pixel").astype("uint16") & bitmask != 0
-    except KeyError:
-        cloud_mask = xr.qa_pixel.astype("uint16") & bitmask != 0
-
-    if filters is not None:
-        cloud_mask = mask_cleanup(cloud_mask, filters)
+    mask = cloud_mask(xr, filters)
 
     if keep_ints:
-        return erase_bad(xr, cloud_mask)
+        return erase_bad(xr, mask)
     else:
-        return xr.where(~cloud_mask)
+        return xr.where(~mask)
 
 
-def pathrows_in_area(area: GeoDataFrame, pathrows: GeoDataFrame | None):
+def pathrows_in_area(area: GeoDataFrame, pathrows: GeoDataFrame | None = None):
     if pathrows is None:
         pathrows = GeoDataFrame(
             read_file(

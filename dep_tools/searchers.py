@@ -1,13 +1,13 @@
+from abc import ABC, abstractmethod
 import warnings
 
 from geopandas import GeoDataFrame, read_file
 import pystac_client
 
 from dep_tools.exceptions import EmptyCollectionError
+from dep_tools.landsat_utils import items_in_pathrows, pathrows_in_area
 from dep_tools.utils import (
     fix_bad_epsgs,
-    items_in_pathrows,
-    pathrows_in_area,
     remove_bad_items,
     search_across_180,
 )
@@ -83,6 +83,7 @@ class LandsatPystacSearcher(PystacSearcher):
         **kwargs,
     ):
         super().__init__(**kwargs)
+        self._kwargs["collections"] = ["landsat-c2-l2"]
         self._search_intersecting_pathrows = search_intersecting_pathrows
         self._exclude_platforms = exclude_platforms
         self._only_tier_one = only_tier_one
@@ -92,15 +93,18 @@ class LandsatPystacSearcher(PystacSearcher):
             warnings.warn(
                 "`query` argument being ignored. To send a query directly, use `PystacSearcher`."
             )
-        self.query = dict(collections=["landsat-c2-l2"])
+
+        query = {}
         if self._exclude_platforms is not None:
             landsat_platforms = ["landsat-5", "landsat-7", "landsat-8", "landsat-9"]
-            self.query["platform"] = {
+            query["platform"] = {
                 "in": [p for p in landsat_platforms if p not in self._exclude_platforms]
             }
 
         if self._only_tier_one:
-            self.query["landsat:collection_category"] = {"eq": "T1"}
+            query["landsat:collection_category"] = {"eq": "T1"}
+
+        self._kwargs["query"] = query
 
         if self._search_intersecting_pathrows:
             self._landsat_pathrows = read_file(
@@ -124,6 +128,6 @@ class LandsatPystacSearcher(PystacSearcher):
                 raise EmptyCollectionError()
 
         if self._search_intersecting_pathrows:
-            items = items_in_pathrows(search_area)
+            items = items_in_pathrows(items, search_area)
 
         return items

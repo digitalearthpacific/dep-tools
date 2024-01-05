@@ -1,5 +1,6 @@
-from geopandas import GeoDataFrame
+from geopandas import GeoDataFrame, read_file
 from shapely.geometry import LineString, Polygon
+import shapely.wkt
 
 from dep_tools.utils import (
     shift_negative_longitudes,
@@ -40,3 +41,18 @@ def test_bbox_across_180_noncrossing():
     bbox = bbox_across_180(crossing_gdf)
     assert isinstance(bbox, list)
     assert bbox == [175.0, -1.0, 179.0, 1.0]
+
+
+def test_geom_split_at_180():
+    # This is from
+    #    split_geom = GeoDataFrame(
+    #        read_file(
+    #            "https://d9-wret.s3.us-west-2.amazonaws.com/assets/palladium/production/s3fs-public/atoms/files/WRS2_descending_0.zip"
+    #        )
+    #    ).loc[[7759]]
+    wkt = "MULTIPOLYGON (((180 -16.581744457409567, 180 -17.994919108280254, 180 -18.07255347222222, 179.3583829354262 -17.9793556231435, 179.358 -17.9793, 179.709 -16.4619, 179.70911279263044 -16.461916385860548, 180 -16.504174795799297, 180 -16.581744457409567)), ((-178.89731077442417 -18.155054868427573, -178.914 -18.2303, -180 -18.07255347222222, -180 -17.994919108280254, -180 -16.581744457409567, -180 -16.5041747957993, -178.5774802586448 -16.710830230803637, -178.577 -16.7109, -178.89731077442417 -18.155054868427573)))"
+    split_geom = GeoDataFrame(geometry=[shapely.wkt.loads(wkt)], crs=4326)
+    bbox = bbox_across_180(split_geom)
+    assert isinstance(bbox, tuple)
+    assert bbox[0] == [179.358, -18.2303, 180, -16.4619]
+    assert bbox[1] == [-180, -18.2303, -178.577, -16.4619]

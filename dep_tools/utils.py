@@ -51,7 +51,28 @@ BBOX = list[float]
 
 
 def bbox_across_180(region: GeoDataFrame) -> BBOX | tuple[BBOX, BBOX]:
-    bbox = region.to_crs(4326).total_bounds
+    # Previously we just used region.to_crs(4326).total_bounds but if the geom
+    # is split right at the antimeridian (see landsat pathrow 073072), output
+    # will have zero width (since min and max will be -180 and 180)
+    # So get the bounds for all geoms in region, remove the 180s and calculate
+    # the min and max values ourselves
+    region_ll = GeoDataFrame(region.to_crs(4326))
+    x_values = (
+        region_ll.explode(index_parts=True).bounds.minx.tolist()
+        + region_ll.explode(index_parts=True).bounds.maxx.tolist()
+    )
+    # Possible we just do a direct compare, we shall see if this causes issues
+    # with locations _really close_ to 180 but not touching it
+    x_values = [i for i in x_values if not np.isclose([-180, 180], i).any()]
+
+    y_values = (
+        region_ll.explode(index_parts=True).bounds.miny.tolist()
+        + region_ll.explode(index_parts=True).bounds.maxy.tolist()
+    )
+
+    bbox = [min(x_values), min(y_values), max(x_values), max(y_values)]
+
+    # Now fix some coord issues
     # If the lower left X coordinate is greater than 180 it needs to shift
     if bbox[0] > 180:
         bbox[0] = bbox[0] - 360
@@ -65,6 +86,7 @@ def bbox_across_180(region: GeoDataFrame) -> BBOX | tuple[BBOX, BBOX]:
         bbox[0] < 180 and bbox[2] > 180
     )
     if bbox_crosses_antimeridian:
+        # Split into two bboxes across the antimeridian
         xmax_ll, ymin_ll = bbox[0], bbox[1]
         xmin_ll, ymax_ll = bbox[2], bbox[3]
 
@@ -94,10 +116,11 @@ def search_across_180(
         )
 
     bbox = bbox_across_180(region)
+
     if isinstance(bbox, tuple):
         return ItemCollection(
-            list(client.search(bbox=box(*bbox[0]), **kwargs).items())
-            + list(client.search(bbox=box(*bbox[1]), **kwargs).items())
+            list(client.search(bbox=bbox[0], **kwargs).items())
+            + list(client.search(bbox=bbox[1], **kwargs).items())
         )
     else:
         return client.search(bbox=bbox, **kwargs).item_collection()
@@ -192,7 +215,6 @@ def write_to_blob_storage(
 
     elif isinstance(d, GeoDataFrame):
         with fiona.io.MemoryFile() as buffer:
-            breakpoint()
             d.to_file(buffer, **write_args)
             buffer.seek(0)
             blob_client.upload_blob(buffer, overwrite=overwrite)
