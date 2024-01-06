@@ -1,5 +1,4 @@
 import io
-from itertools import chain
 from pathlib import Path
 from typing import Dict, List, Union
 
@@ -18,7 +17,7 @@ from odc.geo.xr import to_cog, write_cog
 from osgeo import gdal
 from pystac import ItemCollection
 from retry import retry
-from shapely.geometry import LineString, MultiLineString, box
+from shapely.geometry import LineString, MultiLineString
 from xarray import DataArray, Dataset
 
 from .azure import get_container_client

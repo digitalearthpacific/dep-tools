@@ -61,6 +61,7 @@ class DsWriter(XrWriterMixin, Writer):
         client = get_container_client()
 
         def get_write_partial(variable: Hashable) -> Callable:
+            breakpoint()
             output_da = xr[variable].squeeze()
             path = self.itempath.path(item_id, variable)
             paths.append(path)

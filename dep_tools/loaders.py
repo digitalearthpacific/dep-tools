@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+import warnings
 
 from geopandas import GeoDataFrame
 import odc.stac
@@ -48,19 +49,35 @@ class OdcLoader(StacLoader):
         self._load_as_dataset = load_as_dataset
 
     def load(self, items, areas: GeoDataFrame) -> Dataset | DataArray:
+        # If `nodata` is passed as an arg, or the stac item contains the nodata
+        # value, xr[variable].nodata will be set on load.
         xr = odc.stac.load(
             items,
             geopolygon=areas,
             **self._kwargs,
         )
 
-        if not self._load_as_dataset:
-            xr = xr.to_array("band").rename("data").rio.write_crs(xr.odc.crs)
+        for name in xr:
+            # Since nan is more-or-less universally accepted as a nodata value,
+            # if the dtype of a band is some sort of floating point, then recode
+            # existing values that are equal to the value set on load to nan
+            if xr[name].dtype.kind == "f":
+                # Should I make this an option?
+                xr[name] = xr[name].where(xr[name] != xr[name].nodata, float("nan"))
+                xr[name].attrs["nodata"] = float("nan")
+            # To be helpful, set the nodata so rioxarray can understand it too.
+            xr[name].rio.write_nodata(xr[name].nodata, inplace=True)
 
         if self._clip_to_area:
             xr = xr.rio.clip(
                 areas.to_crs(xr.odc.crs).geometry, all_touched=True, from_disk=True
             )
+            # Clip loses this, so re-set.
+            for name in xr:
+                xr[name].attrs["nodata"] = xr[name].rio.nodata
+
+        if not self._load_as_dataset:
+            xr = xr.to_array("band").rename("data").rio.write_crs(xr.odc.crs)
 
         return xr
 

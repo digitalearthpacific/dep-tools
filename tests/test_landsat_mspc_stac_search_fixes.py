@@ -4,7 +4,7 @@ from pystac_client import Client
 import pytest
 from shapely.geometry import box
 
-from dep_tools.landsat_utils import pathrows_in_area, items_in_pathrows
+from dep_tools.landsat_utils import pathrows_in_area
 from dep_tools.searchers import LandsatPystacSearcher
 
 # From https://github.com/microsoft/PlanetaryComputer/issues/296
