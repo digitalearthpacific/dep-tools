@@ -55,13 +55,13 @@ class DsWriter(XrWriterMixin, Writer):
     write_stac: bool = True
 
     def write(self, xr: Dataset, item_id: str) -> str | List:
-        xr = super().prep(xr)
+        xr = super().prep(xr).compute()
+
         paths = []
         assets = {}
         client = get_container_client()
 
         def get_write_partial(variable: Hashable) -> Callable:
-            breakpoint()
             output_da = xr[variable].squeeze()
             path = self.itempath.path(item_id, variable)
             paths.append(path)

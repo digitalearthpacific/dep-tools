@@ -125,11 +125,33 @@ def search_across_180(
         return client.search(bbox=bbox, **kwargs).item_collection()
 
 
+def copy_attrs(
+    source: DataArray | Dataset, destination: DataArray | Dataset
+) -> DataArray | Dataset:
+    # See https://corteva.github.io/rioxarray/html/getting_started/manage_information_loss.html
+    # Doesn't account if source and dest don't have the same vars
+    if isinstance(destination, DataArray):
+        destination.rio.write_crs(source.rio.crs, inplace=True)
+        destination.rio.update_attrs(source.attrs, inplace=True)
+        destination.rio.update_encoding(source.encoding, inplace=True)
+        return destination
+    else:
+        for variable in destination:
+            destination[variable] = copy_attrs(source[variable], destination[variable])
+        return destination
+
+
 def scale_and_offset(
-    da: xr.DataArray, scale: List[float] = [1], offset: float = 0
-) -> xr.DataArray:
-    """Apply the given scale and offset to the given DataArray"""
-    return da * scale + offset
+    da: DataArray | Dataset,
+    scale: List[float] = [1],
+    offset: float = 0,
+    keep_attrs=True,
+) -> DataArray | Dataset:
+    """Apply the given scale and offset to the given Xarray object."""
+    output = da * scale + offset
+    if keep_attrs:
+        output = copy_attrs(da, output)
+    return output
 
 
 def make_geocube_dask(

@@ -39,6 +39,7 @@ class LandsatProcessor(Processor):
             # to rioxarray/stack/odc.stac.load but apparently that doesn't work.
             scale = 0.0000275
             offset = -0.2
+
             xr = scale_and_offset(xr, scale=[scale], offset=offset)
 
         return xr
