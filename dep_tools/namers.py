@@ -72,6 +72,3 @@ class LocalPath(DepItemPath):
         self._folder_prefix = (
             f"{local_folder}/dep_{self.sensor}_{self.dataset_id}/{self.version}"
         )
-
-    def _folder(self, item_id) -> str:
-        return self._folder_prefix
