@@ -175,7 +175,6 @@ class OdcLoaderMixin(object):
             crs=self._current_epsg,
             chunks=self.dask_chunksize,
             dtype=data_type,
-            nodata=self.nodata,
             **self.odc_load_kwargs,
         )
 
