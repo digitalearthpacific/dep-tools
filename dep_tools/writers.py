@@ -9,7 +9,7 @@ from pystac import Asset
 from urlpath import URL
 from xarray import DataArray, Dataset
 
-from .azure import get_container_client
+from .azure import get_container_client, blob_exists
 from .namers import DepItemPath
 from .stac_utils import write_stac_blob_storage, write_stac_local
 from .utils import scale_to_int16, write_to_blob_storage, write_to_local_storage
@@ -35,6 +35,9 @@ class XrWriterMixin(object):
     extra_attrs: Dict = field(default_factory=dict)
     use_odc_writer: bool = False
 
+    def _stac_exists(self, item_id):
+        return blob_exists(self.itempath.stac_path(item_id))
+
     def prep(self, xr: Union[DataArray, Dataset]):
         xr.attrs.update(self.extra_attrs)
         if self.convert_to_int16:
@@ -54,11 +57,23 @@ class DsWriter(XrWriterMixin, Writer):
     write_stac_function: Callable = write_stac_blob_storage
     write_stac: bool = True
 
+    def _all_paths(self, ds: Dataset, item_id: str):
+        # Only problem here is if xr has variables that aren't in the stac
+        # so maybe we need to read stac?
+        paths = [self.itempath.path(item_id, variable) for variable in ds]
+        if self.write_stac and self._stac_exists(item_id):
+            paths += self.itempath.stac_path(item_id)
+        return paths
+
     def write(self, xr: Dataset, item_id: str) -> str | List:
+        if self._stac_exists(item_id):
+            return self._all_paths(xr, item_id)
+
         xr = super().prep(xr).compute()
 
         paths = []
         assets = {}
+        # pull this out
         client = get_container_client()
 
         def get_write_partial(variable: Hashable) -> Callable:
@@ -77,7 +92,6 @@ class DsWriter(XrWriterMixin, Writer):
             )
 
         if self.write_multithreaded:
-            # Use a threadpool to write all at once
             with ThreadPoolExecutor() as executor:
                 futures = [
                     executor.submit(get_write_partial(variable)) for variable in xr
@@ -100,14 +114,14 @@ class DsWriter(XrWriterMixin, Writer):
                 )
                 for variable, path in zip(xr, paths)
             }
-            stac_id = self.itempath.basename(item_id)  # , variable)
+            stac_id = self.itempath.basename(item_id)
             collection = self.itempath.item_prefix
             # has to be a datetime datetime object
             datetime = np.datetime64(xr.attrs["stac_properties"]["datetime"]).item()
             stac_path = self.write_stac_function(
                 xr,
                 paths[0],
-                stac_url=self.itempath.path(item_id, ext=".stac-item.json"),
+                stac_url=self.itempath.stac_path(item_id),
                 input_datetime=datetime,
                 assets=assets,
                 collection=collection,

@@ -22,11 +22,6 @@ def near_antimeridian_area() -> gpd.GeoDataFrame:
     )
 
 
-@pytest.fixture
-def mspc_client():
-    return Client.open("https://planetarycomputer.microsoft.com/api/stac/v1")
-
-
 def test_pathrows_in_area(near_antimeridian_area):
     pathrows = pathrows_in_area(near_antimeridian_area)
     assert pathrows.PR.tolist() == ["073072", "074072"]

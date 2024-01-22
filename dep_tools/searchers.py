@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 import warnings
 
 from geopandas import GeoDataFrame, read_file
+from pystac import ItemCollection
 import pystac_client
 
 from dep_tools.exceptions import EmptyCollectionError
@@ -14,6 +15,8 @@ from dep_tools.utils import (
 
 
 class Searcher(ABC):
+    """An abstract base class which searches for something based on an area."""
+
     def __init__(self):
         pass
 
@@ -24,21 +27,22 @@ class Searcher(ABC):
 
 class PystacSearcher(Searcher):
     """A Searcher which searches for stac items using pystac_client.Client.search.
-    Fixes include correctly searching across the antimeridian by splitting the bounding
-    box of the target area on either side and removal of known "bad" stac items (using
-    dep_tools.utils.remove_bad_items).
 
-    This is written to be used with the "Task" framework. If you just want to search
-    for stac items and handle the antimeridian correctly, use
+    Fixes include correctly searching across the antimeridian by splitting the
+    bounding box of the target area on either side and removal of known "bad"
+    stac items (using dep_tools.utils.remove_bad_items).
+
+    This is written to be used with the :class:`Task` framework. If you just
+    want to search for stac items and handle the antimeridian correctly, use
     :func:`dep_tools.utils.search_across_180`.
 
     Args:
         client: A search client.
-        raise_empty_collection_error: Whether an EmptyCollectionError exception should
-            be returned if no stac items are found.
-        **kwargs: Additional arguments passed to client.search(). For example, passing
-            `collections=["sentinel-2-l2a"]` will restrict results to Sentinel 2 stac
-            items.
+        raise_empty_collection_error: Whether an EmptyCollectionError exception
+            should be returned if no stac items are found.
+        **kwargs: Additional arguments passed to client.search(). For example,
+            passing `collections=["sentinel-2-l2a"]` will restrict results to
+            Sentinel 2 stac items.
     """
 
     def __init__(
@@ -51,7 +55,7 @@ class PystacSearcher(Searcher):
         self._raise_errors = raise_empty_collection_error
         self._kwargs = kwargs
 
-    def search(self, area: GeoDataFrame):
+    def search(self, area: GeoDataFrame) -> ItemCollection:
         """Search for stac items within the bounds of the corresponding area.
 
         Args:
@@ -74,21 +78,51 @@ class PystacSearcher(Searcher):
 
 
 class LandsatPystacSearcher(PystacSearcher):
+    """A PystacSearcher with special functionality for landsat data on the
+    MSPC. Currently it overwrites any `query` kwarg, so if you want a direct
+    query, just use :class:PystacSearcher.
+
+    Args:
+        client: A search client.
+        raise_empty_collection_error: Whether an EmptyCollectionError exception should
+            be returned if no stac items are found.
+        search_intersecting_pathrows: Whether to use landsat pathrows which
+            intersect the area passed to :func:search rather than the area itself.
+            This is a workaround for bad geometry in some stac items which
+            cross the antimeridian.
+        exclude_platforms: A list of platforms (e.g. ["landsat-7"]) to exclude
+            from searching.
+        only_tier_one: Whether to only search for tier one landsat data.
+        fall_back_to_tier_two: If `only_tier_one` is set to True and no items
+            are returned from the search, search again with tier two data
+            included.
+        **kwargs: Additional arguments passed to client.search(). `collections`
+            and `query` arguments will be overwritten.
+    """
+
     def __init__(
         self,
+        client: pystac_client.Client | None = None,
+        raise_empty_collection_error: bool = True,
         search_intersecting_pathrows: bool = False,
         exclude_platforms: list | None = None,
         only_tier_one: bool = False,
         fall_back_to_tier_two: bool = False,
         **kwargs,
     ):
-        super().__init__(**kwargs)
+        super().__init__(
+            client=client,
+            raise_empty_collection_error=raise_empty_collection_error,
+            **kwargs,
+        )
         self._kwargs["collections"] = ["landsat-c2-l2"]
         self._search_intersecting_pathrows = search_intersecting_pathrows
         self._exclude_platforms = exclude_platforms
         self._only_tier_one = only_tier_one
         self._fall_back_to_tier_two = fall_back_to_tier_two
 
+        # For now, just warn that we're overwriting the query. In future,
+        # we might look to combine.
         if "query" in self._kwargs.keys():
             warnings.warn(
                 "`query` argument being ignored. To send a query directly, use `PystacSearcher`."

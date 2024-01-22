@@ -14,7 +14,7 @@ from .utils import write_to_blob_storage, write_to_local_storage
 
 
 def write_stac(
-    xr: Union[DataArray, Dataset],
+    xr: DataArray | Dataset,
     path: str,
     stac_url,
     writer=write_to_blob_storage,
@@ -43,7 +43,7 @@ write_stac_blob_storage = write_stac
 
 
 def _get_stac_item(
-    xr: Union[DataArray, Dataset],
+    xr: DataArray | Dataset,
     path: str,
     collection: str,
     remote: bool = True,

@@ -57,13 +57,16 @@ class OdcLoader(StacLoader):
             **self._kwargs,
         )
 
+        # TODO: need to handle cases where nodata is _not_ set on load. (see
+        # landsat qr_radsat band)
         for name in xr:
             # Since nan is more-or-less universally accepted as a nodata value,
             # if the dtype of a band is some sort of floating point, then recode
             # existing values that are equal to the value set on load to nan
             if xr[name].dtype.kind == "f":
                 # Should I make this an option?
-                xr[name] = xr[name].where(xr[name] != xr[name].nodata, float("nan"))
+                if "nodata" in xr[name].attrs.keys():
+                    xr[name] = xr[name].where(xr[name] != xr[name].nodata, float("nan"))
                 xr[name].attrs["nodata"] = float("nan")
             # To be helpful, set the nodata so rioxarray can understand it too.
             xr[name].rio.write_nodata(xr[name].nodata, inplace=True)
