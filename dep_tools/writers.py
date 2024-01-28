@@ -56,6 +56,7 @@ class DsWriter(XrWriterMixin, Writer):
     write_multithreaded: bool = False
     write_stac_function: Callable = write_stac_blob_storage
     write_stac: bool = True
+    load_before_write: bool = False
 
     def _all_paths(self, ds: Dataset, item_id: str):
         # Only problem here is if xr has variables that aren't in the stac
@@ -69,7 +70,10 @@ class DsWriter(XrWriterMixin, Writer):
         if self._stac_exists(item_id):
             return self._all_paths(xr, item_id)
 
-        xr = super().prep(xr).compute()
+        xr = super().prep(xr)
+
+        if self.load_before_write:
+            xr.load()
 
         paths = []
         assets = {}
