@@ -66,3 +66,30 @@ class S2Processor(Processor):
             xr = harmonize_to_old(xr)
 
         return xr
+
+
+class XrPostProcessor(Processor):
+    def __init__(
+        self,
+        convert_to_int16: bool = True,
+        output_value_multiplier: int = 10000,
+        scale_int16s: bool = False,
+        output_nodata: int = -32767,
+        extra_attrs: dict = {},
+    ):
+        self._convert_to_int16 = convert_to_int16
+        self._output_value_multiplier = output_value_multiplier
+        self._scale_int16s = scale_int16s
+        self._output_nodata = output_nodata
+        self._extra_attrs = extra_attrs
+
+    def process(self, xr: DataArray | Dataset):
+        xr.attrs.update(self._extra_attrs)
+        if self._convert_to_int16:
+            xr = _scale_to_int16(
+                xr,
+                output_multiplier=self._output_value_multiplier,
+                output_nodata=self._output_nodata,
+                scale_int16s=self._scale_int16s,
+            )
+        return xr

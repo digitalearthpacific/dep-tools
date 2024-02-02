@@ -1,6 +1,5 @@
 import datetime
 import json
-from typing import Union
 
 import numpy as np
 from pystac import Item
@@ -33,7 +32,7 @@ def write_stac(
     return stac_url
 
 
-def write_stac_local(xr: Union[DataArray, Dataset], path: str, stac_url, **kwargs):
+def write_stac_local(xr: DataArray | Dataset, path: str, stac_url, **kwargs):
     write_stac(
         xr, path, stac_url, writer=write_to_local_storage, remote=False, **kwargs
     )

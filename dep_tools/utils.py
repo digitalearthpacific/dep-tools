@@ -154,21 +154,6 @@ def scale_and_offset(
     return output
 
 
-def make_geocube_dask(
-    df: GeoDataFrame, measurements: List[str], like: xr.DataArray, **kwargs
-):
-    """Dask-enabled geocube.make_geocube. Not completely implemented."""
-
-    def rasterize_block(block):
-        return (
-            make_geocube(df, measurements=measurements, like=block, **kwargs)
-            .to_array(measurements[0])
-            .assign_coords(block.coords)
-        )
-
-    return like.map_blocks(rasterize_block, template=like)
-
-
 def write_to_local_storage(
     d: Union[DataArray, Dataset, GeoDataFrame, str],
     path: Union[str, Path],
