@@ -189,7 +189,6 @@ def write_to_local_storage(
 def write_to_blob_storage(
     d: Union[DataArray, Dataset, GeoDataFrame, str],
     path: Union[str, Path],
-    write_args: Dict = dict(),
     overwrite: bool = True,
     use_odc_writer: bool = False,
     client: ContainerClient | None = None,
@@ -198,22 +197,26 @@ def write_to_blob_storage(
     # Allowing for a shared container client, which might be
     # more efficient. If not provided, get one.
     if client is None:
-        client = get_container_client(**kwargs)
+        client = get_container_client()
     blob_client = client.get_blob_client(str(path))
     if not overwrite and blob_client.exists():
         return
 
     if isinstance(d, (DataArray, Dataset)):
         if use_odc_writer:
-            if "driver" in write_args:
-                del write_args["driver"]
-            binary_data = to_cog(d, **write_args)
+            if "driver" in kwargs:
+                del kwargs["driver"]
+            binary_data = to_cog(d, **kwargs)
             blob_client.upload_blob(
                 binary_data, overwrite=overwrite, connection_timeout=TIMEOUT_SECONDS
             )
         else:
             with io.BytesIO() as buffer:
-                d.rio.to_raster(buffer, **write_args)
+                # This is needed or rioxarray doesn't know what type it is
+                # writing
+                if not "driver" in kwargs:
+                    kwargs["driver"] = "COG"
+                d.rio.to_raster(buffer, **kwargs)
                 buffer.seek(0)
                 blob_client.upload_blob(
                     buffer, overwrite=overwrite, connection_timeout=TIMEOUT_SECONDS
@@ -221,11 +224,11 @@ def write_to_blob_storage(
 
     elif isinstance(d, GeoDataFrame):
         with fiona.io.MemoryFile() as buffer:
-            d.to_file(buffer, **write_args)
+            d.to_file(buffer, **kwargs)
             buffer.seek(0)
             blob_client.upload_blob(buffer, overwrite=overwrite)
     elif isinstance(d, str):
-        blob_client.upload_blob(d, overwrite=overwrite, **write_args)
+        blob_client.upload_blob(d, overwrite=overwrite, **kwargs)
     else:
         raise ValueError(
             "You can only write an Xarray DataArray or Dataset, or Geopandas GeoDataFrame"

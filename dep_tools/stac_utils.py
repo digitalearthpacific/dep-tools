@@ -24,9 +24,7 @@ def write_stac(
     writer(
         item_json,
         stac_url,
-        write_args=dict(
-            content_settings=ContentSettings(content_type="application/json")
-        ),
+        content_settings=ContentSettings(content_type="application/json"),
     )
 
     return stac_url

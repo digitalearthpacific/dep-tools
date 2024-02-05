@@ -5,7 +5,7 @@ from xarray import DataArray, Dataset
 from .landsat_utils import mask_clouds as mask_clouds_landsat
 from .s2_utils import harmonize_to_old
 from .s2_utils import mask_clouds as mask_clouds_s2
-from .utils import scale_and_offset
+from .utils import scale_and_offset, scale_to_int16
 
 
 class Processor(ABC):
@@ -86,7 +86,7 @@ class XrPostProcessor(Processor):
     def process(self, xr: DataArray | Dataset):
         xr.attrs.update(self._extra_attrs)
         if self._convert_to_int16:
-            xr = _scale_to_int16(
+            xr = scale_to_int16(
                 xr,
                 output_multiplier=self._output_value_multiplier,
                 output_nodata=self._output_nodata,
