@@ -48,11 +48,13 @@ class S2Processor(Processor):
     def __init__(
         self,
         send_area_to_processor: bool = False,
+        harmonize_to_old: bool = True,
         scale_and_offset: bool = True,
         mask_clouds: bool = True,
         mask_clouds_kwargs: dict = dict(),
     ) -> None:
         super().__init__(send_area_to_processor)
+        self.harmonize_to_old = harmonize_to_old
         self.scale_and_offset = scale_and_offset
         self.mask_clouds = mask_clouds
         self.mask_kwargs = mask_clouds_kwargs
@@ -61,7 +63,17 @@ class S2Processor(Processor):
         if self.mask_clouds:
             xr = mask_clouds_s2(xr, **self.mask_kwargs)
 
-        if self.scale_and_offset:
+        if self.scale_and_offset and not self.harmonize_to_old:
+            print(
+                "Warning: scale and offset is dangerous when used without harmonize_to_old"
+            )
+
+        if self.harmonize_to_old:
             xr = harmonize_to_old(xr)
+
+        if self.scale_and_offset:
+            scale = 1 / 10000
+            offset = 0
+            xr = scale_and_offset(xr, scale=[scale], offset=offset)
 
         return xr

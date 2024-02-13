@@ -58,6 +58,12 @@ def harmonize_to_old(data: DataArray) -> DataArray:
 
     """
     cutoff = datetime.datetime(2022, 1, 25)
+
+    # Do nothing if the data is all before the cutoff
+    latest_datetime = data.time.max().values.astype("M8[ms]").astype("O")
+    if latest_datetime < cutoff:
+        return data
+
     offset = 1000
     bands = [
         "B01",
@@ -75,13 +81,42 @@ def harmonize_to_old(data: DataArray) -> DataArray:
         "B12",
     ]
 
+    # Check if the data has the band dimension
+    data_has_band_dim = "band" in data.dims
+
+    # Store the old data, it doesn't need offsetting
     old = data.sel(time=slice(cutoff))
+    # Get the data after the cutoff
+    new = data.sel(time=slice(cutoff, None))
 
-    to_process = list(set(bands) & set(data.band.data.tolist()))
-    new = data.sel(time=slice(cutoff, None)).drop_sel(band=to_process)
+    if data_has_band_dim:
+        to_process = list(set(bands) & set(data.band.data.tolist()))
+        new = new.drop_sel(band=to_process)
 
-    new_harmonized = data.sel(time=slice(cutoff, None), band=to_process).clip(offset)
-    new_harmonized -= offset
+        new_harmonized = data.sel(time=slice(cutoff, None), band=to_process).clip(
+            offset
+        )
+        new_harmonized -= offset
 
-    new = concat([new, new_harmonized], "band").sel(band=data.band.data.tolist())
-    return concat([old, new], dim="time")
+        new = concat([new, new_harmonized], "band").sel(band=data.band.data.tolist())
+    else:
+        # Handle SCL being there or not
+        new_scl = None
+        if "SCL" in new:
+            new_scl = new.SCL
+
+        new_data = new.drop_vars("SCL", errors="ignore")
+
+        # Now clip to 1000, so any values lower than that are lost, and then offset
+        new_data = new_data.clip(offset)
+        new_data -= offset
+
+        # Combine
+        if new_scl is not None:
+            new_data["SCL"] = new_scl
+
+        new = new_data
+
+    out_data = concat([old, new], dim="time")
+
+    return out_data
