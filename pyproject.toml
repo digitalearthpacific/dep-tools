@@ -24,7 +24,7 @@ tqdm = "*"
 urlpath = "^1.2.0"
 xarray = "*"
 rio-stac = "^0.8.0"
-odc-stac = {git = "https://github.com/jessjaco/odc-stac.git", rev = "exception-fix"}
+odc-stac = "*"
 odc-algo = "*"
 
 [tool.poetry.group.dev]

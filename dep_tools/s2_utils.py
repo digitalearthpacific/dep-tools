@@ -43,7 +43,8 @@ def mask_clouds(
 
 def harmonize_to_old(data: DataArray) -> DataArray:
     """
-    Harmonize new Sentinel-2 data to the old baseline. Taken from https://planetarycomputer.microsoft.com/dataset/sentinel-2-l2a#Baseline-Change
+    Harmonize new Sentinel-2 data to the old baseline.
+    Inspired by https://planetarycomputer.microsoft.com/dataset/sentinel-2-l2a#Baseline-Change
 
     Parameters
     ----------
@@ -57,31 +58,46 @@ def harmonize_to_old(data: DataArray) -> DataArray:
         processing baseline.
 
     """
-    cutoff = datetime.datetime(2022, 1, 25)
-    offset = 1000
-    bands = [
-        "B01",
-        "B02",
-        "B03",
-        "B04",
-        "B05",
-        "B06",
-        "B07",
-        "B08",
-        "B8A",
-        "B09",
-        "B10",
-        "B11",
-        "B12",
-    ]
+    CUTOFF = datetime.datetime(2022, 1, 25)
+    OFFSET = 1000
 
-    old = data.sel(time=slice(cutoff))
+    # Do nothing if the data is all before the CUTOFF
+    latest_datetime = data.time.max().values.astype("M8[ms]").astype("O")
+    if latest_datetime < CUTOFF:
+        return data
 
-    to_process = list(set(bands) & set(data.band.data.tolist()))
-    new = data.sel(time=slice(cutoff, None)).drop_sel(band=to_process)
+    # Check if the data has the band dimension
+    data_has_band_dim = "band" in data.dims
 
-    new_harmonized = data.sel(time=slice(cutoff, None), band=to_process).clip(offset)
-    new_harmonized -= offset
+    # Handle the case where the data has the band dimension
+    if data_has_band_dim:
+        # Remove the bands dimension
+        data = data.to_dataset(dim="band").drop_dims("band")
 
-    new = concat([new, new_harmonized], "band").sel(band=data.band.data.tolist())
-    return concat([old, new], dim="time")
+    # Store the old data, it doesn't need offsetting
+    old = data.sel(time=slice(CUTOFF))
+    # Get the data after the CUTOFF
+    new_unoffset = data.sel(time=slice(CUTOFF, None))
+
+    # Handle SCL being there or not
+    new_scl = None
+    if "SCL" in new_unoffset:
+        new_scl = new_unoffset.SCL
+
+    new = new_unoffset.drop_vars("SCL", errors="ignore")
+
+    # Now clip to 1000, so any values lower than that are lost
+    # (otherwise we get integer overflows) and then offset
+    new = new.clip(OFFSET)
+    new -= OFFSET
+
+    # Combine with the SCL band if it was there
+    if new_scl is not None:
+        new["SCL"] = new_scl
+
+    out_data = concat([old, new], dim="time")
+
+    if data_has_band_dim:
+        out_data = out_data.to_array(dim="band")
+
+    return out_data

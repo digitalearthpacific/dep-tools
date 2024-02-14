@@ -167,14 +167,11 @@ class OdcLoaderMixin(object):
         items,
         areas: GeoDataFrame,
     ) -> DataArray | Dataset:
-        data_type = "uint16" if self.keep_ints else "float32"
-
         xr = load(
             items,
             geopolygon=areas,
             crs=self._current_epsg,
             chunks=self.dask_chunksize,
-            dtype=data_type,
             **self.odc_load_kwargs,
         )
 
