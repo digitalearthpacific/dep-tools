@@ -85,16 +85,10 @@ class ErrorCategoryAreaTask(AreaTask):
 
 
 class SimpleLoggingAreaTask(AreaTask):
-    def run(self, min_timesteps: int = 0):
+    def run(self):
         self.logger.info("Preparing to load data")
         input_data = self.loader.load(self.area)
         self.logger.info(f"Found {len(input_data.time)} timesteps to load")
-
-        if len(input_data.time) < min_timesteps:
-            self.logger.warning(
-                f"Found {len(input_data.time)} timesteps, which is less than the minimum of {min_timesteps}"
-            )
-            return []
 
         self.logger.info("Preparing to process data")
         processor_kwargs = {}
