@@ -41,7 +41,7 @@ class DepWriter(Writer):
         # Only problem here is if xr has variables that aren't in the stac
         # so maybe we need to read stac?
         paths = [self._itempath.path(item_id, variable) for variable in ds]
-        paths += self._itempath.stac_path(item_id)
+        paths.append(self._itempath.stac_path(item_id))
         return paths
 
     def write(self, xr, item_id):
