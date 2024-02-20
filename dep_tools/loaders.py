@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-import warnings
 
 from geopandas import GeoDataFrame
 import odc.stac
