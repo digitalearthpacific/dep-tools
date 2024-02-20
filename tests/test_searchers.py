@@ -22,7 +22,9 @@ def mspc_catalog():
 
 
 def test_PystacSearcher(area, mspc_catalog):
-    s = PystacSearcher(catalog=mspc_catalog, collections=["landsat-c2-l2"], datetime="2007")
+    s = PystacSearcher(
+        catalog=mspc_catalog, collections=["landsat-c2-l2"], datetime="2007"
+    )
     items = s.search(area)
     assert isinstance(items, ItemCollection)
 
