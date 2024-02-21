@@ -8,6 +8,7 @@ packages = [{include = "dep_tools"}]
 include = ["*.gpkg"]
 
 [tool.poetry.dependencies]
+boto3 = "*"
 python = "^3.8"
 azure-storage-blob = "*"
 geopandas = "*"
