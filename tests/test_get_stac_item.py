@@ -1,25 +1,31 @@
 import rioxarray
 
-from dep_tools.stac_utils import _get_stac_item
+from dep_tools.writers import StacWriter
+from dep_tools.namers import LocalPath
 
+from dep_tools.stac_utils import write_stac_local
+from pathlib import Path
 import pytest
 
-TEST_ITEM_URL = "https://deppcpublicstorage.blob.core.windows.net/output/dep_ls_wofs/0-0-2/TV/001/2021/dep_ls_wofs_TV_001_2021_mean.tif"
+DATA_DIR = Path(__file__).parent / "data"
 
 
 @pytest.fixture
 def stac_item():
-    test_path = "dep_ls_wofs/0-0-2/TV/001/2021/dep_ls_wofs_TV_001_2021_mean.tif"
-    test_xr = rioxarray.open_rasterio(TEST_ITEM_URL, chunks=True)
-    item = _get_stac_item(test_xr, test_path, collection="dep_ls_wofs")
+    itempath = LocalPath(
+        DATA_DIR, sensor="spysat", dataset_id="wofs", version="1.0.0", time="2021-01-01"
+    )
+    writer = StacWriter(itempath=itempath, write_stac_function=write_stac_local)
+    tif = itempath.path("12,34", asset_name="wofs")
+    test_xr = rioxarray.open_rasterio(tif).to_dataset(name="wofs")
+    item = writer.get_stac_item("12,34", test_xr, "spysat", remote=False)
+
     return item
 
 
 def test_get_stac_item_properties(stac_item):
     properties = stac_item.properties
     keys = [
-        "start_datetime",
-        "end_datetime",
         "proj:epsg",
         "proj:geometry",
         "proj:bbox",
@@ -31,8 +37,10 @@ def test_get_stac_item_properties(stac_item):
 
 
 def test_get_stac_item_collection_id(stac_item):
-    assert stac_item.collection_id == "dep_ls_wofs"
+    assert stac_item.collection_id == "dep_spysat_wofs"
 
 
 def test_stac_asset_href_is_valid(stac_item):
-    assert stac_item.assets["asset"].href == TEST_ITEM_URL
+    assert stac_item.assets["wofs"].href == str(
+        DATA_DIR / "dep_spysat_wofs_12_34_2021-01-01_wofs.tif"
+    )

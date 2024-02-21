@@ -1,6 +1,5 @@
 import geopandas as gpd
 from pystac import ItemCollection
-from pystac_client import Client
 import pytest
 from shapely.geometry import box
 
@@ -18,12 +17,14 @@ def area() -> gpd.GeoDataFrame:
 
 
 @pytest.fixture
-def mspc_client():
-    return Client.open("https://planetarycomputer.microsoft.com/api/stac/v1")
+def mspc_catalog():
+    return "https://planetarycomputer.microsoft.com/api/stac/v1"
 
 
-def test_PystacSearcher(area):
-    s = PystacSearcher(collections=["landsat-c2-l2"], datetime="2007")
+def test_PystacSearcher(area, mspc_catalog):
+    s = PystacSearcher(
+        catalog=mspc_catalog, collections=["landsat-c2-l2"], datetime="2007"
+    )
     items = s.search(area)
     assert isinstance(items, ItemCollection)
 

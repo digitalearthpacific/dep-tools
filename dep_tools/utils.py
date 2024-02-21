@@ -8,10 +8,8 @@ import planetary_computer
 import pystac_client
 import rasterio
 import rioxarray
-import xarray as xr
 from azure.storage.blob import ContainerClient
 from dask.distributed import Client, Lock
-from geocube.api.core import make_geocube
 from geopandas import GeoDataFrame
 from odc.geo.xr import to_cog, write_cog
 from osgeo import gdal
@@ -19,11 +17,29 @@ from pystac import ItemCollection
 from retry import retry
 from shapely.geometry import LineString, MultiLineString
 from xarray import DataArray, Dataset
+from logging import INFO, Formatter, Logger, StreamHandler, getLogger
 
 from .azure import get_container_client
 
 # Set the timeout to five minutes, which is an extremely long time
 TIMEOUT_SECONDS = 60 * 5
+
+
+def get_logger(prefix: str, name: str) -> Logger:
+    """Set up a simple logger"""
+    console = StreamHandler()
+    time_format = "%Y-%m-%d %H:%M:%S"
+    console.setFormatter(
+        Formatter(
+            fmt=f"%(asctime)s %(levelname)s ({prefix}):  %(message)s",
+            datefmt=time_format,
+        )
+    )
+
+    log = getLogger(name)
+    log.addHandler(console)
+    log.setLevel(INFO)
+    return log
 
 
 def shift_negative_longitudes(
@@ -215,7 +231,7 @@ def write_to_blob_storage(
             with io.BytesIO() as buffer:
                 # This is needed or rioxarray doesn't know what type it is
                 # writing
-                if not "driver" in kwargs:
+                if "driver" not in kwargs:
                     kwargs["driver"] = "COG"
                 d.rio.to_raster(buffer, **kwargs)
                 buffer.seek(0)

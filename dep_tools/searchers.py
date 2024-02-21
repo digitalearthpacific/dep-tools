@@ -3,7 +3,7 @@ import warnings
 
 from geopandas import GeoDataFrame, read_file
 from pystac import ItemCollection
-import pystac_client
+from pystac_client import Client
 
 from dep_tools.exceptions import EmptyCollectionError
 from dep_tools.landsat_utils import items_in_pathrows, pathrows_in_area
@@ -47,11 +47,14 @@ class PystacSearcher(Searcher):
 
     def __init__(
         self,
-        client: pystac_client.Client | None = None,
+        catalog: str | None = None,
         raise_empty_collection_error: bool = True,
         **kwargs,
     ):
-        self._client = client
+        if catalog is None:
+            raise ValueError("A STAC Catalog URI must be provided.")
+
+        self._client = Client.open(catalog)
         self._raise_errors = raise_empty_collection_error
         self._kwargs = kwargs
 
@@ -102,20 +105,23 @@ class LandsatPystacSearcher(PystacSearcher):
 
     def __init__(
         self,
-        client: pystac_client.Client | None = None,
+        catalog: str = "https://planetarycomputer.microsoft.com/api/stac/v1/",
+        collections: list[str] | None = None,
         raise_empty_collection_error: bool = True,
         search_intersecting_pathrows: bool = False,
-        exclude_platforms: list | None = None,
+        exclude_platforms: list[str] | None = None,
         only_tier_one: bool = False,
         fall_back_to_tier_two: bool = False,
         **kwargs,
     ):
         super().__init__(
-            client=client,
+            catalog=catalog,
             raise_empty_collection_error=raise_empty_collection_error,
             **kwargs,
         )
-        self._kwargs["collections"] = ["landsat-c2-l2"]
+        if collections is None:
+            collections = ["landsat-c2-l2"]
+        self._kwargs["collections"] = collections
         self._search_intersecting_pathrows = search_intersecting_pathrows
         self._exclude_platforms = exclude_platforms
         self._only_tier_one = only_tier_one
