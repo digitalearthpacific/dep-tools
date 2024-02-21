@@ -4,6 +4,7 @@ from functools import partial
 from typing import Callable, Hashable, List
 
 import numpy as np
+from azure.storage.blob import ContainerClient
 from pystac import Asset
 from urlpath import URL
 from xarray import Dataset
@@ -168,10 +169,12 @@ class DsCogWriter(Writer):
                 get_write_partial(variable)()
         return paths
 
-
 class LocalDsCogWriter(DsWriter):
     def __init__(self, **kwargs):
         super().__init__(
+            itempath=itempath,
+            use_odc_writer=use_odc_writer,
+            overwrite=overwrite,
             write_function=write_to_local_storage,
             write_stac_function=write_stac_local,
             **kwargs,
@@ -179,4 +182,33 @@ class LocalDsCogWriter(DsWriter):
 
 
 class AzureDsWriter(DsWriter):
-    pass
+    def __init__(
+        self,
+        itempath: DepItemPath,
+        client: ContainerClient | None = None,
+        use_odc_writer: bool = True,
+        overwrite: bool = False,
+        write_stac: bool = True,
+        write_multithreaded: bool = False,
+        convert_to_int16: bool = True,
+        output_value_multiplier: int = 10000,
+        scale_int16s: bool = False,
+        output_nodata: int = -32767,
+        extra_attrs: Dict = {},
+    ):
+        self.client = get_container_client() if client is None else client
+        write_function = partial(write_to_blob_storage, client=client)
+        super().__init__(
+            itempath=itempath,
+            use_odc_writer=use_odc_writer,
+            overwrite=overwrite,
+            write_function=write_function,
+            write_stac_function=write_stac_blob_storage,
+            write_stac=write_stac,
+            write_multithreaded=write_multithreaded,
+            convert_to_int16=convert_to_int16,
+            output_value_multiplier=output_value_multiplier,
+            scale_int16s=scale_int16s,
+            output_nodata=output_nodata,
+            extra_attrs=extra_attrs,
+        )

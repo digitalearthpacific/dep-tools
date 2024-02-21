@@ -89,7 +89,6 @@ class ErrorCategoryAreaTask(AreaTask):
 
         return paths
 
-
 class MultiAreaTask(ABC):
     def __init__(
         self,
@@ -126,3 +125,25 @@ class MultiAreaTask(ABC):
                 if self.fail_on_error:
                     raise e
                 continue
+
+class SimpleLoggingAreaTask(AreaTask):
+    def run(self):
+        self.logger.info("Preparing to load data")
+        input_data = self.loader.load(self.area)
+        self.logger.info(f"Found {len(input_data.time)} timesteps to load")
+
+        self.logger.info("Preparing to process data")
+        processor_kwargs = {}
+        if self.processor.send_area_to_processor:
+            processor_kwargs["area"] = self.area
+        output_data = self.processor.process(input_data, **processor_kwargs)
+        self.logger.info(
+            f"Processed data will have a result of shape: {[output_data.dims[d] for d in ['x', 'y']]}"
+        )
+
+        self.logger.info("Processing and writing data...")
+        paths = self.writer.write(output_data, self.id)
+        self.logger.info(f"Succesfully wrote data to {len(paths)} paths")
+
+        return paths
+

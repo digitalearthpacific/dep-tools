@@ -69,7 +69,6 @@ class LocalPath(DepItemPath):
     def __init__(self, local_folder: str, **kwargs):
         # Need to create an abc for DepItemPath and drop this
         super().__init__(**kwargs)
-        self._folder_prefix = local_folder
-
-    def _folder(self, item_id) -> str:
-        return self._folder_prefix
+        self._folder_prefix = (
+            f"{local_folder}/dep_{self.sensor}_{self.dataset_id}/{self.version}"
+        )

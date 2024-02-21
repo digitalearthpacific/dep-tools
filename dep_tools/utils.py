@@ -363,5 +363,7 @@ def remove_bad_items(item_collection: ItemCollection) -> ItemCollection:
         "LC09_L2SR_073073_20231109_02_T2",
         "LC08_L2SR_075066_20231030_02_T1",
         "S2B_MSIL2A_20230214T001719_R116_T56MMB_20230214T095023",
+        "LC09_L2SR_100050_20231107_02_T1",
+        "LC09_L2SR_100051_20231107_02_T1",
     ]
     return ItemCollection([i for i in item_collection if i.id not in bad_ids])
