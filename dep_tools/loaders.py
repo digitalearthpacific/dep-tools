@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-import warnings
 
 from geopandas import GeoDataFrame
 import odc.stac
@@ -55,6 +54,7 @@ class OdcLoader(StacLoader):
             items,
             geopolygon=areas,
             **self._kwargs,
+        )
 
         # TODO: need to handle cases where nodata is _not_ set on load. (see
         # landsat qr_radsat band)

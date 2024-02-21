@@ -89,6 +89,7 @@ class ErrorCategoryAreaTask(AreaTask):
 
         return paths
 
+
 class MultiAreaTask(ABC):
     def __init__(
         self,
@@ -126,6 +127,7 @@ class MultiAreaTask(ABC):
                     raise e
                 continue
 
+
 class SimpleLoggingAreaTask(AreaTask):
     def run(self):
         self.logger.info("Preparing to load data")
@@ -146,4 +148,3 @@ class SimpleLoggingAreaTask(AreaTask):
         self.logger.info(f"Succesfully wrote data to {len(paths)} paths")
 
         return paths
-
