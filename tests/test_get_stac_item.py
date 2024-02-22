@@ -42,5 +42,6 @@ def test_get_stac_item_collection_id(stac_item):
 
 def test_stac_asset_href_is_valid(stac_item):
     assert stac_item.assets["wofs"].href == str(
-        DATA_DIR / "dep_spysat_wofs_12_34_2021-01-01_wofs.tif"
+        DATA_DIR
+        / "dep_spysat_wofs/1-0-0/12/34/2021-01-01/dep_spysat_wofs_12_34_2021-01-01_wofs.tif"
     )
