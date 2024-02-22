@@ -106,7 +106,7 @@ class LandsatPystacSearcher(PystacSearcher):
     def __init__(
         self,
         catalog: str = "https://planetarycomputer.microsoft.com/api/stac/v1/",
-        collections: list[str] | None = None,
+        collections: list[str] | None = ["landsat-c2-l2"],
         raise_empty_collection_error: bool = True,
         search_intersecting_pathrows: bool = False,
         exclude_platforms: list[str] | None = None,
@@ -119,8 +119,6 @@ class LandsatPystacSearcher(PystacSearcher):
             raise_empty_collection_error=raise_empty_collection_error,
             **kwargs,
         )
-        if collections is None:
-            collections = ["landsat-c2-l2"]
         self._kwargs["collections"] = collections
         self._search_intersecting_pathrows = search_intersecting_pathrows
         self._exclude_platforms = exclude_platforms
