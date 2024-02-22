@@ -25,7 +25,6 @@ def object_exists(bucket: str, key: str, client: BaseClient | None = None) -> bo
         return False
 
 
-# Copied from https://github.com/opendatacube/odc-tools/blob/develop/libs/cloud/odc/aws/__init__.py#L193
 def s3_dump(
     data: Union[bytes, str, IO], bucket: str, key: str, client: BaseClient, **kwargs
 ):
@@ -39,19 +38,16 @@ def s3_dump(
 def write_to_s3(
     d: Union[DataArray, Dataset, GeoDataFrame, str],
     path: Union[str, Path],
+    bucket: str,
     overwrite: bool = True,
     use_odc_writer: bool = True,
     client: BaseClient | None = None,
-    bucket: str | None = None,
     **kwargs,
 ):
-    if bucket is None:
-        raise ValueError("You must provide a destination bucket")
-
-    key = str(path).lstrip("/")
-
     if client is None:
         client = boto3.client("s3")
+
+    key = str(path).lstrip("/")
 
     if not overwrite and object_exists(bucket, key, client):
         return
