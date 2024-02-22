@@ -14,17 +14,22 @@ class ItemPath(ABC):
 
 
 @dataclass
-class DepItemPath(ItemPath):
+class GenericItemPath(ItemPath):
     sensor: str
     dataset_id: str
     version: str
     time: str
+    prefix: str = "dep"
     zero_pad_numbers: bool = False
 
     def __post_init__(self):
         self.version = self.version.replace(".", "-")
-        self._folder_prefix = f"dep_{self.sensor}_{self.dataset_id}/{self.version}"
-        self.item_prefix = f"dep_{self.sensor}_{self.dataset_id.replace('/','_')}"
+        self._folder_prefix = (
+            f"{self.prefix}_{self.sensor}_{self.dataset_id}/{self.version}"
+        )
+        self.item_prefix = (
+            f"{self.prefix}_{self.sensor}_{self.dataset_id.replace('/','_')}"
+        )
 
     def _format_item_id(
         self, item_id: list[str | int] | tuple[str | int] | str, join_str="/"
@@ -65,10 +70,14 @@ class DepItemPath(ItemPath):
         return f"{self._folder_prefix}/logs/{self.item_prefix}_{self.time}_log.csv"
 
 
+class DepItemPath(GenericItemPath):
+    pass
+
+
 class LocalPath(DepItemPath):
-    def __init__(self, local_folder: str, **kwargs):
+    def __init__(self, local_folder: str, prefix: str = "dep", **kwargs):
         # Need to create an abc for DepItemPath and drop this
         super().__init__(**kwargs)
         self._folder_prefix = (
-            f"{local_folder}/dep_{self.sensor}_{self.dataset_id}/{self.version}"
+            f"{local_folder}/{prefix}_{self.sensor}_{self.dataset_id}/{self.version}"
         )

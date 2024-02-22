@@ -27,10 +27,12 @@ def mask_clouds(
     for field in [CLOUD_SHADOWS, CLOUD_HIGH_PROBABILITY]:
         bitmask |= 1 << field
 
+    scl = "scl" if "scl" in xr else "SCL"
+
     try:
-        cloud_mask = xr.sel(band="SCL").astype("uint16") & bitmask != 0
+        cloud_mask = xr.sel(band=scl).astype("uint16") & bitmask != 0
     except KeyError:
-        cloud_mask = xr.SCL.astype("uint16") & bitmask != 0
+        cloud_mask = xr[scl].astype("uint16") & bitmask != 0
 
     if filters is not None:
         cloud_mask = mask_cleanup(cloud_mask, filters)
