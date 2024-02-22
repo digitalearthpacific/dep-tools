@@ -30,8 +30,11 @@ def get_container_client(
     )
 
 
-def blob_exists(path: Union[str, Path], **kwargs):
-    container_client = get_container_client(**kwargs)
+def blob_exists(
+    path: Union[str, Path], container_client: ContainerClient | None = None, **kwargs
+):
+    if container_client is None:
+        container_client = get_container_client(**kwargs)
     blob_client = container_client.get_blob_client(str(path))
     return blob_client.exists()
 

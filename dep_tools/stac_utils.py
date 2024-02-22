@@ -1,6 +1,5 @@
 import datetime
 import json
-from typing import Union
 
 import numpy as np
 from pystac import Item
@@ -14,7 +13,7 @@ from .utils import write_to_blob_storage, write_to_local_storage
 
 
 def write_stac(
-    xr: Union[DataArray, Dataset],
+    xr: DataArray | Dataset,
     path: str,
     stac_url,
     writer=write_to_blob_storage,
@@ -25,15 +24,13 @@ def write_stac(
     writer(
         item_json,
         stac_url,
-        write_args=dict(
-            content_settings=ContentSettings(content_type="application/json")
-        ),
+        content_settings=ContentSettings(content_type="application/json"),
     )
 
     return stac_url
 
 
-def write_stac_local(xr: Union[DataArray, Dataset], path: str, stac_url, **kwargs):
+def write_stac_local(xr: DataArray | Dataset, path: str, stac_url, **kwargs):
     write_stac(
         xr, path, stac_url, writer=write_to_local_storage, remote=False, **kwargs
     )
@@ -43,7 +40,7 @@ write_stac_blob_storage = write_stac
 
 
 def _get_stac_item(
-    xr: Union[DataArray, Dataset],
+    xr: DataArray | Dataset,
     path: str,
     collection: str,
     remote: bool = True,

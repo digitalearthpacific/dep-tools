@@ -24,7 +24,7 @@ class DepItemPath(ItemPath):
     def __post_init__(self):
         self.version = self.version.replace(".", "-")
         self._folder_prefix = f"dep_{self.sensor}_{self.dataset_id}/{self.version}"
-        self.item_prefix = f"dep_{self.sensor}_{self.dataset_id}"
+        self.item_prefix = f"dep_{self.sensor}_{self.dataset_id.replace('/','_')}"
 
     def _format_item_id(
         self, item_id: list[str | int] | tuple[str | int] | str, join_str="/"

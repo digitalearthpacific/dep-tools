@@ -1,11 +1,43 @@
-from typing import Dict, Iterable, Tuple
+from typing import Iterable, Tuple
 
-import planetary_computer
-import pystac_client
+from geopandas import read_file, GeoDataFrame
 from odc.algo import erase_bad, mask_cleanup
 from pystac import ItemCollection
-from retry import retry
+from shapely.geometry import box
 from xarray import DataArray, Dataset
+
+from dep_tools.utils import bbox_across_180
+
+
+def cloud_mask(
+    xr: DataArray | Dataset, filters: Iterable[Tuple[str, int]] | None = None
+) -> DataArray | Dataset:
+    """Get the cloud mask for landsat data.
+
+    Args:
+        xr: DataArray containing Landsat data including the `qa_pixel` band.
+        filters: List of filters to apply to the cloud mask. Each filter is a tuple of
+            (filter name, filter size). Valid filter names are 'opening' and 'dilation'.
+            If None, no filters will be applied.
+            For example: [("closing", 10),("opening", 2),("dilation", 2)]
+
+    """
+    CLOUD = 3
+    CLOUD_SHADOW = 4
+
+    bitmask = 0
+    for field in [CLOUD, CLOUD_SHADOW]:
+        bitmask |= 1 << field
+
+    try:
+        cloud_mask = xr.sel(band="qa_pixel").astype("uint16") & bitmask != 0
+    except KeyError:
+        cloud_mask = xr.qa_pixel.astype("uint16") & bitmask != 0
+
+    if filters is not None:
+        cloud_mask = mask_cleanup(cloud_mask, filters)
+
+    return cloud_mask
 
 
 def mask_clouds(
@@ -25,39 +57,51 @@ def mask_clouds(
         keep_ints: If True, return the masked data as integers. Otherwise, return
             the masked data as floats.
     """
-    CLOUD = 3
-    CLOUD_SHADOW = 4
 
-    bitmask = 0
-    for field in [CLOUD, CLOUD_SHADOW]:
-        bitmask |= 1 << field
-
-    try:
-        cloud_mask = xr.sel(band="qa_pixel").astype("uint16") & bitmask != 0
-    except KeyError:
-        cloud_mask = xr.qa_pixel.astype("uint16") & bitmask != 0
-
-    if filters is not None:
-        cloud_mask = mask_cleanup(cloud_mask, filters)
+    mask = cloud_mask(xr, filters)
 
     if keep_ints:
-        return erase_bad(xr, cloud_mask)
+        return erase_bad(xr, mask)
     else:
-        return xr.where(~cloud_mask)
+        return xr.where(~mask)
 
 
-@retry(tries=10, delay=1)
-def item_collection_for_pathrow(
-    path: int, row: int, search_args: Dict
+def pathrows_in_area(area: GeoDataFrame, pathrows: GeoDataFrame | None = None):
+    if pathrows is None:
+        pathrows = GeoDataFrame(
+            read_file(
+                "https://d9-wret.s3.us-west-2.amazonaws.com/assets/palladium/production/s3fs-public/atoms/files/WRS2_descending_0.zip"
+            )
+        )
+    bbox = bbox_across_180(area)
+    if isinstance(bbox, tuple):
+        return pathrows[
+            pathrows.intersects(box(*bbox[0])) | pathrows.intersects(box(*bbox[1]))
+        ]
+
+    return pathrows[pathrows.intersects(box(*bbox))]
+
+
+def items_in_pathrows(
+    items: ItemCollection, some_pathrows: GeoDataFrame
 ) -> ItemCollection:
-    catalog = pystac_client.Client.open(
-        "https://planetarycomputer.microsoft.com/api/stac/v1",
-        modifier=planetary_computer.sign_inplace,
+    return ItemCollection(
+        some_pathrows.apply(
+            lambda row: [
+                i
+                for i in items
+                if i.properties["landsat:wrs_path"] == str(row["PATH"]).zfill(3)
+                and i.properties["landsat:wrs_row"] == str(row["ROW"]).zfill(3)
+            ],
+            axis=1,
+        ).sum()
     )
-    return catalog.search(
-        **search_args,
-        query=[
-            #           f"landsat:wrs_path={path:03d}",
-            #           f"landsat:wrs_row={row:03d}",
-        ],
-    ).item_collection()
+
+
+def pathrow_with_greatest_area(shapes: GeoDataFrame) -> Tuple[str, str]:
+    pathrows = read_file(
+        "https://d9-wret.s3.us-west-2.amazonaws.com/assets/palladium/production/s3fs-public/atoms/files/WRS2_descending_0.zip"
+    )
+    intersection = shapes.overlay(pathrows, how="intersection")
+    row_with_greatest_area = intersection.iloc[[intersection.geometry.area.idxmax()]]
+    return (row_with_greatest_area.PATH.item(), row_with_greatest_area.ROW.item())

@@ -46,28 +46,32 @@ def shift_negative_longitudes(
     return LineString([(((pt[0] + 360) % 360), pt[1]) for pt in geometry.coords])
 
 
-@retry(tries=2, delay=1)
-def search_across_180(region: GeoDataFrame, **kwargs) -> ItemCollection:
-    """
-    region: A GeoDataFrame.
-    **kwargs: Arguments besides bbox and intersects passed to
-        pystac_client.Client.search
-    """
+BBOX = list[float]
 
-    # pystac_client doesn't appear to be able to handle non-geographic data,
-    # either via the `bbox` or `intersects` parameter. The docs don't really say.
-    # Here I split the bbox of the given GeoDataFrame on either side of the
-    # 180th meridian and concatenate the results.
-    # An alternative would be to actually cut the region in two pieces and use
-    # intersects, but we can wait to see if that's needed (for the current
-    # work I am collecting io-lulc which doesn't have data in areas which
-    # aren't near land
-    client = pystac_client.Client.open(
-        "https://planetarycomputer.microsoft.com/api/stac/v1",
-        modifier=planetary_computer.sign_inplace,
+
+def bbox_across_180(region: GeoDataFrame) -> BBOX | tuple[BBOX, BBOX]:
+    # Previously we just used region.to_crs(4326).total_bounds but if the geom
+    # is split right at the antimeridian (see landsat pathrow 073072), output
+    # will have zero width (since min and max will be -180 and 180)
+    # So get the bounds for all geoms in region, remove the 180s and calculate
+    # the min and max values ourselves
+    region_ll = GeoDataFrame(region.to_crs(4326))
+    x_values = (
+        region_ll.explode(index_parts=True).bounds.minx.tolist()
+        + region_ll.explode(index_parts=True).bounds.maxx.tolist()
+    )
+    # Possible we just do a direct compare, we shall see if this causes issues
+    # with locations _really close_ to 180 but not touching it
+    x_values = [i for i in x_values if not np.isclose([-180, 180], i).any()]
+
+    y_values = (
+        region_ll.explode(index_parts=True).bounds.miny.tolist()
+        + region_ll.explode(index_parts=True).bounds.maxy.tolist()
     )
 
-    bbox = region.to_crs(4326).total_bounds
+    bbox = [min(x_values), min(y_values), max(x_values), max(y_values)]
+
+    # Now fix some coord issues
     # If the lower left X coordinate is greater than 180 it needs to shift
     if bbox[0] > 180:
         bbox[0] = bbox[0] - 360
@@ -76,45 +80,78 @@ def search_across_180(region: GeoDataFrame, **kwargs) -> ItemCollection:
         if bbox[2] > 180:
             bbox[2] = bbox[2] - 360
 
-    bbox_crosses_antimeridian = (
-        bbox[0] < 0 and bbox[2] > 0 or bbox[0] < 180 and bbox[2] > 180
+    # These are Pacific specific tests!
+    bbox_crosses_antimeridian = (bbox[0] < 0 and bbox[2] > 0) or (
+        bbox[0] < 180 and bbox[2] > 180
     )
     if bbox_crosses_antimeridian:
-        xmin_ll, ymin_ll = bbox[0], bbox[1]
-        xmax_ll, ymax_ll = bbox[2], bbox[3]
+        # Split into two bboxes across the antimeridian
+        xmax_ll, ymin_ll = bbox[0], bbox[1]
+        xmin_ll, ymax_ll = bbox[2], bbox[3]
 
         xmax_ll = xmax_ll - 360 if xmax_ll > 180 else xmax_ll
 
-        left_bbox = [xmin_ll, ymin_ll, 180, ymax_ll]
-        right_bbox = [-180, ymin_ll, xmax_ll, ymax_ll]
+        left_bbox = BBOX([xmin_ll, ymin_ll, 180, ymax_ll])
+        right_bbox = BBOX([-180, ymin_ll, xmax_ll, ymax_ll])
+        return (left_bbox, right_bbox)
+    else:
+        return BBOX(bbox)
+
+
+# retry is for search timeouts which occasionally occur
+@retry(tries=5, delay=1)
+def search_across_180(
+    region: GeoDataFrame, client: pystac_client.Client | None = None, **kwargs
+) -> ItemCollection:
+    """
+    region: A GeoDataFrame.
+    **kwargs: Arguments besides bbox and intersects passed to
+        pystac_client.Client.search
+    """
+    if client is None:
+        client = pystac_client.Client.open(
+            "https://planetarycomputer.microsoft.com/api/stac/v1",
+            modifier=planetary_computer.sign_inplace,
+        )
+
+    bbox = bbox_across_180(region)
+
+    if isinstance(bbox, tuple):
         return ItemCollection(
-            list(client.search(bbox=left_bbox, **kwargs).items())
-            + list(client.search(bbox=right_bbox, **kwargs).items())
+            list(client.search(bbox=bbox[0], **kwargs).items())
+            + list(client.search(bbox=bbox[1], **kwargs).items())
         )
     else:
         return client.search(bbox=bbox, **kwargs).item_collection()
 
 
+def copy_attrs(
+    source: DataArray | Dataset, destination: DataArray | Dataset
+) -> DataArray | Dataset:
+    # See https://corteva.github.io/rioxarray/html/getting_started/manage_information_loss.html
+    # Doesn't account if source and dest don't have the same vars
+    if isinstance(destination, DataArray):
+        destination.rio.write_crs(source.rio.crs, inplace=True)
+        destination.rio.update_attrs(source.attrs, inplace=True)
+        destination.rio.update_encoding(source.encoding, inplace=True)
+        return destination
+    else:
+        for variable in destination:
+            destination[variable] = copy_attrs(source[variable], destination[variable])
+        return destination
+
+
 def scale_and_offset(
-    da: xr.DataArray, scale: List[float] = [1], offset: float = 0
-) -> xr.DataArray:
-    """Apply the given scale and offset to the given DataArray"""
-    return da * scale + offset
-
-
-def make_geocube_dask(
-    df: GeoDataFrame, measurements: List[str], like: xr.DataArray, **kwargs
-):
-    """Dask-enabled geocube.make_geocube. Not completely implemented."""
-
-    def rasterize_block(block):
-        return (
-            make_geocube(df, measurements=measurements, like=block, **kwargs)
-            .to_array(measurements[0])
-            .assign_coords(block.coords)
-        )
-
-    return like.map_blocks(rasterize_block, template=like)
+    da: DataArray | Dataset,
+    scale: List[float] = [1],
+    offset: float = 0,
+    keep_attrs=True,
+) -> DataArray | Dataset:
+    """Apply the given scale and offset to the given Xarray object."""
+    output = da * scale + offset
+    if keep_attrs:
+        output = copy_attrs(da, output)
+    return output
 
 
 def write_to_local_storage(
@@ -152,7 +189,6 @@ def write_to_local_storage(
 def write_to_blob_storage(
     d: Union[DataArray, Dataset, GeoDataFrame, str],
     path: Union[str, Path],
-    write_args: Dict = dict(),
     overwrite: bool = True,
     use_odc_writer: bool = False,
     client: ContainerClient | None = None,
@@ -161,22 +197,26 @@ def write_to_blob_storage(
     # Allowing for a shared container client, which might be
     # more efficient. If not provided, get one.
     if client is None:
-        client = get_container_client(**kwargs)
+        client = get_container_client()
     blob_client = client.get_blob_client(str(path))
     if not overwrite and blob_client.exists():
         return
 
     if isinstance(d, (DataArray, Dataset)):
         if use_odc_writer:
-            if "driver" in write_args:
-                del write_args["driver"]
-            binary_data = to_cog(d, **write_args)
+            if "driver" in kwargs:
+                del kwargs["driver"]
+            binary_data = to_cog(d, **kwargs)
             blob_client.upload_blob(
                 binary_data, overwrite=overwrite, connection_timeout=TIMEOUT_SECONDS
             )
         else:
             with io.BytesIO() as buffer:
-                d.rio.to_raster(buffer, **write_args)
+                # This is needed or rioxarray doesn't know what type it is
+                # writing
+                if not "driver" in kwargs:
+                    kwargs["driver"] = "COG"
+                d.rio.to_raster(buffer, **kwargs)
                 buffer.seek(0)
                 blob_client.upload_blob(
                     buffer, overwrite=overwrite, connection_timeout=TIMEOUT_SECONDS
@@ -184,11 +224,11 @@ def write_to_blob_storage(
 
     elif isinstance(d, GeoDataFrame):
         with fiona.io.MemoryFile() as buffer:
-            d.to_file(buffer, **write_args)
+            d.to_file(buffer, **kwargs)
             buffer.seek(0)
             blob_client.upload_blob(buffer, overwrite=overwrite)
     elif isinstance(d, str):
-        blob_client.upload_blob(d, overwrite=overwrite, **write_args)
+        blob_client.upload_blob(d, overwrite=overwrite, **kwargs)
     else:
         raise ValueError(
             "You can only write an Xarray DataArray or Dataset, or Geopandas GeoDataFrame"
@@ -320,6 +360,8 @@ def remove_bad_items(item_collection: ItemCollection) -> ItemCollection:
         "LC08_L2SR_083073_20220917_02_T1",
         "LC08_L2SR_089064_20201007_02_T2",
         "LC08_L2SR_074073_20221105_02_T1",
+        "LC09_L2SR_073073_20231109_02_T2",
+        "LC08_L2SR_075066_20231030_02_T1",
         "S2B_MSIL2A_20230214T001719_R116_T56MMB_20230214T095023",
         "LC09_L2SR_100050_20231107_02_T1",
         "LC09_L2SR_100051_20231107_02_T1",

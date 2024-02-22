@@ -8,11 +8,19 @@ from .loaders import Loader
 from .processors import Processor
 from .writers import Writer
 
+task_id = str
+
 
 class Task(ABC):
     def __init__(
-        self, loader: Loader, processor: Processor, writer: Writer, logger: Logger
+        self,
+        task_id: task_id,
+        loader: Loader,
+        processor: Processor,
+        writer: Writer,
+        logger: Logger,
     ):
+        self.id = task_id
         self.loader = loader
         self.processor = processor
         self.writer = writer
@@ -26,16 +34,15 @@ class Task(ABC):
 class AreaTask(Task):
     def __init__(
         self,
-        id: str,
+        id: task_id,
         area: GeoDataFrame,
         loader: Loader,
         processor: Processor,
         writer: Writer,
         logger: Logger = getLogger(),
     ):
-        super().__init__(loader, processor, writer, logger)
+        super().__init__(id, loader, processor, writer, logger)
         self.area = area
-        self.id = id
 
     def run(self):
         input_data = self.loader.load(self.area)
@@ -53,11 +60,11 @@ class ErrorCategoryAreaTask(AreaTask):
         try:
             input_data = self.loader.load(self.area)
         except EmptyCollectionError as e:
-            self.logger.debug([self.id, "no items for areas"])
+            self.logger.info([self.id, "no items for areas"])
             raise e
 
         except Exception as e:
-            self.logger.debug([self.id, "load error", e])
+            self.logger.info([self.id, "load error", e])
             raise e
 
         processor_kwargs = (
@@ -66,22 +73,59 @@ class ErrorCategoryAreaTask(AreaTask):
         try:
             output_data = self.processor.process(input_data, **processor_kwargs)
         except Exception as e:
-            self.logger.debug([self.id, "processor error", e])
+            self.logger.info([self.id, "processor error", e])
             raise e
 
         if output_data is None:
-            self.logger.debug([self.id, "no output from processor"])
+            self.logger.info([self.id, "no output from processor"])
             raise NoOutputError()
         try:
             paths = self.writer.write(output_data, self.id)
-            # Return the list of paths that were written
         except Exception as e:
-            self.logger.error([self.id, "error", "", e])
+            self.logger.error([self.id, "error", e])
             raise e
 
-        self.logger.debug([self.id, "complete", paths])
+        self.logger.info([self.id, "complete", paths])
 
         return paths
+
+
+class MultiAreaTask(ABC):
+    def __init__(
+        self,
+        ids: list[task_id],
+        areas: GeoDataFrame,
+        task_class: type[AreaTask],
+        loader: Loader,
+        processor: Processor,
+        writer: Writer,
+        logger: Logger = getLogger(),
+        fail_on_error: bool = True,
+    ):
+        self.ids = ids
+        self.areas = areas
+        self.loader = loader
+        self.processor = processor
+        self.writer = writer
+        self.logger = logger
+        self.task_class = task_class
+        self.fail_on_error = fail_on_error
+
+    def run(self):
+        for id in self.ids:
+            try:
+                self.task_class(
+                    id,
+                    self.areas.loc[[id]],
+                    self.loader,
+                    self.processor,
+                    self.writer,
+                    self.logger,
+                ).run()
+            except Exception as e:
+                if self.fail_on_error:
+                    raise e
+                continue
 
 
 class SimpleLoggingAreaTask(AreaTask):

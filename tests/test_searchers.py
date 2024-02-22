@@ -1,0 +1,36 @@
+import geopandas as gpd
+from pystac import ItemCollection
+from pystac_client import Client
+import pytest
+from shapely.geometry import box
+
+from dep_tools.searchers import PystacSearcher, LandsatPystacSearcher
+
+BBOX = [-111, 35, -110, 36]
+
+
+@pytest.fixture()
+def area() -> gpd.GeoDataFrame:
+    return gpd.GeoDataFrame(
+        geometry=[box(*BBOX)],
+        crs="EPSG:4326",
+    )
+
+
+@pytest.fixture
+def mspc_client():
+    return Client.open("https://planetarycomputer.microsoft.com/api/stac/v1")
+
+
+def test_PystacSearcher(area):
+    s = PystacSearcher(collections=["landsat-c2-l2"], datetime="2007")
+    items = s.search(area)
+    assert isinstance(items, ItemCollection)
+
+    an_item = list(items)[0]
+    assert an_item.properties["description"] == "Landsat Collection 2 Level-2"
+
+
+def test_LandsatPystacSearcher_exclude_platforms(area):
+    s = LandsatPystacSearcher(exclude_platforms=["landsat-7"])
+    s.search(area)
