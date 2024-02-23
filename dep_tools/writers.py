@@ -9,6 +9,8 @@ from xarray import Dataset, DataArray
 
 from pathlib import Path
 
+from datetime import datetime
+
 from .azure import blob_exists
 from .namers import DepItemPath
 from .processors import Processor, XrPostProcessor
@@ -162,9 +164,14 @@ class StacWriter(Writer):
         collection = self._itempath.item_prefix
         collection_url = f"{collection_url_root}/{collection}"
 
+        input_datetime = properties.get("datetime", None)
+        if input_datetime is not None:
+            input_datetime = datetime.strptime(input_datetime, "%Y-%m-%dT%H:%M:%SZ")
+
         item = create_stac_item(
             str(prefix / paths[0]),
             id=stac_id,
+            input_datetime=input_datetime,
             assets=assets,
             with_proj=True,
             properties=properties,
