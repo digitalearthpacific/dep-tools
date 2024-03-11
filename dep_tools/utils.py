@@ -103,8 +103,8 @@ def bbox_across_180(region: GeoDataFrame) -> BBOX | tuple[BBOX, BBOX]:
     )
     if bbox_crosses_antimeridian:
         # Split into two bboxes across the antimeridian
-        xmax_ll, ymin_ll = bbox[0], bbox[1]
-        xmin_ll, ymax_ll = bbox[2], bbox[3]
+        xmin_ll, ymin_ll = bbox[0], bbox[1]
+        xmax_ll, ymax_ll = bbox[2], bbox[3]
 
         xmax_ll = xmax_ll - 360 if xmax_ll > 180 else xmax_ll
 
