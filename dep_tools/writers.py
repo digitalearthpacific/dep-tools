@@ -166,7 +166,7 @@ class StacWriter(Writer):
 
         input_datetime = properties.get("datetime", None)
         if input_datetime is not None:
-            input_datetime = datetime.strptime(input_datetime, "%Y-%m-%dT%H:%M:%SZ")
+            input_datetime = datetime.strptime(input_datetime, "%Y-%m-%dT%H:%M:%S.000Z")
 
         item = create_stac_item(
             str(prefix / paths[0]),
