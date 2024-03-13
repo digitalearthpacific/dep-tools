@@ -1,4 +1,5 @@
 import io
+from logging import INFO, Formatter, Logger, StreamHandler, getLogger
 from pathlib import Path
 from typing import Dict, List, Union
 
@@ -8,6 +9,8 @@ import planetary_computer
 import pystac_client
 import rasterio
 import rioxarray
+from antimeridian import bbox as antimeridian_bbox
+from antimeridian import fix_multi_polygon, fix_polygon
 from azure.storage.blob import ContainerClient
 from dask.distributed import Client, Lock
 from geopandas import GeoDataFrame
@@ -17,7 +20,6 @@ from pystac import ItemCollection
 from retry import retry
 from shapely.geometry import LineString, MultiLineString
 from xarray import DataArray, Dataset
-from logging import INFO, Formatter, Logger, StreamHandler, getLogger
 
 from .azure import get_container_client
 
@@ -66,27 +68,16 @@ BBOX = list[float]
 
 
 def bbox_across_180(region: GeoDataFrame) -> BBOX | tuple[BBOX, BBOX]:
-    # Previously we just used region.to_crs(4326).total_bounds but if the geom
-    # is split right at the antimeridian (see landsat pathrow 073072), output
-    # will have zero width (since min and max will be -180 and 180)
-    # So get the bounds for all geoms in region, remove the 180s and calculate
-    # the min and max values ourselves
-    region_ll = GeoDataFrame(region.to_crs(4326))
-    x_values = (
-        region_ll.explode(index_parts=True).bounds.minx.tolist()
-        + region_ll.explode(index_parts=True).bounds.maxx.tolist()
-    )
-    # Possible we just do a direct compare, we shall see if this causes issues
-    # with locations _really close_ to 180 but not touching it
-    tolerance = 1e-5
-    x_values = [i for i in x_values if abs(180 - abs(i)) > tolerance]
+    geometry = region.to_crs(4326).unary_union
 
-    y_values = (
-        region_ll.explode(index_parts=True).bounds.miny.tolist()
-        + region_ll.explode(index_parts=True).bounds.maxy.tolist()
-    )
+    if geometry.geom_type == "Polygon":
+        geometry = fix_polygon(geometry)
+    elif geometry.geom_type == "MultiPolygon":
+        geometry = fix_multi_polygon(geometry)
+    else:
+        raise ValueError(f"Unsupported geometry type: {geometry.type}")
 
-    bbox = [min(x_values), min(y_values), max(x_values), max(y_values)]
+    bbox = antimeridian_bbox(geometry)
 
     # Now fix some coord issues
     # If the lower left X coordinate is greater than 180 it needs to shift
@@ -98,18 +89,19 @@ def bbox_across_180(region: GeoDataFrame) -> BBOX | tuple[BBOX, BBOX]:
             bbox[2] = bbox[2] - 360
 
     # These are Pacific specific tests!
-    bbox_crosses_antimeridian = (bbox[0] < 0 and bbox[2] > 0) or (
+    bbox_crosses_antimeridian = (bbox[0] > 0 and bbox[2] < 0) or (
         bbox[0] < 180 and bbox[2] > 180
     )
+
     if bbox_crosses_antimeridian:
+        print("Woo, w're crossing the antimeridian!")
         # Split into two bboxes across the antimeridian
-        xmin_ll, ymin_ll = bbox[0], bbox[1]
-        xmax_ll, ymax_ll = bbox[2], bbox[3]
+        xmin, ymin = bbox[0], bbox[1]
+        xmax, ymax = bbox[2], bbox[3]
 
-        xmax_ll = xmax_ll - 360 if xmax_ll > 180 else xmax_ll
-
-        left_bbox = BBOX([xmin_ll, ymin_ll, 180, ymax_ll])
-        right_bbox = BBOX([-180, ymin_ll, xmax_ll, ymax_ll])
+        xmax = xmax - 360 if xmax > 180 else xmax
+        left_bbox = BBOX([xmin, ymin, 180, ymax])
+        right_bbox = BBOX([-180, ymin, xmax, ymax])
         return (left_bbox, right_bbox)
     else:
         return BBOX(bbox)
