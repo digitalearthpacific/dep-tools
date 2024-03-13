@@ -1,11 +1,10 @@
-from geopandas import GeoDataFrame, read_file
+from geopandas import GeoDataFrame
 from shapely.geometry import LineString, Polygon
 import shapely.wkt
 
 from dep_tools.utils import (
     shift_negative_longitudes,
     bbox_across_180,
-    search_across_180,
 )
 
 
@@ -24,13 +23,14 @@ def test_shift_negative_longitudes_noncrossing_linestring():
 
 def test_bbox_across_180_crossing():
     crossing_polygon = Polygon(
-        [(179.0, 1.0), (-179.0, 1.0), (-179.0, -1.0), (179.0, -1.0), (179.0, 1.0)]
+        [(179.0, 1.0), (179.0, -1.0), (-179.0, -1.0), (-179.0, 1.0), (179.0, 1.0)]
     )
+
     crossing_gdf = GeoDataFrame(geometry=[crossing_polygon], crs=4326)
     bbox = bbox_across_180(crossing_gdf)
-    assert isinstance(bbox, tuple)
-    assert bbox[0] == [179.0, -1.0, 180, 1.0]
-    assert bbox[1] == [-180, -1.0, -179.0, 1.0]
+    assert isinstance(bbox, list | tuple)
+    assert bbox[0] == [179, -1, 180, 1]
+    assert bbox[1] == [-180, -1, -179, 1]
 
 
 def test_bbox_across_180_noncrossing():
