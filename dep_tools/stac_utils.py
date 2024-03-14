@@ -3,71 +3,30 @@ import json
 
 import numpy as np
 from pystac import Item
-from rio_stac.stac import create_stac_item
-from urlpath import URL
 from xarray import DataArray, Dataset
 
 from azure.storage.blob import ContentSettings
 
-from .utils import write_to_blob_storage, write_to_local_storage
+from .utils import write_to_blob_storage
 
 
-def write_stac(
-    xr: DataArray | Dataset,
-    path: str,
-    stac_url,
-    writer=write_to_blob_storage,
+def write_stac_blob_storage(
+    item: Item,
+    stac_path: str,
     **kwargs,
 ) -> None:
-    item = _get_stac_item(xr, path, **kwargs)
     item_json = json.dumps(item.to_dict(), indent=4)
-    writer(
+    write_to_blob_storage(
         item_json,
-        stac_url,
+        stac_path,
         content_settings=ContentSettings(content_type="application/json"),
     )
-
-    return stac_url
-
-
-def write_stac_local(xr: DataArray | Dataset, path: str, stac_url, **kwargs):
-    write_stac(
-        xr, path, stac_url, writer=write_to_local_storage, remote=False, **kwargs
-    )
+    return stac_path
 
 
-write_stac_blob_storage = write_stac
-
-
-def _get_stac_item(
-    xr: DataArray | Dataset,
-    path: str,
-    collection: str,
-    remote: bool = True,
-    **kwargs,
-) -> Item:
-    az_prefix = URL("https://deppcpublicstorage.blob.core.windows.net/output")
-    blob_url = az_prefix / path if remote else path
-    properties = {}
-    if "stac_properties" in xr.attrs:
-        properties = (
-            json.loads(xr.attrs["stac_properties"].replace("'", '"'))
-            if isinstance(xr.attrs["stac_properties"], str)
-            else xr.attrs["stac_properties"]
-        )
-
-    collection_url = (
-        f"https://stac.staging.digitalearthpacific.org/collections/{collection}"
-    )
-    return create_stac_item(
-        str(blob_url),
-        asset_roles=["data"],
-        with_proj=True,
-        properties=properties,
-        collection_url=collection_url,
-        collection=collection,
-        **kwargs,
-    )
+def write_stac_local(item: Item, stac_path: str, **kwargs) -> None:
+    with open(stac_path, "w") as f:
+        json.dump(item.to_dict(), f, indent=4)
 
 
 def set_stac_properties(

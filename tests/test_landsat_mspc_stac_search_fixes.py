@@ -1,6 +1,4 @@
-from re import search
 import geopandas as gpd
-from pystac_client import Client
 import pytest
 from shapely.geometry import box
 
@@ -33,4 +31,4 @@ def test_search_for_stac_items_with_bad_geoms(near_antimeridian_area):
     )
 
     items = searcher.search(near_antimeridian_area)
-    assert len(items) == 12
+    assert len(items) == 24

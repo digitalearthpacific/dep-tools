@@ -8,10 +8,8 @@ import planetary_computer
 import pystac_client
 import rasterio
 import rioxarray
-import xarray as xr
 from azure.storage.blob import ContainerClient
 from dask.distributed import Client, Lock
-from geocube.api.core import make_geocube
 from geopandas import GeoDataFrame
 from odc.geo.xr import to_cog, write_cog
 from osgeo import gdal
@@ -19,11 +17,32 @@ from pystac import ItemCollection
 from retry import retry
 from shapely.geometry import LineString, MultiLineString
 from xarray import DataArray, Dataset
+from logging import INFO, Formatter, Logger, StreamHandler, getLogger
+
+
+from antimeridian import bbox as antimeridian_bbox, fix_polygon, fix_multi_polygon
 
 from .azure import get_container_client
 
 # Set the timeout to five minutes, which is an extremely long time
 TIMEOUT_SECONDS = 60 * 5
+
+
+def get_logger(prefix: str, name: str) -> Logger:
+    """Set up a simple logger"""
+    console = StreamHandler()
+    time_format = "%Y-%m-%d %H:%M:%S"
+    console.setFormatter(
+        Formatter(
+            fmt=f"%(asctime)s %(levelname)s ({prefix}):  %(message)s",
+            datefmt=time_format,
+        )
+    )
+
+    log = getLogger(name)
+    log.addHandler(console)
+    log.setLevel(INFO)
+    return log
 
 
 def shift_negative_longitudes(
@@ -50,26 +69,16 @@ BBOX = list[float]
 
 
 def bbox_across_180(region: GeoDataFrame) -> BBOX | tuple[BBOX, BBOX]:
-    # Previously we just used region.to_crs(4326).total_bounds but if the geom
-    # is split right at the antimeridian (see landsat pathrow 073072), output
-    # will have zero width (since min and max will be -180 and 180)
-    # So get the bounds for all geoms in region, remove the 180s and calculate
-    # the min and max values ourselves
-    region_ll = GeoDataFrame(region.to_crs(4326))
-    x_values = (
-        region_ll.explode(index_parts=True).bounds.minx.tolist()
-        + region_ll.explode(index_parts=True).bounds.maxx.tolist()
-    )
-    # Possible we just do a direct compare, we shall see if this causes issues
-    # with locations _really close_ to 180 but not touching it
-    x_values = [i for i in x_values if not np.isclose([-180, 180], i).any()]
+    geometry = region.to_crs(4326).unary_union
 
-    y_values = (
-        region_ll.explode(index_parts=True).bounds.miny.tolist()
-        + region_ll.explode(index_parts=True).bounds.maxy.tolist()
-    )
+    if geometry.geom_type == "Polygon":
+        geometry = fix_polygon(geometry)
+    elif geometry.geom_type == "MultiPolygon":
+        geometry = fix_multi_polygon(geometry)
+    else:
+        raise ValueError(f"Unsupported geometry type: {geometry.type}")
 
-    bbox = [min(x_values), min(y_values), max(x_values), max(y_values)]
+    bbox = antimeridian_bbox(geometry)
 
     # Now fix some coord issues
     # If the lower left X coordinate is greater than 180 it needs to shift
@@ -81,18 +90,18 @@ def bbox_across_180(region: GeoDataFrame) -> BBOX | tuple[BBOX, BBOX]:
             bbox[2] = bbox[2] - 360
 
     # These are Pacific specific tests!
-    bbox_crosses_antimeridian = (bbox[0] < 0 and bbox[2] > 0) or (
+    bbox_crosses_antimeridian = (bbox[0] > 0 and bbox[2] < 0) or (
         bbox[0] < 180 and bbox[2] > 180
     )
+
     if bbox_crosses_antimeridian:
         # Split into two bboxes across the antimeridian
-        xmax_ll, ymin_ll = bbox[0], bbox[1]
-        xmin_ll, ymax_ll = bbox[2], bbox[3]
+        xmin, ymin = bbox[0], bbox[1]
+        xmax, ymax = bbox[2], bbox[3]
 
-        xmax_ll = xmax_ll - 360 if xmax_ll > 180 else xmax_ll
-
-        left_bbox = BBOX([xmin_ll, ymin_ll, 180, ymax_ll])
-        right_bbox = BBOX([-180, ymin_ll, xmax_ll, ymax_ll])
+        xmax = xmax - 360 if xmax > 180 else xmax
+        left_bbox = BBOX([xmin, ymin, 180, ymax])
+        right_bbox = BBOX([-180, ymin, xmax, ymax])
         return (left_bbox, right_bbox)
     else:
         return BBOX(bbox)
@@ -214,7 +223,7 @@ def write_to_blob_storage(
             with io.BytesIO() as buffer:
                 # This is needed or rioxarray doesn't know what type it is
                 # writing
-                if not "driver" in kwargs:
+                if "driver" not in kwargs:
                     kwargs["driver"] = "COG"
                 d.rio.to_raster(buffer, **kwargs)
                 buffer.seek(0)
@@ -332,14 +341,15 @@ def mosaic_scenes(
 
 
 def fix_bad_epsgs(item_collection: ItemCollection) -> None:
-    """Repairs soLC08_L2SP_101055_20220612_20220617_02_T2me band epsg codes in stac items loaded from the Planetary
+    """Repairs some band epsg codes in stac items loaded from the Planetary
     Computer stac catalog"""
     # ** modifies in place **
     # See https://github.com/microsoft/PlanetaryComputer/discussions/113
     # Will get fixed at some point and we can remove this
     for item in item_collection:
-        epsg = str(item.properties["proj:epsg"])
-        item.properties["proj:epsg"] = int(f"{epsg[0:3]}{int(epsg[3:]):02d}")
+        if item.collection_id == "landsat-c2-l2":
+            epsg = str(item.properties["proj:epsg"])
+            item.properties["proj:epsg"] = int(f"{epsg[0:3]}{int(epsg[3:]):02d}")
 
 
 def remove_bad_items(item_collection: ItemCollection) -> ItemCollection:
