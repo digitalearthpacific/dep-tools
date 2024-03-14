@@ -94,7 +94,6 @@ def bbox_across_180(region: GeoDataFrame) -> BBOX | tuple[BBOX, BBOX]:
     )
 
     if bbox_crosses_antimeridian:
-        print("Woo, w're crossing the antimeridian!")
         # Split into two bboxes across the antimeridian
         xmin, ymin = bbox[0], bbox[1]
         xmax, ymax = bbox[2], bbox[3]
