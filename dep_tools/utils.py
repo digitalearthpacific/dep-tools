@@ -62,7 +62,8 @@ def bbox_across_180(region: GeoDataFrame) -> BBOX | tuple[BBOX, BBOX]:
     )
     # Possible we just do a direct compare, we shall see if this causes issues
     # with locations _really close_ to 180 but not touching it
-    x_values = [i for i in x_values if not np.isclose([-180, 180], i).any()]
+    tolerance = 1e-5
+    x_values = [i for i in x_values if abs(180 - abs(i)) > tolerance]
 
     y_values = (
         region_ll.explode(index_parts=True).bounds.miny.tolist()
@@ -365,5 +366,6 @@ def remove_bad_items(item_collection: ItemCollection) -> ItemCollection:
         "S2B_MSIL2A_20230214T001719_R116_T56MMB_20230214T095023",
         "LC09_L2SR_100050_20231107_02_T1",
         "LC09_L2SR_100051_20231107_02_T1",
+        "LE07_L2SP_097065_20221029_02_T1",
     ]
     return ItemCollection([i for i in item_collection if i.id not in bad_ids])
