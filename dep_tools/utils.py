@@ -81,14 +81,18 @@ def bbox_across_180(region: GeoDataFrame) -> BBOX | tuple[BBOX, BBOX]:
         if bbox[2] > 180:
             bbox[2] = bbox[2] - 360
 
-    # These are Pacific specific tests!
-    bbox_crosses_antimeridian = (bbox[0] < 0 and bbox[2] > 0) or (
-        bbox[0] < 180 and bbox[2] > 180
-    )
-    if bbox_crosses_antimeridian:
-        # Split into two bboxes across the antimeridian
-        xmax_ll, ymin_ll = bbox[0], bbox[1]
-        xmin_ll, ymax_ll = bbox[2], bbox[3]
+    bbox_crosses_antimeridian_right_to_left = bbox[0] < 0 and bbox[2] > 0
+    bbox_crosses_antimeridian_left_to_right = bbox[0] < 180 and bbox[2] > 180
+    if (
+        bbox_crosses_antimeridian_right_to_left
+        or bbox_crosses_antimeridian_left_to_right
+    ):
+        if bbox_crosses_antimeridian_left_to_right:
+            xmin_ll, ymin_ll = bbox[0], bbox[1]
+            xmax_ll, ymax_ll = bbox[2], bbox[3]
+        else:
+            xmax_ll, ymin_ll = bbox[0], bbox[1]
+            xmin_ll, ymax_ll = bbox[2], bbox[3]
 
         xmax_ll = xmax_ll - 360 if xmax_ll > 180 else xmax_ll
 
