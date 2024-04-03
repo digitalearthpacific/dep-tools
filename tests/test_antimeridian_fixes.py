@@ -2,7 +2,10 @@ import shapely.wkt
 from geopandas import GeoDataFrame
 from shapely.geometry import LineString, Polygon
 
-from dep_tools.utils import bbox_across_180, shift_negative_longitudes
+from dep_tools.utils import (
+    bbox_across_180,
+    shift_negative_longitudes,
+)
 
 
 def test_shift_negative_longitudes_crossing_linestring():
