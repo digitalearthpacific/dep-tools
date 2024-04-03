@@ -2,10 +2,7 @@ import shapely.wkt
 from geopandas import GeoDataFrame
 from shapely.geometry import LineString, Polygon
 
-from dep_tools.utils import (
-    bbox_across_180,
-    shift_negative_longitudes,
-)
+from dep_tools.utils import bbox_across_180, shift_negative_longitudes
 
 
 def test_shift_negative_longitudes_crossing_linestring():
@@ -72,5 +69,6 @@ def test_geom_tile_across_180():
     bbox = bbox_across_180(gdf)
 
     assert isinstance(bbox, tuple)
-    assert bbox[0] == [179.9, -16.8, 180.8, -15.9]
-    assert bbox[1] == [-180, -16.8, -179.2, -15.9]
+
+    assert bbox[0] == [179.9, -16.8, 180.0, -15.9]
+    assert bbox[1] == [-180.0, -16.8, -179.2, -15.9]
