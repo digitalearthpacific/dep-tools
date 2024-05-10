@@ -58,7 +58,7 @@ class OdcLoader(StacLoader):
             else dict(geobox=areas)
         )
 
-        data = stac_load(
+        ds = stac_load(
             items,
             **load_geometry,
             **self._kwargs,
@@ -66,32 +66,31 @@ class OdcLoader(StacLoader):
 
         # TODO: need to handle cases where nodata is _not_ set on load. (see
         # landsat qr_radsat band)
-        for name in data:
+        for name in ds:
             # Since nan is more-or-less universally accepted as a nodata value,
             # if the dtype of a band is some sort of floating point, then recode
             # existing values that are equal to the value set on load to nan
-            if data[name].dtype.kind == "f":
+            if ds[name].dtype.kind == "f":
                 # Should I make this an option?
-                if "nodata" in data[name].attrs.keys():
-                    data[name] = data[name].where(
-                        data[name] != data[name].nodata, float("nan")
-                    )
-                data[name].attrs["nodata"] = float("nan")
+                if "nodata" in ds[name].attrs.keys():
+                    ds[name] = ds[name].where(ds[name] != ds[name].nodata, float("nan"))
+                ds[name].attrs["nodata"] = float("nan")
             # To be helpful, set the nodata so rioxarray can understand it too.
-            data[name].rio.write_nodata(data[name].nodata, inplace=True)
+            ds[name].rio.write_nodata(ds[name].nodata, inplace=True)
 
         if self._clip_to_area:
-            data = data.rio.clip(
-                areas.to_crs(data.odc.crs).geometry, all_touched=True, from_disk=True
+            ds = ds.rio.clip(
+                areas.to_crs(ds.odc.crs).geometry, all_touched=True, from_disk=True
             )
             # Clip loses this, so re-set.
-            for name in data:
-                data[name].attrs["nodata"] = data[name].rio.nodata
+            for name in ds:
+                ds[name].attrs["nodata"] = ds[name].rio.nodata
 
         if not self._load_as_dataset:
-            data = data.to_array("band").rename("data").rio.write_crs(data.odc.crs)
+            da = ds.to_array("band").rename("data").rio.write_crs(data.odc.crs)
+            return da
 
-        return data
+        return ds
 
 
 class StackStacLoader(StacLoader):
