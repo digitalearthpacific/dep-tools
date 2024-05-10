@@ -56,3 +56,22 @@ def test_geom_split_at_180():
     assert isinstance(bbox, tuple)
     assert bbox[0] == [179.358, -18.2303, 180, -16.4619]
     assert bbox[1] == [-180, -18.2303, -178.577, -16.4619]
+
+
+def test_geom_tile_across_180():
+    # This is from tile 66,22 but with rounded coords
+    crossing_polygon = Polygon(
+        [
+            [179.9, -15.9],
+            [179.9, -16.8],
+            [180.8, -16.8],
+            [180.8, -15.9],
+            [179.9, -15.9],
+        ]
+    )
+    gdf = GeoDataFrame(geometry=[crossing_polygon], crs=4326)
+    bbox = bbox_across_180(gdf)
+
+    assert isinstance(bbox, tuple)
+    assert bbox[0] == [179.9, -16.8, 180, -15.9]
+    assert bbox[1] == [-180, -16.8, -179.2, -15.9]
