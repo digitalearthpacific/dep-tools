@@ -1,7 +1,8 @@
 from abc import ABC, abstractmethod
 
 from geopandas import GeoDataFrame
-import odc.stac
+from odc.geo.geobox import GeoBox
+from odc.stac import load as stac_load
 from rasterio.errors import RasterioError, RasterioIOError
 from stackstac import stack
 from xarray import DataArray, Dataset, concat
@@ -47,41 +48,49 @@ class OdcLoader(StacLoader):
         self._clip_to_area = clip_to_area
         self._load_as_dataset = load_as_dataset
 
-    def load(self, items, areas: GeoDataFrame) -> Dataset | DataArray:
+    def load(self, items, areas: GeoDataFrame | GeoBox) -> Dataset | DataArray:
         # If `nodata` is passed as an arg, or the stac item contains the nodata
         # value, xr[variable].nodata will be set on load.
-        xr = odc.stac.load(
+
+        load_geometry = (
+            dict(geopolygon=areas)
+            if isinstance(areas, GeoDataFrame)
+            else dict(geobox=areas)
+        )
+
+        ds = stac_load(
             items,
-            geopolygon=areas,
+            **load_geometry,
             **self._kwargs,
         )
 
         # TODO: need to handle cases where nodata is _not_ set on load. (see
         # landsat qr_radsat band)
-        for name in xr:
+        for name in ds:
             # Since nan is more-or-less universally accepted as a nodata value,
             # if the dtype of a band is some sort of floating point, then recode
             # existing values that are equal to the value set on load to nan
-            if xr[name].dtype.kind == "f":
+            if ds[name].dtype.kind == "f":
                 # Should I make this an option?
-                if "nodata" in xr[name].attrs.keys():
-                    xr[name] = xr[name].where(xr[name] != xr[name].nodata, float("nan"))
-                xr[name].attrs["nodata"] = float("nan")
+                if "nodata" in ds[name].attrs.keys():
+                    ds[name] = ds[name].where(ds[name] != ds[name].nodata, float("nan"))
+                ds[name].attrs["nodata"] = float("nan")
             # To be helpful, set the nodata so rioxarray can understand it too.
-            xr[name].rio.write_nodata(xr[name].nodata, inplace=True)
+            ds[name].rio.write_nodata(ds[name].nodata, inplace=True)
 
         if self._clip_to_area:
-            xr = xr.rio.clip(
-                areas.to_crs(xr.odc.crs).geometry, all_touched=True, from_disk=True
+            ds = ds.rio.clip(
+                areas.to_crs(ds.odc.crs).geometry, all_touched=True, from_disk=True
             )
             # Clip loses this, so re-set.
-            for name in xr:
-                xr[name].attrs["nodata"] = xr[name].rio.nodata
+            for name in ds:
+                ds[name].attrs["nodata"] = ds[name].rio.nodata
 
         if not self._load_as_dataset:
-            xr = xr.to_array("band").rename("data").rio.write_crs(xr.odc.crs)
+            da = ds.to_array("band").rename("data").rio.write_crs(data.odc.crs)
+            return da
 
-        return xr
+        return ds
 
 
 class StackStacLoader(StacLoader):
