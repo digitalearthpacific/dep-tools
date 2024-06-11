@@ -11,15 +11,17 @@ import rasterio
 import rioxarray
 from antimeridian import bbox as antimeridian_bbox
 from antimeridian import fix_multi_polygon, fix_polygon
-from azure.storage.blob import ContainerClient
 from dask.distributed import Client, Lock
 from geopandas import GeoDataFrame
+from odc.geo.geobox import GeoBox
 from odc.geo.xr import to_cog, write_cog
 from osgeo import gdal
 from pystac import ItemCollection
 from retry import retry
 from shapely.geometry import LineString, MultiLineString
 from xarray import DataArray, Dataset
+
+from azure.storage.blob import ContainerClient
 
 from .azure import get_container_client
 
@@ -67,8 +69,11 @@ def shift_negative_longitudes(
 BBOX = list[float]
 
 
-def bbox_across_180(region: GeoDataFrame) -> BBOX | tuple[BBOX, BBOX]:
-    geometry = region.to_crs(4326).unary_union
+def bbox_across_180(region: GeoDataFrame | GeoBox) -> BBOX | tuple[BBOX, BBOX]:
+    if isinstance(region, GeoBox):
+        geometry = region.geographic_extent.geom
+    else:
+        geometry = region.to_crs(4326).unary_union
 
     if geometry.geom_type == "Polygon":
         geometry = fix_polygon(geometry)
@@ -109,7 +114,7 @@ def bbox_across_180(region: GeoDataFrame) -> BBOX | tuple[BBOX, BBOX]:
 # retry is for search timeouts which occasionally occur
 @retry(tries=5, delay=1)
 def search_across_180(
-    region: GeoDataFrame, client: pystac_client.Client | None = None, **kwargs
+    region: GeoDataFrame | GeoBox, client: pystac_client.Client | None = None, **kwargs
 ) -> ItemCollection:
     """
     region: A GeoDataFrame.
