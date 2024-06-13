@@ -8,13 +8,13 @@ from .loaders import Loader
 from .processors import Processor
 from .writers import Writer
 
-task_id = str
+TaskID = str
 
 
 class Task(ABC):
     def __init__(
         self,
-        task_id: task_id,
+        task_id: TaskID,
         loader: Loader,
         processor: Processor,
         writer: Writer,
@@ -34,7 +34,7 @@ class Task(ABC):
 class AreaTask(Task):
     def __init__(
         self,
-        id: task_id,
+        id: TaskID,
         area: GeoDataFrame,
         loader: Loader,
         processor: Processor,
@@ -93,7 +93,7 @@ class ErrorCategoryAreaTask(AreaTask):
 class MultiAreaTask(ABC):
     def __init__(
         self,
-        ids: list[task_id],
+        ids: list[TaskID],
         areas: GeoDataFrame,
         task_class: type[AreaTask],
         loader: Loader,

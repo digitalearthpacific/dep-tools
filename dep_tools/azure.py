@@ -71,3 +71,20 @@ def list_blob_container(
         blob_name = blob_record["name"]
         if blob_name.endswith(suffix):
             yield blob_name
+
+
+def build_vrt(
+    bounds: List,
+    prefix: str = "",
+    suffix: str = "",
+) -> Path:
+    blobs = [
+        f"/vsiaz/output/{blob.name}"
+        for blob in get_container_client().list_blobs(name_starts_with=prefix)
+        if blob.name.endswith(suffix)
+    ]
+
+    local_prefix = Path(prefix).stem
+    vrt_file = f"data/{local_prefix}.vrt"
+    gdal.BuildVRT(vrt_file, blobs, outputBounds=bounds)
+    return Path(vrt_file)

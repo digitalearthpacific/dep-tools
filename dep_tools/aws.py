@@ -27,7 +27,7 @@ def object_exists(bucket: str, key: str, client: BaseClient | None = None) -> bo
 
 def s3_dump(
     data: Union[bytes, str, IO], bucket: str, key: str, client: BaseClient, **kwargs
-):
+) -> bool:
     """Write data to s3 object."""
 
     r = client.put_object(Bucket=bucket, Key=key, Body=data, **kwargs)
