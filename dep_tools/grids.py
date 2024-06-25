@@ -1,3 +1,4 @@
+# JA: Why is this here and not in dep-grid. dep-tools is not a catch-all.
 from odc.geo import XY
 from odc.geo.gridspec import GridSpec
 

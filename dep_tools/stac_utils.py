@@ -19,13 +19,11 @@ class StacCreator(Processor):
     def __init__(
         self,
         itempath: DepItemPath,
-        collection: str,
         remote: bool = True,
         collection_url_root: str = "https://stac.staging.digitalearthpacific.org/collections",
-        bucket: str = None,
+        bucket: str | None = None,
     ):
         self._itempath = itempath
-        self._collection = collection
         self._remote = remote
         self._collection_url_root = collection_url_root
         self._bucket = bucket
@@ -55,7 +53,7 @@ def get_stac_item(
     collection: str,
     remote: bool = True,
     collection_url_root: str = "https://stac.staging.digitalearthpacific.org/collections",
-    bucket: str = None,
+    bucket: str | None = None,
     **kwargs,
 ) -> Item:
     prefix = Path("./")

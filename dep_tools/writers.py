@@ -10,7 +10,7 @@ from .azure import blob_exists
 from .aws import write_to_s3, object_exists, write_stac_aws
 from .namers import DepItemPath
 from .processors import Processor, XrPostProcessor
-from .stac_utils import write_stac_blob_storage, write_stac_local
+from .stac_utils import write_stac_blob_storage, write_stac_local, StacCreator
 from .utils import write_to_blob_storage, write_to_local_storage
 
 
@@ -65,6 +65,7 @@ class DepWriter(Writer):
             stac_path = self._stac_writer.write(output, item_id)
             if isinstance(paths, str):
                 paths = [paths]
+            assert isinstance(stac_path, str)
             paths.append(stac_path)
 
         return paths
@@ -109,6 +110,8 @@ class StacWriter(Writer):
     def __init__(
         self,
         itempath: DepItemPath,
+        # this could be more generic, it just needs to be a Processor that
+        # accepts an item_id
         stac_creator: StacCreator,
         write_stac_function: Callable = write_stac_blob_storage,
         **kwargs,
@@ -118,7 +121,7 @@ class StacWriter(Writer):
         self._write_stac_function = write_stac_function
         self._kwargs = kwargs
 
-    def write(self, ds: Dataset, item_id, **kwargs):
+    def write(self, ds: Dataset, item_id, **kwargs) -> str:
         item = self._stac_creator.process(ds, item_id)
         stac_path = self._itempath.stac_path(item_id)
         self._write_stac_function(item, stac_path, **kwargs)

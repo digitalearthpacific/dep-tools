@@ -74,7 +74,7 @@ def list_blob_container(
 
 
 def build_vrt(
-    bounds: List,
+    bounds: list,
     prefix: str = "",
     suffix: str = "",
 ) -> Path:
