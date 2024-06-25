@@ -1,17 +1,14 @@
-from abc import ABC, abstractmethod
 import warnings
+from abc import ABC, abstractmethod
 
 from geopandas import GeoDataFrame, read_file
+from odc.geo.geobox import GeoBox
 from pystac import ItemCollection
 from pystac_client import Client
 
 from dep_tools.exceptions import EmptyCollectionError
 from dep_tools.landsat_utils import items_in_pathrows, pathrows_in_area
-from dep_tools.utils import (
-    fix_bad_epsgs,
-    remove_bad_items,
-    search_across_180,
-)
+from dep_tools.utils import fix_bad_epsgs, remove_bad_items, search_across_180
 
 
 class Searcher(ABC):
@@ -58,7 +55,7 @@ class PystacSearcher(Searcher):
         self._raise_errors = raise_empty_collection_error
         self._kwargs = kwargs
 
-    def search(self, area: GeoDataFrame) -> ItemCollection:
+    def search(self, area: GeoDataFrame | GeoBox) -> ItemCollection:
         """Search for stac items within the bounds of the corresponding area.
 
         Args:
