@@ -2,8 +2,6 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
 
-# Should probably be renamed to AssetPath at earliest opportunity
-# to avoid confusion with stac items
 class ItemPath(ABC):
     def __init__(self) -> None:
         pass

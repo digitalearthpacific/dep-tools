@@ -1,9 +1,7 @@
-import io
 from logging import INFO, Formatter, Logger, StreamHandler, getLogger
 from pathlib import Path
 from typing import Dict, List, Union
 
-import fiona
 import numpy as np
 import planetary_computer
 import pystac_client
@@ -20,8 +18,6 @@ from pystac import ItemCollection
 from retry import retry
 from shapely.geometry import LineString, MultiLineString
 from xarray import DataArray, Dataset
-
-from azure.storage.blob import ContainerClient
 
 from .azure import get_container_client
 
@@ -196,55 +192,6 @@ def write_to_local_storage(
     else:
         raise ValueError(
             "You can only write an Xarray DataArray or Dataset, Geopandas GeoDataFrame, or string"
-        )
-
-
-def write_to_blob_storage(
-    d: Union[DataArray, Dataset, GeoDataFrame, str],
-    path: Union[str, Path],
-    overwrite: bool = True,
-    use_odc_writer: bool = False,
-    client: ContainerClient | None = None,
-    **kwargs,
-) -> None:
-    # Allowing for a shared container client, which might be
-    # more efficient. If not provided, get one.
-    if client is None:
-        client = get_container_client()
-    blob_client = client.get_blob_client(str(path))
-    if not overwrite and blob_client.exists():
-        return
-
-    if isinstance(d, (DataArray, Dataset)):
-        if use_odc_writer:
-            if "driver" in kwargs:
-                del kwargs["driver"]
-            binary_data = to_cog(d, **kwargs)
-            blob_client.upload_blob(
-                binary_data, overwrite=overwrite, connection_timeout=TIMEOUT_SECONDS
-            )
-        else:
-            with io.BytesIO() as buffer:
-                # This is needed or rioxarray doesn't know what type it is
-                # writing
-                if "driver" not in kwargs:
-                    kwargs["driver"] = "COG"
-                d.rio.to_raster(buffer, **kwargs)
-                buffer.seek(0)
-                blob_client.upload_blob(
-                    buffer, overwrite=overwrite, connection_timeout=TIMEOUT_SECONDS
-                )
-
-    elif isinstance(d, GeoDataFrame):
-        with fiona.io.MemoryFile() as buffer:
-            d.to_file(buffer, **kwargs)
-            buffer.seek(0)
-            blob_client.upload_blob(buffer, overwrite=overwrite)
-    elif isinstance(d, str):
-        blob_client.upload_blob(d, overwrite=overwrite, **kwargs)
-    else:
-        raise ValueError(
-            "You can only write an Xarray DataArray or Dataset, or Geopandas GeoDataFrame"
         )
 
 

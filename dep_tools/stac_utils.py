@@ -12,7 +12,7 @@ from xarray import DataArray, Dataset
 
 from .namers import DepItemPath
 from .processors import Processor
-from .utils import write_to_blob_storage
+from .azure import write_to_blob_storage
 
 
 class StacCreator(Processor):

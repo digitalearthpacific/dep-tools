@@ -6,12 +6,12 @@ from typing import Callable, Hashable, List
 from botocore.client import BaseClient
 from xarray import Dataset
 
-from .azure import blob_exists
+from .azure import blob_exists, write_to_blob_storage
 from .aws import write_to_s3, object_exists, write_stac_aws
 from .namers import DepItemPath
 from .processors import Processor, XrPostProcessor
 from .stac_utils import write_stac_blob_storage, write_stac_local, StacCreator
-from .utils import write_to_blob_storage, write_to_local_storage
+from .utils import write_to_local_storage
 
 
 class Writer(ABC):
