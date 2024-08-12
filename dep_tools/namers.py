@@ -11,16 +11,22 @@ class ItemPath(ABC):
         return ""
 
 
-@dataclass
 class GenericItemPath(ItemPath):
-    sensor: str
-    dataset_id: str
-    version: str
-    time: str
-    prefix: str = "dep"
-    zero_pad_numbers: bool = False
-
-    def __post_init__(self):
+    def __init__(
+        self,
+        sensor: str,
+        dataset_id: str,
+        version: str,
+        time: str,
+        prefix: str = "dep",
+        zero_pad_numbers: bool = False,
+    ):
+        self.sensor = sensor
+        self.dataset_id = dataset_id
+        self.version = version
+        self.time = time
+        self.prefix = prefix
+        self.zero_pad_numbers = zero_pad_numbers
         self.version = self.version.replace(".", "-")
         self._folder_prefix = (
             f"{self.prefix}_{self.sensor}_{self.dataset_id}/{self.version}"
@@ -70,6 +76,28 @@ class GenericItemPath(ItemPath):
 
 class DepItemPath(GenericItemPath):
     pass
+
+
+class S3ItemPath(GenericItemPath):
+    def __init__(
+        self,
+        bucket: str,
+        sensor: str,
+        dataset_id: str,
+        version: str,
+        time: str,
+        prefix: str = "dep",
+        zero_pad_numbers: bool = False,
+    ):
+        super().__init__(
+            sensor=sensor,
+            dataset_id=dataset_id,
+            version=version,
+            time=time,
+            prefix=prefix,
+            zero_pad_numbers=zero_pad_numbers,
+        )
+        self.bucket = bucket
 
 
 class LocalPath(DepItemPath):

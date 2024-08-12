@@ -4,9 +4,12 @@ from logging import Logger, getLogger
 from geopandas import GeoDataFrame
 
 from .exceptions import EmptyCollectionError, NoOutputError
-from .loaders import Loader
+from .loaders import Loader, StacLoader
 from .processors import Processor
-from .writers import Writer
+from .namers import S3ItemPath
+from .searchers import Searcher
+from .stac_utils import set_stac_properties, StacCreator
+from .writers import Writer, RealAwsDsCogWriter, AwsStacWriter
 
 TaskID = str
 
@@ -53,6 +56,80 @@ class AreaTask(Task):
         output_data = self.processor.process(input_data, **processor_kwargs)
         paths = self.writer.write(output_data, self.id)
         return paths
+
+
+class StacTask(AreaTask):
+    def __init__(
+        self,
+        id: TaskID,
+        area,
+        searcher: Searcher,
+        loader: StacLoader,
+        processor: Processor,
+        writer: Writer,
+        post_processor: Processor | None = None,
+        stac_creator: StacCreator | None = None,
+        stac_writer: Writer | None = None,
+        logger: Logger = getLogger(),
+    ):
+        super().__init__(id, area, loader, processor, writer, logger)
+        self.id = id
+        self.searcher = searcher
+        self.post_processor = post_processor
+        self.stac_creator = stac_creator
+        self.stac_writer = stac_writer
+
+    def run(self):
+        items = self.searcher.search(self.area)
+        input_data = self.loader.load(items, self.area)
+
+        processor_kwargs = (
+            dict(area=self.area) if self.processor.send_area_to_processor else dict()
+        )
+
+        output_data = set_stac_properties(
+            input_data, self.processor.process(input_data, **processor_kwargs)
+        )
+
+        if self.post_processor is not None:
+            output_data = self.post_processor.process(output_data)
+
+        self.writer.write(output_data, self.id)
+
+        if self.stac_creator is not None and self.stac_writer is not None:
+            stac_item = self.stac_creator.process(output_data, self.id)
+            self.stac_writer.write(stac_item, self.id)
+
+
+class AwsStacTask(StacTask):
+    def __init__(
+        self,
+        itempath: S3ItemPath,
+        id: TaskID,
+        area,
+        searcher: Searcher,
+        loader: StacLoader,
+        processor: Processor,
+        post_processor: Processor | None = None,
+        logger: Logger = getLogger(),
+        **kwargs,
+    ):
+        writer = RealAwsDsCogWriter(itempath)
+        stac_creator = StacCreator(itempath)
+        stac_writer = AwsStacWriter(itempath)
+        super().__init__(
+            id=id,
+            area=area,
+            searcher=searcher,
+            loader=loader,
+            processor=processor,
+            post_processor=post_processor,
+            writer=writer,
+            stac_creator=stac_creator,
+            stac_writer=stac_writer,
+            logger=logger,
+            **kwargs,
+        )
 
 
 class ErrorCategoryAreaTask(AreaTask):

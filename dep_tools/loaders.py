@@ -27,6 +27,7 @@ class StacLoader(Loader):
         pass
 
 
+# This will likely be deprecated
 class SearchLoader(Loader):
     def __init__(self, searcher: Searcher, loader: StacLoader):
         self.searcher = searcher
@@ -64,8 +65,6 @@ class OdcLoader(StacLoader):
             **self._kwargs,
         )
 
-        # TODO: need to handle cases where nodata is _not_ set on load. (see
-        # landsat qr_radsat band)
         for name in ds:
             # Since nan is more-or-less universally accepted as a nodata value,
             # if the dtype of a band is some sort of floating point, then recode
@@ -75,8 +74,8 @@ class OdcLoader(StacLoader):
                 if "nodata" in ds[name].attrs.keys():
                     ds[name] = ds[name].where(ds[name] != ds[name].nodata, float("nan"))
                 ds[name].attrs["nodata"] = float("nan")
-            # To be helpful, set the nodata so rioxarray can understand it too.
-            ds[name].rio.write_nodata(ds[name].nodata, inplace=True)
+            # To be helpful, set the nodata for rioxarray accessor
+            ds[name].rio.write_nodata(ds[name].attrs.get("nodata"), inplace=True)
 
         if self._clip_to_area:
             ds = ds.rio.clip(

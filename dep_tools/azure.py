@@ -1,16 +1,17 @@
 from functools import partial
 import io
+import json
 from multiprocessing.dummy import Pool as ThreadPool
 import os
 from pathlib import Path
 from typing import Union, Generator
 
-import azure.storage.blob
-from azure.storage.blob import ContainerClient
+from azure.storage.blob import ContainerClient, ContentSettings
 import fiona
 from geopandas import GeoDataFrame
 from odc.geo.xr import to_cog
 from osgeo import gdal
+from pystac import Item
 from xarray import DataArray, Dataset
 
 
@@ -29,7 +30,7 @@ def get_container_client(
             "'None' is not a valid value for 'credential'. Pass a valid name or set the 'AZURE_STORAGE_SAS_TOKEN' environment variable"
         )
 
-    return azure.storage.blob.ContainerClient(
+    return ContainerClient(
         f"https://{storage_account}.blob.core.windows.net",
         container_name=container_name,
         credential=credential,
@@ -94,6 +95,21 @@ def build_vrt(
     vrt_file = f"data/{local_prefix}.vrt"
     gdal.BuildVRT(vrt_file, blobs, outputBounds=bounds)
     return Path(vrt_file)
+
+
+def write_stac_blob_storage(
+    item: Item,
+    stac_path: str,
+    **kwargs,
+) -> str | None:
+    item_json = json.dumps(item.to_dict(), indent=4)
+    write_to_blob_storage(
+        item_json,
+        stac_path,
+        content_settings=ContentSettings(content_type="application/json"),
+        **kwargs,
+    )
+    return stac_path
 
 
 def write_to_blob_storage(

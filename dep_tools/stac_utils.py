@@ -2,7 +2,6 @@ from datetime import datetime
 import json
 from pathlib import Path
 
-from azure.storage.blob import ContentSettings
 import numpy as np
 from pystac import Asset, Item, MediaType
 from rio_stac.stac import create_stac_item
@@ -12,7 +11,6 @@ from xarray import DataArray, Dataset
 
 from .namers import DepItemPath
 from .processors import Processor
-from .azure import write_to_blob_storage
 
 
 class StacCreator(Processor):
@@ -21,28 +19,25 @@ class StacCreator(Processor):
         itempath: DepItemPath,
         remote: bool = True,
         collection_url_root: str = "https://stac.staging.digitalearthpacific.org/collections",
-        bucket: str | None = None,
+        **kwargs,
     ):
         self._itempath = itempath
         self._remote = remote
         self._collection_url_root = collection_url_root
-        self._bucket = bucket
+        self._kwargs = kwargs
 
     def process(
         self,
         data: DataArray | Dataset,
         item_id: str,
-        **kwargs,
-    ) -> Item:
+    ) -> Item | str:
         return get_stac_item(
-            self._itempath,
-            item_id,
-            data,
-            self._collection,
-            self._remote,
-            self._collection_url_root,
-            self._bucket,
-            **kwargs,
+            itempath=self._itempath,
+            item_id=item_id,
+            data=data,
+            remote=self._remote,
+            collection_url_root=self._collection_url_root,
+            **self._kwargs,
         )
 
 
@@ -50,19 +45,18 @@ def get_stac_item(
     itempath: DepItemPath,
     item_id: str,
     data: DataArray | Dataset,
-    collection: str,
     remote: bool = True,
     collection_url_root: str = "https://stac.staging.digitalearthpacific.org/collections",
-    bucket: str | None = None,
     **kwargs,
-) -> Item:
+) -> Item | str:
     prefix = Path("./")
     # Remote means not local
     # TODO: neaten local file writing up
     if remote:
-        if bucket is not None:
+        # Or, isinstance(itempath, S3ItemPath)
+        if hasattr(itempath, "bucket"):
             # Writing to S3
-            prefix = URL(f"s3://{bucket}")
+            prefix = URL(f"s3://{getattr(itempath,'bucket')}")
         else:
             # Default to Azure
             prefix = URL("https://deppcpublicstorage.blob.core.windows.net/output")
@@ -109,21 +103,6 @@ def get_stac_item(
     item.set_self_href(stac_url)
 
     return item
-
-
-def write_stac_blob_storage(
-    item: Item,
-    stac_path: str,
-    **kwargs,
-) -> str | None:
-    item_json = json.dumps(item.to_dict(), indent=4)
-    write_to_blob_storage(
-        item_json,
-        stac_path,
-        content_settings=ContentSettings(content_type="application/json"),
-        **kwargs,
-    )
-    return stac_path
 
 
 def write_stac_local(item: Item, stac_path: str, **kwargs) -> None:

@@ -6,11 +6,11 @@ from typing import Callable, Hashable, List
 from botocore.client import BaseClient
 from xarray import Dataset
 
-from .azure import blob_exists, write_to_blob_storage
+from .azure import blob_exists, write_to_blob_storage, write_stac_blob_storage
 from .aws import write_to_s3, object_exists, write_stac_aws
-from .namers import DepItemPath
+from .namers import DepItemPath, S3ItemPath
 from .processors import Processor, XrPostProcessor
-from .stac_utils import write_stac_blob_storage, write_stac_local, StacCreator
+from .stac_utils import write_stac_local
 from .utils import write_to_local_storage
 
 
@@ -22,6 +22,105 @@ class Writer(ABC):
         pass
 
 
+class DsCogWriter(Writer):
+    def __init__(
+        self,
+        itempath: DepItemPath,
+        write_multithreaded: bool = False,
+        load_before_write: bool = False,
+        write_function: Callable = write_to_blob_storage,
+        **kwargs,
+    ):
+        self._itempath = itempath
+        self._write_multithreaded = write_multithreaded
+        self._load_before_write = load_before_write
+        self._write_function = write_function
+        self._kwargs = kwargs
+
+    def write(self, xr: Dataset, item_id: str) -> str | List:
+        if self._load_before_write:
+            xr.load()
+
+        paths = []
+
+        def get_write_partial(variable: Hashable) -> Callable:
+            output_da = xr[variable].squeeze()
+            path = self._itempath.path(item_id, variable)
+            paths.append(path)
+
+            return partial(
+                self._write_function,
+                output_da,
+                path=path,
+                **self._kwargs,
+            )
+
+        if self._write_multithreaded:
+            with ThreadPoolExecutor() as executor:
+                futures = [
+                    executor.submit(get_write_partial(variable)) for variable in xr
+                ]
+                for future in futures:
+                    future.result()
+        else:
+            for variable in xr:
+                get_write_partial(variable)()
+        return paths
+
+
+# This should be the AwsDsCogWriter as the one below subclasses DsWriter
+class RealAwsDsCogWriter(DsCogWriter):
+    def __init__(
+        self,
+        itempath: S3ItemPath,
+        write_multithreaded: bool = False,
+        load_before_write: bool = False,
+        write_function: Callable = write_to_s3,
+        **kwargs,
+    ):
+        super().__init__(
+            itempath=itempath,
+            write_multithreaded=write_multithreaded,
+            load_before_write=load_before_write,
+            write_function=write_function,
+            bucket=itempath.bucket,
+            **kwargs,
+        )
+
+
+class StacWriter(Writer):
+    def __init__(
+        self,
+        itempath: DepItemPath,
+        write_stac_function: Callable = write_stac_blob_storage,
+        **kwargs,
+    ):
+        self._itempath = itempath
+        self._write_stac_function = write_stac_function
+        self._kwargs = kwargs
+
+    def write(self, item, item_id) -> str:
+        stac_path = self._itempath.stac_path(item_id)
+        self._write_stac_function(item, stac_path, **self._kwargs)
+
+        return item.self_href
+
+
+class AwsStacWriter(StacWriter):
+    def __init__(
+        self,
+        itempath: S3ItemPath,
+        **kwargs,
+    ):
+        super().__init__(
+            itempath=itempath,
+            write_stac_function=write_to_s3,
+            bucket=itempath.bucket,
+            **kwargs,
+        )
+
+
+# Everything below here should be candidate for deletion
 class DepWriter(Writer):
     """A writer which writes xarray Datasets to cloud-optimized GeoTiffs.
     It requires a pre-processor and optionally creates and writes a STAC
@@ -102,77 +201,12 @@ class DsWriter(DepWriter):
         cog_writer = DsCogWriter(
             itempath, write_multithreaded, load_before_write, write_function, **kwargs
         )
-        stac_writer = StacWriter(itempath, write_stac_function) if write_stac else None
+        stac_writer = (
+            StacWriter(itempath, write_stac_function=write_stac_function)
+            if write_stac
+            else None
+        )
         super().__init__(itempath, pre_processor, cog_writer, stac_writer, overwrite)
-
-
-class StacWriter(Writer):
-    def __init__(
-        self,
-        itempath: DepItemPath,
-        # this could be more generic, it just needs to be a Processor that
-        # accepts an item_id
-        stac_creator: StacCreator,
-        write_stac_function: Callable = write_stac_blob_storage,
-        **kwargs,
-    ):
-        self._itempath = itempath
-        self._stac_creator = stac_creator
-        self._write_stac_function = write_stac_function
-        self._kwargs = kwargs
-
-    def write(self, ds: Dataset, item_id, **kwargs) -> str:
-        item = self._stac_creator.process(ds, item_id)
-        stac_path = self._itempath.stac_path(item_id)
-        self._write_stac_function(item, stac_path, **kwargs)
-
-        return item.self_href
-
-
-class DsCogWriter(Writer):
-    def __init__(
-        self,
-        itempath: DepItemPath,
-        write_multithreaded: bool = False,
-        load_before_write: bool = False,
-        write_function: Callable = write_to_blob_storage,
-        **kwargs,
-    ):
-        self._itempath = itempath
-        self._write_multithreaded = write_multithreaded
-        self._load_before_write = load_before_write
-        self._write_function = write_function
-        self._kwargs = kwargs
-
-    def write(self, xr: Dataset, item_id: str) -> str | List:
-        if self._load_before_write:
-            xr.load()
-
-        paths = []
-
-        def get_write_partial(variable: Hashable) -> Callable:
-            output_da = xr[variable].squeeze()
-            path = self._itempath.path(item_id, variable)
-            paths.append(path)
-
-            return partial(
-                self._write_function,
-                output_da,
-                path=path,
-                **self._kwargs,
-            )
-
-        if self._write_multithreaded:
-            with ThreadPoolExecutor() as executor:
-                futures = [
-                    executor.submit(get_write_partial(variable)) for variable in xr
-                ]
-                for future in futures:
-                    future.result()
-        else:
-            for variable in xr:
-                get_write_partial(variable)()
-        return paths
 
 
 class LocalDsCogWriter(DsWriter):
@@ -200,5 +234,4 @@ class AwsDsCogWriter(DsWriter):
 
 
 class AzureDsWriter(DsWriter):
-    # This really runs a DepWriter
     pass

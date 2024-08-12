@@ -74,11 +74,13 @@ def write_to_s3(
             d.to_file(buffer, **kwargs)
             buffer.seek(0)
             s3_dump(buffer.read(), bucket, key, client, **kwargs)
+    elif isinstance(d, Item):
+        s3_dump(json.dumps(d.to_dict(), indent=4), bucket, key, client, **kwargs)
     elif isinstance(d, str):
         s3_dump(d, bucket, key, client, **kwargs)
     else:
         raise ValueError(
-            "You can only write an Xarray DataArray or Dataset, or Geopandas GeoDataFrame"
+            "You can only write an Xarray DataArray or Dataset, Geopandas GeoDataFrame, Pystac Item, or string"
         )
 
 
