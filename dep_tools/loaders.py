@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 
 from geopandas import GeoDataFrame
 from odc.geo.geobox import GeoBox
+from odc.geo.geom import Geometry
 from odc.stac import load as stac_load
 from rasterio.errors import RasterioError, RasterioIOError
 from stackstac import stack
@@ -78,12 +79,19 @@ class OdcLoader(StacLoader):
             ds[name].rio.write_nodata(ds[name].attrs.get("nodata"), inplace=True)
 
         if self._clip_to_area:
-            ds = ds.rio.clip(
-                areas.to_crs(ds.odc.crs).geometry, all_touched=True, from_disk=True
-            )
+            if isinstance(areas, GeoBox):
+                raise ValueError(
+                    "Clip not supported for GeoBox (nor should it be needed)"
+                )
+
+            # ds = ds.rio.clip(
+            #    areas.to_crs(ds.odc.crs).geometry, all_touched=True, from_disk=True
+            # )
+            geom = Geometry(areas.geometry.unary_union, crs=areas.crs)
+            ds = ds.odc.mask(geom)
             # Clip loses this, so re-set.
-            for name in ds:
-                ds[name].attrs["nodata"] = ds[name].rio.nodata
+            # for name in ds:
+            #    ds[name].attrs["nodata"] = ds[name].rio.nodata
 
         if not self._load_as_dataset:
             da = ds.to_array("band").rename("data").rio.write_crs(data.odc.crs)
