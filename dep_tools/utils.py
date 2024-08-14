@@ -69,7 +69,7 @@ def bbox_across_180(region: GeoDataFrame | GeoBox) -> BBOX | tuple[BBOX, BBOX]:
     if isinstance(region, GeoBox):
         geometry = region.geographic_extent.geom
     else:
-        geometry = region.to_crs(4326).unary_union
+        geometry = region.to_crs(4326).make_valid().unary_union
 
     if geometry.geom_type == "Polygon":
         geometry = fix_polygon(geometry)
