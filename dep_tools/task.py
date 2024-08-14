@@ -94,11 +94,13 @@ class StacTask(AreaTask):
         if self.post_processor is not None:
             output_data = self.post_processor.process(output_data)
 
-        self.writer.write(output_data, self.id)
+        paths = self.writer.write(output_data, self.id)
 
         if self.stac_creator is not None and self.stac_writer is not None:
             stac_item = self.stac_creator.process(output_data, self.id)
             self.stac_writer.write(stac_item, self.id)
+
+        return paths
 
 
 class AwsStacTask(StacTask):
@@ -137,11 +139,11 @@ class ErrorCategoryAreaTask(AreaTask):
         try:
             input_data = self.loader.load(self.area)
         except EmptyCollectionError as e:
-            self.logger.info([self.id, "no items for areas"])
+            self.logger.error([self.id, "no items for areas"])
             raise e
 
         except Exception as e:
-            self.logger.info([self.id, "load error", e])
+            self.logger.error([self.id, "load error", e])
             raise e
 
         processor_kwargs = (
@@ -150,11 +152,11 @@ class ErrorCategoryAreaTask(AreaTask):
         try:
             output_data = self.processor.process(input_data, **processor_kwargs)
         except Exception as e:
-            self.logger.info([self.id, "processor error", e])
+            self.logger.error([self.id, "processor error", e])
             raise e
 
         if output_data is None:
-            self.logger.info([self.id, "no output from processor"])
+            self.logger.error([self.id, "no output from processor"])
             raise NoOutputError()
         try:
             paths = self.writer.write(output_data, self.id)
