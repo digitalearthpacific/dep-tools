@@ -126,10 +126,15 @@ def search_across_180(
     bbox = bbox_across_180(region)
 
     if isinstance(bbox, tuple):
-        return ItemCollection(
-            list(client.search(bbox=bbox[0], **kwargs).items())
-            + list(client.search(bbox=bbox[1], **kwargs).items())
-        )
+        first_result = list(client.search(bbox=bbox[0], **kwargs).items())
+        first_ids = [item.id for item in first_result]
+
+        second_result = list(client.search(bbox=bbox[1], **kwargs).items())
+        unique_second_result = [
+            item for item in second_result if item.id not in first_ids
+        ]
+
+        return ItemCollection(first_result + unique_second_result)
     else:
         return client.search(bbox=bbox, **kwargs).item_collection()
 
