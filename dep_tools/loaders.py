@@ -84,14 +84,8 @@ class OdcLoader(StacLoader):
                     "Clip not supported for GeoBox (nor should it be needed)"
                 )
 
-            # ds = ds.rio.clip(
-            #    areas.to_crs(ds.odc.crs).geometry, all_touched=True, from_disk=True
-            # )
             geom = Geometry(areas.geometry.unary_union, crs=areas.crs)
             ds = ds.odc.mask(geom)
-            # Clip loses this, so re-set.
-            # for name in ds:
-            #    ds[name].attrs["nodata"] = ds[name].rio.nodata
 
         if not self._load_as_dataset:
             da = ds.to_array("band").rename("data").rio.write_crs(data.odc.crs)

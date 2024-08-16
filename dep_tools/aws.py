@@ -42,6 +42,7 @@ def write_to_s3(
     overwrite: bool = True,
     use_odc_writer: bool = True,
     client: BaseClient | None = None,
+    s3_dump_kwargs=dict(),
     **kwargs,
 ):
     if client is None:
@@ -58,7 +59,12 @@ def write_to_s3(
                 del kwargs["driver"]
             binary_data = to_cog(d, **kwargs)
             s3_dump(
-                binary_data, bucket, key, client, ContentType="image/tiff", **kwargs
+                binary_data,
+                bucket,
+                key,
+                client,
+                ContentType="image/tiff",
+                **s3_dump_kwargs,
             )
 
         else:
@@ -66,28 +72,35 @@ def write_to_s3(
                 d.rio.to_raster(binary_data, driver="COG", **kwargs)
                 binary_data.seek(0)
                 s3_dump(
-                    binary_data, bucket, key, client, ContentType="image/tiff", **kwargs
+                    binary_data,
+                    bucket,
+                    key,
+                    client,
+                    ContentType="image/tiff",
+                    **s3_dump_kwargs,
                 )
 
     elif isinstance(d, GeoDataFrame):
         with MemoryFile() as buffer:
             d.to_file(buffer, **kwargs)
             buffer.seek(0)
-            s3_dump(buffer.read(), bucket, key, client, **kwargs)
+            s3_dump(buffer.read(), bucket, key, client, **s3_dump_kwargs)
     elif isinstance(d, Item):
-        s3_dump(json.dumps(d.to_dict(), indent=4), bucket, key, client, **kwargs)
+        s3_dump(
+            json.dumps(d.to_dict(), indent=4), bucket, key, client, **s3_dump_kwargs
+        )
     elif isinstance(d, str):
-        s3_dump(d, bucket, key, client, **kwargs)
+        s3_dump(d, bucket, key, client, **s3_dump_kwargs)
     else:
         raise ValueError(
             "You can only write an Xarray DataArray or Dataset, Geopandas GeoDataFrame, Pystac Item, or string"
         )
 
 
-def write_stac_aws(
+def write_stac_s3(
     item: Item,
     stac_path: str,
-    bucket: str = None,
+    bucket: str,
     **kwargs,
 ) -> None:
     item_string = json.dumps(item.to_dict(), indent=4)

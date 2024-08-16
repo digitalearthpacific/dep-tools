@@ -5,11 +5,11 @@ from geopandas import GeoDataFrame
 
 from .exceptions import EmptyCollectionError, NoOutputError
 from .loaders import Loader, StacLoader
-from .processors import Processor
+from .processors import Processor, XrPostProcessor
 from .namers import S3ItemPath
 from .searchers import Searcher
 from .stac_utils import set_stac_properties, StacCreator
-from .writers import Writer, RealAwsDsCogWriter, AwsStacWriter
+from .writers import Writer, AwsDsCogWriter, AwsStacWriter
 
 TaskID = str
 
@@ -112,11 +112,11 @@ class AwsStacTask(StacTask):
         searcher: Searcher,
         loader: StacLoader,
         processor: Processor,
-        post_processor: Processor | None = None,
+        post_processor: Processor | None = XrPostProcessor(),
         logger: Logger = getLogger(),
         **kwargs,
     ):
-        writer = RealAwsDsCogWriter(itempath)
+        writer = AwsDsCogWriter(itempath)
         stac_creator = StacCreator(itempath)
         stac_writer = AwsStacWriter(itempath)
         super().__init__(

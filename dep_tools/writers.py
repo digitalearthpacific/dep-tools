@@ -68,8 +68,9 @@ class DsCogWriter(Writer):
         return paths
 
 
-# This should be the AwsDsCogWriter as the one below subclasses DsWriter
-class RealAwsDsCogWriter(DsCogWriter):
+# This replaces the old AwsDsCogWriter as the it was actually a DsWriter
+# At some point it will likely replace the DsCogWriter.
+class AwsDsCogWriter(DsCogWriter):
     def __init__(
         self,
         itempath: S3ItemPath,
@@ -88,11 +89,19 @@ class RealAwsDsCogWriter(DsCogWriter):
         )
 
 
+class LocalDsCogWriter(DsCogWriter):
+    def __init__(self, **kwargs):
+        super().__init__(
+            write_function=write_to_local_storage,
+            **kwargs,
+        )
+
+
 class StacWriter(Writer):
     def __init__(
         self,
         itempath: DepItemPath,
-        write_stac_function: Callable = write_stac_blob_storage,
+        write_stac_function: Callable = write_stac_s3,
         **kwargs,
     ):
         self._itempath = itempath
@@ -120,118 +129,15 @@ class AwsStacWriter(StacWriter):
         )
 
 
-# Everything below here should be candidate for deletion
-class DepWriter(Writer):
-    """A writer which writes xarray Datasets to cloud-optimized GeoTiffs.
-    It requires a pre-processor and optionally creates and writes a STAC
-    item."""
-
+class LocalStacWriter(StacWriter):
     def __init__(
         self,
-        itempath: DepItemPath,
-        pre_processor: Processor,
-        cog_writer: Writer,
-        stac_writer: Writer | None,
-        overwrite: bool = False,
-    ):
-        self._itempath = itempath
-        self._pre_processor = pre_processor
-        self._cog_writer = cog_writer
-        self._stac_writer = stac_writer
-        self._overwrite = overwrite
-
-    def _stac_exists(self, item_id) -> bool:
-        return blob_exists(self._itempath.stac_path(item_id))
-
-    def _all_paths(self, ds: Dataset, item_id: str) -> list:
-        # Only problem here is if xr has variables that aren't in the stac
-        # so maybe we need to read stac?
-        paths = [self._itempath.path(item_id, variable) for variable in ds]
-        paths.append(self._itempath.stac_path(item_id))
-        return paths
-
-    def write(self, ds: Dataset, item_id) -> list | list[str]:
-        # Check if the STAC doc exists, and quit early if it does
-        if not self._overwrite and self._stac_exists(item_id):
-            return self._all_paths(ds, item_id)
-
-        # Process the data and write it to COGs
-        output = self._pre_processor.process(ds)
-        paths = self._cog_writer.write(output, item_id)
-
-        # If a STAC writer is provided, write the STAC doc
-        if self._stac_writer is not None:
-            stac_path = self._stac_writer.write(output, item_id)
-            if isinstance(paths, str):
-                paths = [paths]
-            assert isinstance(stac_path, str)
-            paths.append(stac_path)
-
-        return paths
-
-
-class DsWriter(DepWriter):
-    """A DepWriter with common parameters for DEP assets. If you
-    need more fine-grained control over the individual pieces, then use
-    a DepWriter."""
-
-    def __init__(
-        self,
-        itempath: DepItemPath,
-        convert_to_int16: bool = True,
-        output_value_multiplier: int = 10000,
-        scale_int16s: bool = False,
-        output_nodata: int = -32767,
-        extra_attrs: dict = {},
-        write_function: Callable = write_to_blob_storage,
-        write_multithreaded: bool = True,
-        write_stac: bool = True,
-        write_stac_function=write_stac_blob_storage,
-        load_before_write: bool = False,
-        overwrite: bool = False,
+        itempath: S3ItemPath,
         **kwargs,
     ):
-        pre_processor = XrPostProcessor(
-            convert_to_int16,
-            output_value_multiplier,
-            scale_int16s,
-            output_nodata,
-            extra_attrs,
-        )
-        cog_writer = DsCogWriter(
-            itempath, write_multithreaded, load_before_write, write_function, **kwargs
-        )
-        stac_writer = (
-            StacWriter(itempath, write_stac_function=write_stac_function)
-            if write_stac
-            else None
-        )
-        super().__init__(itempath, pre_processor, cog_writer, stac_writer, overwrite)
-
-
-class LocalDsCogWriter(DsWriter):
-    def __init__(self, **kwargs):
         super().__init__(
-            write_function=write_to_local_storage,
-            write_stac_function=write_stac_local,
+            itempath=itempath,
+            write_stac_function=write_to_local_storage,
+            bucket=itempath.bucket,
             **kwargs,
         )
-
-
-class AwsDsCogWriter(DsWriter):
-    def __init__(self, bucket: str, client: BaseClient | None = None, **kwargs):
-        super().__init__(
-            write_function=write_to_s3,
-            write_stac_function=write_stac_aws,
-            bucket=bucket,
-            client=client,
-            **kwargs,
-        )
-        self._bucket = bucket
-
-    def _stac_exists(self, item_id):
-        return object_exists(self._bucket, self._itempath.stac_path(item_id))
-
-
-class AzureDsWriter(DsWriter):
-    pass

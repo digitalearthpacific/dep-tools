@@ -26,7 +26,6 @@ def stac_item():
         itempath=itempath,
         item_id="12,34",
         data=test_xr,
-        collection="spysat",
         remote=False,
     )
 
