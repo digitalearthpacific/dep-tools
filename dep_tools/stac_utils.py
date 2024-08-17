@@ -3,13 +3,15 @@ import json
 from pathlib import Path
 
 import numpy as np
+from pandas import DataFrame
 from pystac import Asset, Item, MediaType
 from rio_stac.stac import create_stac_item
 from urlpath import URL
 from xarray import DataArray, Dataset
 
 
-from .namers import DepItemPath
+from .aws import object_exists
+from .namers import DepItemPath, S3ItemPath
 from .processors import Processor
 
 
@@ -105,9 +107,25 @@ def get_stac_item(
     return item
 
 
-def write_stac_local(item: Item, stac_path: str, **kwargs) -> None:
+def write_stac_local(item: Item, stac_path: str) -> None:
     with open(stac_path, "w") as f:
         json.dump(item.to_dict(), f, indent=4)
+
+
+def existing_stac_items(possible_ids: list, itempath: S3ItemPath) -> list:
+    """Returns only those ids which have an existing stac item."""
+    return [
+        id
+        for id in possible_ids
+        if object_exists(itempath.bucket, itempath.stac_path(id))
+    ]
+
+
+def remove_items_with_existing_stac(grid: DataFrame, itempath: S3ItemPath) -> DataFrame:
+    """Filter a dataframe to only include items which don't have an existing stac output.
+    The dataframe must have an index which corresponds to ids for the given itempath.
+    """
+    return grid[~grid.index.isin(existing_stac_items(list(grid.index), itempath))]
 
 
 def set_stac_properties(

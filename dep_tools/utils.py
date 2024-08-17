@@ -11,8 +11,8 @@ from antimeridian import bbox as antimeridian_bbox
 from antimeridian import fix_multi_polygon, fix_polygon
 from dask.distributed import Client, Lock
 from geopandas import GeoDataFrame
-from odc.geo.geobox import GeoBox
-from odc.geo.xr import to_cog, write_cog
+from odc.geo.geobox import GeoBox as GeoBox
+from odc.geo.xr import write_cog
 from osgeo import gdal
 from pystac import ItemCollection
 from retry import retry
@@ -218,13 +218,17 @@ def scale_to_int16(
         return (
             da.where(da.notnull(), output_nodata)
             .astype("int16")
-            .rio.write_nodata(output_nodata)
+            .rio.write_nodata(output_nodata)  # for rioxarray
+            .assign_attrs(nodata=output_nodata)  # for odc
         )
 
     if isinstance(xr, Dataset):
         for var in xr:
             xr[var] = scale_da(xr[var])
-            xr[var].rio.write_nodata(output_nodata, inplace=True)
+            # Assuming this needs to be redone?
+            xr[var].rio.write_nodata(output_nodata, inplace=True).assign_attrs(
+                nodata=output_nodata
+            )
     else:
         xr = scale_da(xr)
 

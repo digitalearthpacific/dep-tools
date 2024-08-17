@@ -3,14 +3,10 @@ from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 from typing import Callable, Hashable, List
 
-from botocore.client import BaseClient
 from xarray import Dataset
 
-from .azure import blob_exists, write_to_blob_storage, write_stac_blob_storage
-from .aws import write_to_s3, object_exists, write_stac_aws
+from .aws import write_to_s3, write_stac_s3
 from .namers import DepItemPath, S3ItemPath
-from .processors import Processor, XrPostProcessor
-from .stac_utils import write_stac_local
 from .utils import write_to_local_storage
 
 
@@ -28,7 +24,7 @@ class DsCogWriter(Writer):
         itempath: DepItemPath,
         write_multithreaded: bool = False,
         load_before_write: bool = False,
-        write_function: Callable = write_to_blob_storage,
+        write_function: Callable = write_to_s3,
         **kwargs,
     ):
         self._itempath = itempath
@@ -68,8 +64,6 @@ class DsCogWriter(Writer):
         return paths
 
 
-# This replaces the old AwsDsCogWriter as the it was actually a DsWriter
-# At some point it will likely replace the DsCogWriter.
 class AwsDsCogWriter(DsCogWriter):
     def __init__(
         self,
