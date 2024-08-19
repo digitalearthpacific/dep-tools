@@ -5,6 +5,7 @@ from odc.geo.geobox import GeoBox
 from odc.geo.geom import Geometry
 from odc.stac import load as stac_load
 from rasterio.errors import RasterioError, RasterioIOError
+import rioxarray
 from stackstac import stack
 from xarray import DataArray, Dataset, concat
 
