@@ -2,24 +2,18 @@ from logging import INFO, Formatter, Logger, StreamHandler, getLogger
 from pathlib import Path
 from typing import Dict, List, Union
 
-import numpy as np
-import planetary_computer
-import pystac_client
-import rasterio
-import rioxarray
 from antimeridian import bbox as antimeridian_bbox
 from antimeridian import fix_multi_polygon, fix_polygon
-from dask.distributed import Client, Lock
 from geopandas import GeoDataFrame
+import numpy as np
 from odc.geo.geobox import GeoBox as GeoBox
 from odc.geo.xr import write_cog
-from osgeo import gdal
+import planetary_computer
 from pystac import ItemCollection
+import pystac_client
 from retry import retry
 from shapely.geometry import LineString, MultiLineString
 from xarray import DataArray, Dataset
-
-from .azure import get_container_client
 
 # Set the timeout to five minutes, which is an extremely long time
 TIMEOUT_SECONDS = 60 * 5
@@ -233,71 +227,6 @@ def scale_to_int16(
         xr = scale_da(xr)
 
     return xr
-
-
-def raster_bounds(raster_path: Path) -> List:
-    """Returns the bounds for a raster file at the given path"""
-    with rasterio.open(raster_path) as t:
-        return list(t.bounds)
-
-
-def gpdf_bounds(gpdf: GeoDataFrame) -> List[float]:
-    """Returns the bounds for the give GeoDataFrame, and makes sure
-    it doesn't cross the antimeridian."""
-    bbox = gpdf.to_crs("EPSG:4326").total_bounds
-    # Or the opposite!
-    bbox_crosses_antimeridian = bbox[0] < 0 and bbox[2] > 0
-    if bbox_crosses_antimeridian:
-        # This may be overkill, but nothing else was really working
-        bbox[0] = -179.9999999999
-        bbox[2] = 179.9999999999
-    return bbox
-
-
-def build_vrt(
-    bounds: List,
-    prefix: str = "",
-    suffix: str = "",
-) -> Path:
-    blobs = [
-        f"/vsiaz/output/{blob.name}"
-        for blob in get_container_client().list_blobs(name_starts_with=prefix)
-        if blob.name.endswith(suffix)
-    ]
-
-    local_prefix = Path(prefix).stem
-    vrt_file = f"data/{local_prefix}.vrt"
-    gdal.BuildVRT(vrt_file, blobs, outputBounds=bounds)
-    return Path(vrt_file)
-
-
-def _local_prefix(prefix: str) -> str:
-    return Path(prefix).stem
-
-
-def _mosaic_file(prefix: str) -> str:
-    return f"data/{_local_prefix(prefix)}.tif"
-
-
-def mosaic_scenes(
-    prefix: str,
-    bounds: List,
-    client: Client,
-    scale_factor: float = None,
-    overwrite: bool = True,
-) -> None:
-    mosaic_file = _mosaic_file(prefix)
-    if not Path(mosaic_file).is_file() or overwrite:
-        vrt_file = build_vrt(prefix, bounds)
-        rioxarray.open_rasterio(vrt_file, chunks=True).rio.to_raster(
-            mosaic_file,
-            compress="LZW",
-            lock=Lock("rio", client=client),
-        )
-
-        if scale_factor is not None:
-            with rasterio.open(mosaic_file, "r+") as dst:
-                dst.scales = (scale_factor,)
 
 
 def fix_bad_epsgs(item_collection: ItemCollection) -> None:

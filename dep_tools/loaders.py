@@ -8,8 +8,6 @@ from rasterio.errors import RasterioError, RasterioIOError
 from stackstac import stack
 from xarray import DataArray, Dataset, concat
 
-from dep_tools.searchers import Searcher
-
 
 class Loader(ABC):
     """A loader loads data."""
@@ -26,16 +24,6 @@ class StacLoader(Loader):
     @abstractmethod
     def load(self, items, area):
         pass
-
-
-# This will likely be deprecated
-class SearchLoader(Loader):
-    def __init__(self, searcher: Searcher, loader: StacLoader):
-        self.searcher = searcher
-        self.loader = loader
-
-    def load(self, area):
-        return self.loader.load(self.searcher.search(area), area)
 
 
 class OdcLoader(StacLoader):

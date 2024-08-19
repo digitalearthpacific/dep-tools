@@ -132,6 +132,5 @@ class LocalStacWriter(StacWriter):
         super().__init__(
             itempath=itempath,
             write_stac_function=write_to_local_storage,
-            bucket=itempath.bucket,
             **kwargs,
         )
