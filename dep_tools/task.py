@@ -62,7 +62,7 @@ class StacTask(AreaTask):
     def __init__(
         self,
         id: TaskID,
-        area,
+        area: GeoDataFrame,
         searcher: Searcher,
         loader: StacLoader,
         processor: Processor,
@@ -72,6 +72,13 @@ class StacTask(AreaTask):
         stac_writer: Writer | None = None,
         logger: Logger = getLogger(),
     ):
+        """Implementation of a typical DEP product pipeline as a series of
+        generic operations. For a defined location (identified by an id and
+        a spatial region), search for and then load appropriate input data,
+        process that data to create an output, optionally post-process that
+        output to prep for writing, then write. Also allows for
+        optional creation and writing of a stac item document.
+        """
         super().__init__(id, area, loader, processor, writer, logger)
         self.id = id
         self.searcher = searcher
@@ -116,6 +123,7 @@ class AwsStacTask(StacTask):
         logger: Logger = getLogger(),
         **kwargs,
     ):
+        """A StacTask with typical parameters to write to s3 storage."""
         writer = AwsDsCogWriter(itempath)
         stac_creator = StacCreator(itempath)
         stac_writer = AwsStacWriter(itempath)
@@ -169,38 +177,25 @@ class ErrorCategoryAreaTask(AreaTask):
         return paths
 
 
-class MultiAreaTask(ABC):
+class MultiAreaTask:
     def __init__(
         self,
         ids: list[TaskID],
         areas: GeoDataFrame,
         task_class: type[AreaTask],
-        loader: Loader,
-        processor: Processor,
-        writer: Writer,
-        logger: Logger = getLogger(),
         fail_on_error: bool = True,
+        **kwargs,
     ):
         self.ids = ids
         self.areas = areas
-        self.loader = loader
-        self.processor = processor
-        self.writer = writer
-        self.logger = logger
         self.task_class = task_class
         self.fail_on_error = fail_on_error
+        self._kwargs = kwargs
 
     def run(self):
         for id in self.ids:
             try:
-                self.task_class(
-                    id,
-                    self.areas.loc[[id]],
-                    self.loader,
-                    self.processor,
-                    self.writer,
-                    self.logger,
-                ).run()
+                self.task_class(id, self.areas.loc[[id]], **self._kwargs).run()
             except Exception as e:
                 if self.fail_on_error:
                     raise e
