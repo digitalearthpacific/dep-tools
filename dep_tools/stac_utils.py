@@ -87,7 +87,10 @@ def get_stac_item(
 
     input_datetime = properties.get("datetime", None)
     if input_datetime is not None:
-        input_datetime = datetime.strptime(input_datetime, "%Y-%m-%dT%H:%M:%S.%fZ")
+        format_string = (
+            "%Y-%m-%dT%H:%M:%S.%fZ" if "." in input_datetime else "%Y-%m-%dT%H:%M:%SZ"
+        )
+        input_datetime = datetime.strptime(input_datetime, format_string)
 
     item = create_stac_item(
         str(prefix / paths[0]),
