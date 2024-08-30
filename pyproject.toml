@@ -26,6 +26,7 @@ xarray = "*"
 rio-stac = "^0.8.0"
 odc-stac = "*"
 odc-algo = "*"
+fiona = "^1.9.6"
 
 [tool.poetry.group.dev]
 optional = true
