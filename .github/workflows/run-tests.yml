@@ -31,7 +31,7 @@ jobs:
   testing:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/osgeo/gdal:ubuntu-full-3.7.3
+      image: ghcr.io/osgeo/gdal:ubuntu-full-3.8.4
       volumes:
         - ${{ github.workspace }}:/github/workspace
     steps:
