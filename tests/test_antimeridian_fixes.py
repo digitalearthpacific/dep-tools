@@ -48,6 +48,12 @@ def test_features_on_either_side_of_180():
     features = read_file("tests/features_on_either_side.geojson")
     bbox = bbox_across_180(features)
     assert len(bbox) == 2
+    assert isclose(
+        bbox[0], [179.97098076944076, -19.044135782844712, 180, -18.555752850452095]
+    ).all()
+    assert isclose(
+        bbox[1], [-180, -19.044135782844712, -179.92643501801794, -18.555752850452095]
+    ).all()
 
 
 def test_geom_split_at_180():
