@@ -73,6 +73,10 @@ def bbox_across_180(region: GeoDataFrame | GeoBox) -> BBOX | tuple[BBOX, BBOX]:
         raise ValueError(f"Unsupported geometry type: {geometry.type}")
 
     bbox = antimeridian_bbox(geometry)
+    # Sometimes they still come through with the negative value first, see
+    # https://github.com/gadomski/antimeridian/issues/134
+    if bbox[0] < 0 and bbox[2] > 0:
+        bbox[0], bbox[2] = bbox[2], bbox[0]
 
     # Now fix some coord issues
     # If the lower left X coordinate is greater than 180 it needs to shift
@@ -83,7 +87,8 @@ def bbox_across_180(region: GeoDataFrame | GeoBox) -> BBOX | tuple[BBOX, BBOX]:
         if bbox[2] > 180:
             bbox[2] = bbox[2] - 360
 
-    # These are Pacific specific tests!
+    # These are Pacific specific tests, meaning e.g. we know that these aren't
+    # areas that are crossing 0 longitude.
     bbox_crosses_antimeridian = (bbox[0] > 0 and bbox[2] < 0) or (
         bbox[0] < 180 and bbox[2] > 180
     )
