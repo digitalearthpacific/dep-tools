@@ -124,9 +124,9 @@ class AwsStacTask(StacTask):
         **kwargs,
     ):
         """A StacTask with typical parameters to write to s3 storage."""
-        writer = AwsDsCogWriter(itempath)
-        stac_creator = StacCreator(itempath)
-        stac_writer = AwsStacWriter(itempath)
+        writer = kwargs.get("writer", AwsDsCogWriter(itempath))
+        stac_creator = kwargs.get("stac_creator", StacCreator(itempath))
+        stac_writer = kwargs.get("stac_writer", AwsStacWriter(itempath))
         super().__init__(
             id=id,
             area=area,
@@ -182,6 +182,7 @@ class MultiAreaTask:
         self,
         ids: list[TaskID],
         areas: GeoDataFrame,
+        logger,
         task_class: type[AreaTask],
         fail_on_error: bool = True,
         **kwargs,
@@ -190,15 +191,18 @@ class MultiAreaTask:
         self.areas = areas
         self.task_class = task_class
         self.fail_on_error = fail_on_error
+        self.logger = logger
         self._kwargs = kwargs
 
     def run(self):
         for id in self.ids:
             try:
-                self.task_class(id, self.areas.loc[[id]], **self._kwargs).run()
+                paths = self.task_class(id, self.areas.loc[[id]], **self._kwargs).run()
+                self.logger.info([id, "complete", paths])
             except Exception as e:
                 if self.fail_on_error:
                     raise e
+                self.logger.error([id, "error", [], e])
                 continue
 
 

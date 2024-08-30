@@ -1,4 +1,4 @@
-from geopandas import GeoDataFrame
+from geopandas import GeoDataFrame, read_file
 from numpy import isclose
 from shapely.geometry import LineString, Polygon
 import shapely.wkt
@@ -42,6 +42,12 @@ def test_bbox_across_180_noncrossing():
     bbox = bbox_across_180(crossing_gdf)
     assert isinstance(bbox, list)
     assert bbox == [175.0, -1.0, 179.0, 1.0]
+
+
+def test_features_on_either_side_of_180():
+    features = read_file("tests/features_on_either_side.geojson")
+    bbox = bbox_across_180(features)
+    assert len(bbox) == 2
 
 
 def test_geom_split_at_180():

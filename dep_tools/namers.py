@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
 
 
 class ItemPath(ABC):
@@ -102,7 +101,6 @@ class S3ItemPath(GenericItemPath):
 
 class LocalPath(DepItemPath):
     def __init__(self, local_folder: str, prefix: str = "dep", **kwargs):
-        # Need to create an abc for DepItemPath and drop this
         super().__init__(**kwargs)
         self._folder_prefix = (
             f"{local_folder}/{prefix}_{self.sensor}_{self.dataset_id}/{self.version}"
