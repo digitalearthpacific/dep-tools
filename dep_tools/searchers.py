@@ -44,13 +44,10 @@ class PystacSearcher(Searcher):
 
     def __init__(
         self,
-        catalog: str | None = None,
+        catalog: str,
         raise_empty_collection_error: bool = True,
         **kwargs,
     ):
-        if catalog is None:
-            raise ValueError("A STAC Catalog URI must be provided.")
-
         self._client = Client.open(catalog)
         self._raise_errors = raise_empty_collection_error
         self._kwargs = kwargs

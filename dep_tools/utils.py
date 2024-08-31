@@ -3,7 +3,12 @@ from pathlib import Path
 from typing import Dict, List, Union
 
 from antimeridian import bbox as antimeridian_bbox
-from antimeridian import fix_multi_polygon, fix_polygon
+from antimeridian import (
+    fix_multi_polygon,
+    fix_polygon,
+    fix_line_string,
+    fix_multi_line_string,
+)
 from geopandas import GeoDataFrame
 import numpy as np
 from odc.geo.geobox import GeoBox as GeoBox
@@ -12,7 +17,7 @@ import planetary_computer
 from pystac import ItemCollection
 import pystac_client
 from retry import retry
-from shapely.geometry import LineString, MultiLineString
+from shapely.geometry import LineString, MultiLineString, GeometryCollection
 from xarray import DataArray, Dataset
 
 # Set the timeout to five minutes, which is an extremely long time
@@ -63,15 +68,12 @@ def bbox_across_180(region: GeoDataFrame | GeoBox) -> BBOX | tuple[BBOX, BBOX]:
     if isinstance(region, GeoBox):
         geometry = region.geographic_extent.geom
     else:
-        geometry = region.to_crs(4326).make_valid().unary_union
+        geometry = region.to_crs(4326).geometry.make_valid().explode()
+        geometry = geometry[
+            geometry.geom_type.isin(["Polygon", "MultiPolygon"])
+        ].unary_union
 
-    if geometry.geom_type == "Polygon":
-        geometry = fix_polygon(geometry)
-    elif geometry.geom_type == "MultiPolygon":
-        geometry = fix_multi_polygon(geometry)
-    else:
-        raise ValueError(f"Unsupported geometry type: {geometry.type}")
-
+    geometry = _fix_geometry(geometry)
     bbox = antimeridian_bbox(geometry)
     # Sometimes they still come through with the negative value first, see
     # https://github.com/gadomski/antimeridian/issues/134
@@ -104,6 +106,25 @@ def bbox_across_180(region: GeoDataFrame | GeoBox) -> BBOX | tuple[BBOX, BBOX]:
         return (left_bbox, right_bbox)
     else:
         return BBOX(bbox)
+
+
+def _fix_geometry(geometry):
+    if isinstance(geometry, GeometryCollection):
+        return GeometryCollection(
+            [_fix_geometry(a_geometry) for a_geometry in geometry.geoms]
+        )
+    match geometry.geom_type:
+        case "Polygon":
+            geometry = fix_polygon(geometry)
+        case "MultiPolygon":
+            geometry = fix_multi_polygon(geometry)
+        case "LineString":
+            geometry = fix_line_string(geometry)
+        case "MultiLineString":
+            geometry = fix_multi_line_string(geometry)
+        case _:
+            raise ValueError(f"Unsupported geometry type: {geometry.type}")
+    return geometry
 
 
 # retry is for search timeouts which occasionally occur
