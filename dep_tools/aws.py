@@ -117,7 +117,8 @@ def auth(bucket: str, **kwargs):
         s3 = boto3.client("s3")
         test_key = "write_access_test_please_delete_if_found.txt"
         s3.put_object(Bucket=bucket, Key=test_key, Body="Testing write access")
-        s3.delete_object(Bucket=bucket, Key=test_key)
+        # argo acct can write but not delete, so this gives an error up there
+        # s3.delete_object(Bucket=bucket, Key=test_key)
 
     try:
         test_write(bucket)
