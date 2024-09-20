@@ -124,9 +124,9 @@ class AwsStacTask(StacTask):
         **kwargs,
     ):
         """A StacTask with typical parameters to write to s3 storage."""
-        writer = kwargs.get("writer", AwsDsCogWriter(itempath))
-        stac_creator = kwargs.get("stac_creator", StacCreator(itempath))
-        stac_writer = kwargs.get("stac_writer", AwsStacWriter(itempath))
+        writer = kwargs.pop("writer", AwsDsCogWriter(itempath))
+        stac_creator = kwargs.pop("stac_creator", StacCreator(itempath))
+        stac_writer = kwargs.pop("stac_writer", AwsStacWriter(itempath))
         super().__init__(
             id=id,
             area=area,
