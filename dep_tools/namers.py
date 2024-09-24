@@ -1,9 +1,6 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
 
 
-# Should probably be renamed to AssetPath at earliest opportunity
-# to avoid confusion with stac items
 class ItemPath(ABC):
     def __init__(self) -> None:
         pass
@@ -13,16 +10,22 @@ class ItemPath(ABC):
         return ""
 
 
-@dataclass
 class GenericItemPath(ItemPath):
-    sensor: str
-    dataset_id: str
-    version: str
-    time: str
-    prefix: str = "dep"
-    zero_pad_numbers: bool = False
-
-    def __post_init__(self):
+    def __init__(
+        self,
+        sensor: str,
+        dataset_id: str,
+        version: str,
+        time: str,
+        prefix: str = "dep",
+        zero_pad_numbers: bool = False,
+    ):
+        self.sensor = sensor
+        self.dataset_id = dataset_id
+        self.version = version
+        self.time = time
+        self.prefix = prefix
+        self.zero_pad_numbers = zero_pad_numbers
         self.version = self.version.replace(".", "-")
         self._folder_prefix = (
             f"{self.prefix}_{self.sensor}_{self.dataset_id}/{self.version}"
@@ -74,9 +77,30 @@ class DepItemPath(GenericItemPath):
     pass
 
 
+class S3ItemPath(GenericItemPath):
+    def __init__(
+        self,
+        bucket: str,
+        sensor: str,
+        dataset_id: str,
+        version: str,
+        time: str,
+        prefix: str = "dep",
+        zero_pad_numbers: bool = False,
+    ):
+        super().__init__(
+            sensor=sensor,
+            dataset_id=dataset_id,
+            version=version,
+            time=time,
+            prefix=prefix,
+            zero_pad_numbers=zero_pad_numbers,
+        )
+        self.bucket = bucket
+
+
 class LocalPath(DepItemPath):
     def __init__(self, local_folder: str, prefix: str = "dep", **kwargs):
-        # Need to create an abc for DepItemPath and drop this
         super().__init__(**kwargs)
         self._folder_prefix = (
             f"{local_folder}/{prefix}_{self.sensor}_{self.dataset_id}/{self.version}"

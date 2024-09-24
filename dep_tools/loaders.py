@@ -2,12 +2,12 @@ from abc import ABC, abstractmethod
 
 from geopandas import GeoDataFrame
 from odc.geo.geobox import GeoBox
+from odc.geo.geom import Geometry
 from odc.stac import load as stac_load
 from rasterio.errors import RasterioError, RasterioIOError
+import rioxarray
 from stackstac import stack
 from xarray import DataArray, Dataset, concat
-
-from dep_tools.searchers import Searcher
 
 
 class Loader(ABC):
@@ -25,15 +25,6 @@ class StacLoader(Loader):
     @abstractmethod
     def load(self, items, area):
         pass
-
-
-class SearchLoader(Loader):
-    def __init__(self, searcher: Searcher, loader: StacLoader):
-        self.searcher = searcher
-        self.loader = loader
-
-    def load(self, area):
-        return self.loader.load(self.searcher.search(area), area)
 
 
 class OdcLoader(StacLoader):
@@ -64,8 +55,6 @@ class OdcLoader(StacLoader):
             **self._kwargs,
         )
 
-        # TODO: need to handle cases where nodata is _not_ set on load. (see
-        # landsat qr_radsat band)
         for name in ds:
             # Since nan is more-or-less universally accepted as a nodata value,
             # if the dtype of a band is some sort of floating point, then recode
@@ -75,16 +64,17 @@ class OdcLoader(StacLoader):
                 if "nodata" in ds[name].attrs.keys():
                     ds[name] = ds[name].where(ds[name] != ds[name].nodata, float("nan"))
                 ds[name].attrs["nodata"] = float("nan")
-            # To be helpful, set the nodata so rioxarray can understand it too.
-            ds[name].rio.write_nodata(ds[name].nodata, inplace=True)
+            # To be helpful, set the nodata for rioxarray accessor
+            ds[name].rio.write_nodata(ds[name].attrs.get("nodata"), inplace=True)
 
         if self._clip_to_area:
-            ds = ds.rio.clip(
-                areas.to_crs(ds.odc.crs).geometry, all_touched=True, from_disk=True
-            )
-            # Clip loses this, so re-set.
-            for name in ds:
-                ds[name].attrs["nodata"] = ds[name].rio.nodata
+            if isinstance(areas, GeoBox):
+                raise ValueError(
+                    "Clip not supported for GeoBox (nor should it be needed)"
+                )
+
+            geom = Geometry(areas.geometry.unary_union, crs=areas.crs)
+            ds = ds.odc.mask(geom)
 
         if not self._load_as_dataset:
             da = ds.to_array("band").rename("data").rio.write_crs(data.odc.crs)

@@ -1,9 +1,10 @@
 import rioxarray
 
-from dep_tools.writers import StacWriter
 from dep_tools.namers import LocalPath
+from dep_tools.stac_utils import StacCreator
+from dep_tools.writers import StacWriter
 
-from dep_tools.stac_utils import write_stac_local
+from dep_tools.stac_utils import get_stac_item
 from pathlib import Path
 import pytest
 
@@ -13,12 +14,20 @@ DATA_DIR = Path(__file__).parent / "data"
 @pytest.fixture
 def stac_item():
     itempath = LocalPath(
-        DATA_DIR, sensor="spysat", dataset_id="wofs", version="1.0.0", time="2021-01-01"
+        str(DATA_DIR),
+        sensor="spysat",
+        dataset_id="wofs",
+        version="1.0.0",
+        time="2021-01-01",
     )
-    writer = StacWriter(itempath=itempath, write_stac_function=write_stac_local)
     tif = itempath.path("12,34", asset_name="wofs")
     test_xr = rioxarray.open_rasterio(tif).to_dataset(name="wofs")
-    item = writer.get_stac_item("12,34", test_xr, "spysat", remote=False)
+    item = get_stac_item(
+        itempath=itempath,
+        item_id="12,34",
+        data=test_xr,
+        remote=False,
+    )
 
     return item
 

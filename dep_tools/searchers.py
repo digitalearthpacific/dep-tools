@@ -44,13 +44,10 @@ class PystacSearcher(Searcher):
 
     def __init__(
         self,
-        catalog: str | None = None,
+        catalog: str,
         raise_empty_collection_error: bool = True,
         **kwargs,
     ):
-        if catalog is None:
-            raise ValueError("A STAC Catalog URI must be provided.")
-
         self._client = Client.open(catalog)
         self._raise_errors = raise_empty_collection_error
         self._kwargs = kwargs
@@ -126,10 +123,12 @@ class LandsatPystacSearcher(PystacSearcher):
         # we might look to combine.
         if "query" in self._kwargs.keys():
             warnings.warn(
-                "`query` argument being ignored. To send a query directly, use `PystacSearcher`."
+                "Portions of `query` argument may be replaced. To specify the full query directly, use `PystacSearcher`."
             )
+            query = kwargs.pop("query")
+        else:
+            query = {}
 
-        query = {}
         if self._exclude_platforms is not None:
             landsat_platforms = ["landsat-5", "landsat-7", "landsat-8", "landsat-9"]
             query["platform"] = {
