@@ -23,15 +23,16 @@ jobs:
           fetch-depth: 0
 
       - name: Check linting
-        uses: rickstaa/action-black@v1
+        uses: psf/black@stable
         id: action_black
         with:
-          black_args: "--check dep_tools"
+          options: "--check" 
+          src: "./dep_tools"
 
   testing:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/osgeo/gdal:ubuntu-full-3.7.3
+      image: ghcr.io/osgeo/gdal:ubuntu-full-3.8.4
       volumes:
         - ${{ github.workspace }}:/github/workspace
     steps:
