@@ -7,7 +7,7 @@ dynamic = ["dependencies"]
 license = {file = "LICENSE"}
 name = "dep-tools"
 requires-python = ">=3.10"
-version = "0.2.0"
+version = "0.4.0"
 
 [tool.setuptools]
 packages = ["dep_tools"]
