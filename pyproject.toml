@@ -8,9 +8,3 @@ license = {file = "LICENSE"}
 name = "dep-tools"
 requires-python = ">=3.10"
 version = "0.2.0"
-
-[tool.setuptools]
-packages = ["dep_tools"]
-
-[tool.setuptools.dynamic]
-dependencies = { file = ["requirements.txt"] }
