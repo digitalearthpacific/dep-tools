@@ -1,6 +1,4 @@
-from re import search
 import geopandas as gpd
-from pystac_client import Client
 import pytest
 from shapely.geometry import box
 

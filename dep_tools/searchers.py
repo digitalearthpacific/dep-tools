@@ -1,17 +1,14 @@
-from abc import ABC, abstractmethod
 import warnings
+from abc import ABC, abstractmethod
 
 from geopandas import GeoDataFrame, read_file
+from odc.geo.geobox import GeoBox
 from pystac import ItemCollection
-import pystac_client
+from pystac_client import Client
 
 from dep_tools.exceptions import EmptyCollectionError
 from dep_tools.landsat_utils import items_in_pathrows, pathrows_in_area
-from dep_tools.utils import (
-    fix_bad_epsgs,
-    remove_bad_items,
-    search_across_180,
-)
+from dep_tools.utils import fix_bad_epsgs, remove_bad_items, search_across_180
 
 
 class Searcher(ABC):
@@ -47,15 +44,15 @@ class PystacSearcher(Searcher):
 
     def __init__(
         self,
-        client: pystac_client.Client | None = None,
+        catalog: str,
         raise_empty_collection_error: bool = True,
         **kwargs,
     ):
-        self._client = client
+        self._client = Client.open(catalog)
         self._raise_errors = raise_empty_collection_error
         self._kwargs = kwargs
 
-    def search(self, area: GeoDataFrame) -> ItemCollection:
+    def search(self, area: GeoDataFrame | GeoBox) -> ItemCollection:
         """Search for stac items within the bounds of the corresponding area.
 
         Args:
@@ -102,20 +99,21 @@ class LandsatPystacSearcher(PystacSearcher):
 
     def __init__(
         self,
-        client: pystac_client.Client | None = None,
+        catalog: str = "https://planetarycomputer.microsoft.com/api/stac/v1/",
+        collections: list[str] | None = ["landsat-c2-l2"],
         raise_empty_collection_error: bool = True,
         search_intersecting_pathrows: bool = False,
-        exclude_platforms: list | None = None,
+        exclude_platforms: list[str] | None = None,
         only_tier_one: bool = False,
         fall_back_to_tier_two: bool = False,
         **kwargs,
     ):
         super().__init__(
-            client=client,
+            catalog=catalog,
             raise_empty_collection_error=raise_empty_collection_error,
             **kwargs,
         )
-        self._kwargs["collections"] = ["landsat-c2-l2"]
+        self._kwargs["collections"] = collections
         self._search_intersecting_pathrows = search_intersecting_pathrows
         self._exclude_platforms = exclude_platforms
         self._only_tier_one = only_tier_one
@@ -125,10 +123,12 @@ class LandsatPystacSearcher(PystacSearcher):
         # we might look to combine.
         if "query" in self._kwargs.keys():
             warnings.warn(
-                "`query` argument being ignored. To send a query directly, use `PystacSearcher`."
+                "Portions of `query` argument may be replaced. To specify the full query directly, use `PystacSearcher`."
             )
+            query = kwargs.pop("query")
+        else:
+            query = {}
 
-        query = {}
         if self._exclude_platforms is not None:
             landsat_platforms = ["landsat-5", "landsat-7", "landsat-8", "landsat-9"]
             query["platform"] = {

@@ -1,29 +1,44 @@
-import io
+from logging import INFO, Formatter, Logger, StreamHandler, getLogger
 from pathlib import Path
 from typing import Dict, List, Union
 
-import fiona
-import numpy as np
-import planetary_computer
-import pystac_client
-import rasterio
-import rioxarray
-import xarray as xr
-from azure.storage.blob import ContainerClient
-from dask.distributed import Client, Lock
-from geocube.api.core import make_geocube
+from antimeridian import bbox as antimeridian_bbox
+from antimeridian import (
+    fix_multi_polygon,
+    fix_polygon,
+    fix_line_string,
+    fix_multi_line_string,
+)
 from geopandas import GeoDataFrame
-from odc.geo.xr import to_cog, write_cog
-from osgeo import gdal
+import numpy as np
+from odc.geo.geobox import GeoBox as GeoBox
+from odc.geo.xr import write_cog
+import planetary_computer
 from pystac import ItemCollection
+import pystac_client
 from retry import retry
-from shapely.geometry import LineString, MultiLineString
+from shapely.geometry import LineString, MultiLineString, GeometryCollection
 from xarray import DataArray, Dataset
-
-from .azure import get_container_client
 
 # Set the timeout to five minutes, which is an extremely long time
 TIMEOUT_SECONDS = 60 * 5
+
+
+def get_logger(prefix: str, name: str) -> Logger:
+    """Set up a simple logger"""
+    console = StreamHandler()
+    time_format = "%Y-%m-%d %H:%M:%S"
+    console.setFormatter(
+        Formatter(
+            fmt=f"%(asctime)s %(levelname)s ({prefix}):  %(message)s",
+            datefmt=time_format,
+        )
+    )
+
+    log = getLogger(name)
+    log.addHandler(console)
+    log.setLevel(INFO)
+    return log
 
 
 def shift_negative_longitudes(
@@ -49,28 +64,21 @@ def shift_negative_longitudes(
 BBOX = list[float]
 
 
-def bbox_across_180(region: GeoDataFrame) -> BBOX | tuple[BBOX, BBOX]:
-    # Previously we just used region.to_crs(4326).total_bounds but if the geom
-    # is split right at the antimeridian (see landsat pathrow 073072), output
-    # will have zero width (since min and max will be -180 and 180)
-    # So get the bounds for all geoms in region, remove the 180s and calculate
-    # the min and max values ourselves
-    region_ll = GeoDataFrame(region.to_crs(4326))
-    x_values = (
-        region_ll.explode(index_parts=True).bounds.minx.tolist()
-        + region_ll.explode(index_parts=True).bounds.maxx.tolist()
-    )
-    # Possible we just do a direct compare, we shall see if this causes issues
-    # with locations _really close_ to 180 but not touching it
-    tolerance = 1e-5
-    x_values = [i for i in x_values if abs(180 - abs(i)) > tolerance]
+def bbox_across_180(region: GeoDataFrame | GeoBox) -> BBOX | tuple[BBOX, BBOX]:
+    if isinstance(region, GeoBox):
+        geometry = region.geographic_extent.geom
+    else:
+        geometry = region.to_crs(4326).geometry.make_valid().explode()
+        geometry = geometry[
+            geometry.geom_type.isin(["Polygon", "MultiPolygon"])
+        ].unary_union
 
-    y_values = (
-        region_ll.explode(index_parts=True).bounds.miny.tolist()
-        + region_ll.explode(index_parts=True).bounds.maxy.tolist()
-    )
-
-    bbox = [min(x_values), min(y_values), max(x_values), max(y_values)]
+    geometry = _fix_geometry(geometry)
+    bbox = antimeridian_bbox(geometry)
+    # Sometimes they still come through with the negative value first, see
+    # https://github.com/gadomski/antimeridian/issues/134
+    if bbox[0] < 0 and bbox[2] > 0:
+        bbox[0], bbox[2] = bbox[2], bbox[0]
 
     # Now fix some coord issues
     # If the lower left X coordinate is greater than 180 it needs to shift
@@ -81,28 +89,48 @@ def bbox_across_180(region: GeoDataFrame) -> BBOX | tuple[BBOX, BBOX]:
         if bbox[2] > 180:
             bbox[2] = bbox[2] - 360
 
-    # These are Pacific specific tests!
-    bbox_crosses_antimeridian = (bbox[0] < 0 and bbox[2] > 0) or (
+    # These are Pacific specific tests, meaning e.g. we know that these aren't
+    # areas that are crossing 0 longitude.
+    bbox_crosses_antimeridian = (bbox[0] > 0 and bbox[2] < 0) or (
         bbox[0] < 180 and bbox[2] > 180
     )
+
     if bbox_crosses_antimeridian:
         # Split into two bboxes across the antimeridian
-        xmax_ll, ymin_ll = bbox[0], bbox[1]
-        xmin_ll, ymax_ll = bbox[2], bbox[3]
+        xmin, ymin = bbox[0], bbox[1]
+        xmax, ymax = bbox[2], bbox[3]
 
-        xmax_ll = xmax_ll - 360 if xmax_ll > 180 else xmax_ll
-
-        left_bbox = BBOX([xmin_ll, ymin_ll, 180, ymax_ll])
-        right_bbox = BBOX([-180, ymin_ll, xmax_ll, ymax_ll])
+        xmax = xmax - 360 if xmax > 180 else xmax
+        left_bbox = BBOX([xmin, ymin, 180, ymax])
+        right_bbox = BBOX([-180, ymin, xmax, ymax])
         return (left_bbox, right_bbox)
     else:
         return BBOX(bbox)
 
 
+def _fix_geometry(geometry):
+    if isinstance(geometry, GeometryCollection):
+        return GeometryCollection(
+            [_fix_geometry(a_geometry) for a_geometry in geometry.geoms]
+        )
+    match geometry.geom_type:
+        case "Polygon":
+            geometry = fix_polygon(geometry)
+        case "MultiPolygon":
+            geometry = fix_multi_polygon(geometry)
+        case "LineString":
+            geometry = fix_line_string(geometry)
+        case "MultiLineString":
+            geometry = fix_multi_line_string(geometry)
+        case _:
+            raise ValueError(f"Unsupported geometry type: {geometry.type}")
+    return geometry
+
+
 # retry is for search timeouts which occasionally occur
 @retry(tries=5, delay=1)
 def search_across_180(
-    region: GeoDataFrame, client: pystac_client.Client | None = None, **kwargs
+    region: GeoDataFrame | GeoBox, client: pystac_client.Client | None = None, **kwargs
 ) -> ItemCollection:
     """
     region: A GeoDataFrame.
@@ -118,10 +146,15 @@ def search_across_180(
     bbox = bbox_across_180(region)
 
     if isinstance(bbox, tuple):
-        return ItemCollection(
-            list(client.search(bbox=bbox[0], **kwargs).items())
-            + list(client.search(bbox=bbox[1], **kwargs).items())
-        )
+        first_result = list(client.search(bbox=bbox[0], **kwargs).items())
+        first_ids = [item.id for item in first_result]
+
+        second_result = list(client.search(bbox=bbox[1], **kwargs).items())
+        unique_second_result = [
+            item for item in second_result if item.id not in first_ids
+        ]
+
+        return ItemCollection(first_result + unique_second_result)
     else:
         return client.search(bbox=bbox, **kwargs).item_collection()
 
@@ -187,55 +220,6 @@ def write_to_local_storage(
         )
 
 
-def write_to_blob_storage(
-    d: Union[DataArray, Dataset, GeoDataFrame, str],
-    path: Union[str, Path],
-    overwrite: bool = True,
-    use_odc_writer: bool = False,
-    client: ContainerClient | None = None,
-    **kwargs,
-) -> None:
-    # Allowing for a shared container client, which might be
-    # more efficient. If not provided, get one.
-    if client is None:
-        client = get_container_client()
-    blob_client = client.get_blob_client(str(path))
-    if not overwrite and blob_client.exists():
-        return
-
-    if isinstance(d, (DataArray, Dataset)):
-        if use_odc_writer:
-            if "driver" in kwargs:
-                del kwargs["driver"]
-            binary_data = to_cog(d, **kwargs)
-            blob_client.upload_blob(
-                binary_data, overwrite=overwrite, connection_timeout=TIMEOUT_SECONDS
-            )
-        else:
-            with io.BytesIO() as buffer:
-                # This is needed or rioxarray doesn't know what type it is
-                # writing
-                if not "driver" in kwargs:
-                    kwargs["driver"] = "COG"
-                d.rio.to_raster(buffer, **kwargs)
-                buffer.seek(0)
-                blob_client.upload_blob(
-                    buffer, overwrite=overwrite, connection_timeout=TIMEOUT_SECONDS
-                )
-
-    elif isinstance(d, GeoDataFrame):
-        with fiona.io.MemoryFile() as buffer:
-            d.to_file(buffer, **kwargs)
-            buffer.seek(0)
-            blob_client.upload_blob(buffer, overwrite=overwrite)
-    elif isinstance(d, str):
-        blob_client.upload_blob(d, overwrite=overwrite, **kwargs)
-    else:
-        raise ValueError(
-            "You can only write an Xarray DataArray or Dataset, or Geopandas GeoDataFrame"
-        )
-
-
 def scale_to_int16(
     xr: Union[DataArray, Dataset],
     output_multiplier: int,
@@ -254,93 +238,33 @@ def scale_to_int16(
         return (
             da.where(da.notnull(), output_nodata)
             .astype("int16")
-            .rio.write_nodata(output_nodata)
+            .rio.write_nodata(output_nodata)  # for rioxarray
+            .assign_attrs(nodata=output_nodata)  # for odc
         )
 
     if isinstance(xr, Dataset):
         for var in xr:
             xr[var] = scale_da(xr[var])
-            xr[var].rio.write_nodata(output_nodata, inplace=True)
+            # Assuming this needs to be redone?
+            xr[var].rio.write_nodata(output_nodata, inplace=True).assign_attrs(
+                nodata=output_nodata
+            )
     else:
         xr = scale_da(xr)
 
     return xr
 
 
-def raster_bounds(raster_path: Path) -> List:
-    """Returns the bounds for a raster file at the given path"""
-    with rasterio.open(raster_path) as t:
-        return list(t.bounds)
-
-
-def gpdf_bounds(gpdf: GeoDataFrame) -> List[float]:
-    """Returns the bounds for the give GeoDataFrame, and makes sure
-    it doesn't cross the antimeridian."""
-    bbox = gpdf.to_crs("EPSG:4326").total_bounds
-    # Or the opposite!
-    bbox_crosses_antimeridian = bbox[0] < 0 and bbox[2] > 0
-    if bbox_crosses_antimeridian:
-        # This may be overkill, but nothing else was really working
-        bbox[0] = -179.9999999999
-        bbox[2] = 179.9999999999
-    return bbox
-
-
-def build_vrt(
-    bounds: List,
-    prefix: str = "",
-    suffix: str = "",
-) -> Path:
-    blobs = [
-        f"/vsiaz/output/{blob.name}"
-        for blob in get_container_client().list_blobs(name_starts_with=prefix)
-        if blob.name.endswith(suffix)
-    ]
-
-    local_prefix = Path(prefix).stem
-    vrt_file = f"data/{local_prefix}.vrt"
-    gdal.BuildVRT(vrt_file, blobs, outputBounds=bounds)
-    return Path(vrt_file)
-
-
-def _local_prefix(prefix: str) -> str:
-    return Path(prefix).stem
-
-
-def _mosaic_file(prefix: str) -> str:
-    return f"data/{_local_prefix(prefix)}.tif"
-
-
-def mosaic_scenes(
-    prefix: str,
-    bounds: List,
-    client: Client,
-    scale_factor: float = None,
-    overwrite: bool = True,
-) -> None:
-    mosaic_file = _mosaic_file(prefix)
-    if not Path(mosaic_file).is_file() or overwrite:
-        vrt_file = build_vrt(prefix, bounds)
-        rioxarray.open_rasterio(vrt_file, chunks=True).rio.to_raster(
-            mosaic_file,
-            compress="LZW",
-            lock=Lock("rio", client=client),
-        )
-
-        if scale_factor is not None:
-            with rasterio.open(mosaic_file, "r+") as dst:
-                dst.scales = (scale_factor,)
-
-
 def fix_bad_epsgs(item_collection: ItemCollection) -> None:
-    """Repairs soLC08_L2SP_101055_20220612_20220617_02_T2me band epsg codes in stac items loaded from the Planetary
+    """Repairs some band epsg codes in stac items loaded from the Planetary
     Computer stac catalog"""
     # ** modifies in place **
     # See https://github.com/microsoft/PlanetaryComputer/discussions/113
     # Will get fixed at some point and we can remove this
     for item in item_collection:
-        epsg = str(item.properties["proj:epsg"])
-        item.properties["proj:epsg"] = int(f"{epsg[0:3]}{int(epsg[3:]):02d}")
+        if item.collection_id == "landsat-c2-l2":
+            epsg = str(item.properties["proj:epsg"])
+            item.properties["proj:epsg"] = int(f"{epsg[0:3]}{int(epsg[3:]):02d}")
 
 
 def remove_bad_items(item_collection: ItemCollection) -> ItemCollection:

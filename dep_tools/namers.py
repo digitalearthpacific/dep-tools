@@ -1,9 +1,6 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
 
 
-# Should probably be renamed to AssetPath at earliest opportunity
-# to avoid confusion with stac items
 class ItemPath(ABC):
     def __init__(self) -> None:
         pass
@@ -13,18 +10,29 @@ class ItemPath(ABC):
         return ""
 
 
-@dataclass
-class DepItemPath(ItemPath):
-    sensor: str
-    dataset_id: str
-    version: str
-    time: str
-    zero_pad_numbers: bool = False
-
-    def __post_init__(self):
+class GenericItemPath(ItemPath):
+    def __init__(
+        self,
+        sensor: str,
+        dataset_id: str,
+        version: str,
+        time: str,
+        prefix: str = "dep",
+        zero_pad_numbers: bool = False,
+    ):
+        self.sensor = sensor
+        self.dataset_id = dataset_id
+        self.version = version
+        self.time = time
+        self.prefix = prefix
+        self.zero_pad_numbers = zero_pad_numbers
         self.version = self.version.replace(".", "-")
-        self._folder_prefix = f"dep_{self.sensor}_{self.dataset_id}/{self.version}"
-        self.item_prefix = f"dep_{self.sensor}_{self.dataset_id.replace('/','_')}"
+        self._folder_prefix = (
+            f"{self.prefix}_{self.sensor}_{self.dataset_id}/{self.version}"
+        )
+        self.item_prefix = (
+            f"{self.prefix}_{self.sensor}_{self.dataset_id.replace('/','_')}"
+        )
 
     def _format_item_id(
         self, item_id: list[str | int] | tuple[str | int] | str, join_str="/"
@@ -65,10 +73,35 @@ class DepItemPath(ItemPath):
         return f"{self._folder_prefix}/logs/{self.item_prefix}_{self.time}_log.csv"
 
 
+class DepItemPath(GenericItemPath):
+    pass
+
+
+class S3ItemPath(GenericItemPath):
+    def __init__(
+        self,
+        bucket: str,
+        sensor: str,
+        dataset_id: str,
+        version: str,
+        time: str,
+        prefix: str = "dep",
+        zero_pad_numbers: bool = False,
+    ):
+        super().__init__(
+            sensor=sensor,
+            dataset_id=dataset_id,
+            version=version,
+            time=time,
+            prefix=prefix,
+            zero_pad_numbers=zero_pad_numbers,
+        )
+        self.bucket = bucket
+
+
 class LocalPath(DepItemPath):
-    def __init__(self, local_folder: str, **kwargs):
-        # Need to create an abc for DepItemPath and drop this
+    def __init__(self, local_folder: str, prefix: str = "dep", **kwargs):
         super().__init__(**kwargs)
         self._folder_prefix = (
-            f"{local_folder}/dep_{self.sensor}_{self.dataset_id}/{self.version}"
+            f"{local_folder}/{prefix}_{self.sensor}_{self.dataset_id}/{self.version}"
         )

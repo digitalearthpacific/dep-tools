@@ -23,10 +23,11 @@ jobs:
           fetch-depth: 0
 
       - name: Check linting
-        uses: rickstaa/action-black@v1
+        uses: psf/black@stable
         id: action_black
         with:
-          black_args: "--check dep_tools"
+          options: "--check" 
+          src: "./dep_tools"
 
   testing:
     runs-on: ubuntu-latest
