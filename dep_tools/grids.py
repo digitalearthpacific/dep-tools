@@ -7,9 +7,16 @@ from odc.geo import XY, BoundingBox
 from odc.geo.gridspec import GridSpec
 from shapely.geometry import shape
 
+
+DEP_GRID_FILE = "https://raw.githubusercontent.com/digitalearthpacific/dep-grid/refs/heads/cleanup/grid_pacific.geojson"
+
 # This EPSG code is what we're using for now
 # but it's not ideal, as its not an equal area projection...
 PACIFIC_EPSG = "EPSG:3832"
+
+
+def get_tiles(grid_file: str = DEP_GRID_FILE) -> GeoDataFrame:
+    return gpd.read_file(grid_file)
 
 
 def grid(
