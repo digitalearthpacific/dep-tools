@@ -1,22 +1,90 @@
+from json import loads
+from pathlib import Path
 from typing import Literal
 
 import antimeridian
 import geopandas as gpd
+import pandas as pd
 from geopandas import GeoDataFrame, GeoSeries
-from odc.geo import XY, BoundingBox
+from odc.geo import XY, BoundingBox, Geometry
 from odc.geo.gridspec import GridSpec
 from shapely.geometry import shape
-
-
-DEP_GRID_FILE = "https://raw.githubusercontent.com/digitalearthpacific/dep-grid/refs/heads/cleanup/grid_pacific.geojson"
 
 # This EPSG code is what we're using for now
 # but it's not ideal, as its not an equal area projection...
 PACIFIC_EPSG = "EPSG:3832"
 
+GADM_FILE = Path(__file__).parent / "gadm_pacific.gpkg"
+GADM_UNION_FILE = Path(__file__).parent / "gadm_pacific_union.gpkg"
 
-def get_tiles(grid_file: str = DEP_GRID_FILE) -> GeoDataFrame:
-    return gpd.read_file(grid_file)
+
+def _get_gadm() -> GeoDataFrame:
+    if not GADM_FILE.exists() or not GADM_UNION_FILE.exists():
+        countries_and_codes = {
+            "American Samoa": "ASM",
+            "Cook Islands": "COK",
+            "Fiji": "FJI",
+            "French Polynesia": "PYF",
+            "Guam": "GUM",
+            "Kiribati": "KIR",
+            "Marshall Islands": "MHL",
+            "Micronesia": "FSM",
+            "Nauru": "NRU",
+            "New Caledonia": "NCL",
+            "Niue": "NIU",
+            "Northern Mariana Islands": "MNP",
+            "Palau": "PLW",
+            "Papua New Guinea": "PNG",
+            "Pitcairn Islands": "PCN",
+            "Solomon Islands": "SLB",
+            "Samoa": "WSM",
+            "Tokelau": "TKL",
+            "Tonga": "TON",
+            "Tuvalu": "TUV",
+            "Vanuatu": "VUT",
+            "Wallis and Futuna": "WLF",
+        }
+
+        all_polys = pd.concat(
+            [
+                gpd.read_file(
+                    f"https://geodata.ucdavis.edu/gadm/gadm4.1/gpkg/gadm41_{code}.gpkg"
+                )
+                for code in countries_and_codes.values()
+            ]
+        )
+
+        all_polys.to_file(GADM_FILE)
+        all_polys.dissolve()[["geometry"]].to_file(GADM_UNION_FILE)
+
+    return gpd.read_file(GADM_FILE)
+
+
+def _get_gadm_union() -> GeoDataFrame:
+    if not GADM_UNION_FILE.exists():
+        _get_gadm()
+
+    return gpd.read_file(GADM_UNION_FILE)
+
+
+def get_tiles(
+    resolution: int | float = 30,
+    country_codes: list[str] | None = None,
+    tight: bool = False,
+) -> list[(list[int, int], GridSpec)]:
+    """Returns a list of tile IDs for the Pacific region, optionally filtered by country code."""
+
+    if country_codes is None:
+        geometries = _get_gadm_union()
+    else:
+        geometries = _get_gadm().loc[lambda df: df["GID_0"].isin(country_codes)]
+
+    return grid(
+        resolution=resolution,
+        return_type="GridSpec",
+        intersect_with=geometries,
+        tight=tight,
+    )
 
 
 def grid(
@@ -24,6 +92,7 @@ def grid(
     crs=PACIFIC_EPSG,
     return_type: Literal["GridSpec", "GeoSeries", "GeoDataFrame"] = "GridSpec",
     intersect_with: GeoDataFrame | None = None,
+    tight: bool = True,
 ) -> GridSpec | GeoSeries | GeoDataFrame:
     """Returns a GridSpec or GeoSeries representing the Pacific grid, optionally
     intersected with an area of interest.
@@ -41,8 +110,21 @@ def grid(
     """
 
     if intersect_with is not None:
-        full_grid = _geoseries(resolution, crs)
-        return _intersect_grid(full_grid, intersect_with)
+        if return_type != "GridSpec":
+            full_grid = _geoseries(resolution, crs)
+            return _intersect_grid(full_grid, intersect_with)
+        else:
+            gridspec = _gridspec(resolution, crs)
+            geometry = Geometry(loads(intersect_with.to_json()))
+            # This is a bit of a hack, but it works. Geometries that are transformed by the tiles_from_geopolygon
+            # are not valid, but doing the simplification and buffer fixes them.
+            buffer = 0.0 if tight else 1000
+            fixed = (
+                geometry.to_crs(PACIFIC_EPSG, check_and_fix=True, wrapdateline=True)
+                .simplify(0.01)
+                .buffer(buffer)
+            )
+            return gridspec.tiles_from_geopolygon(geopolygon=fixed)
 
     return {
         "GridSpec": _gridspec,
@@ -51,13 +133,13 @@ def grid(
     }[return_type](resolution, crs)
 
 
-def _intersect_grid(grid: GeoSeries, areas_of_interest):
+def _intersect_grid(grid: GeoSeries, areas_of_interest) -> GeoDataFrame:
     return gpd.sjoin(
         gpd.GeoDataFrame(geometry=grid), areas_of_interest.to_crs(grid.crs)
     ).drop(columns=["index_right"])
 
 
-def _gridspec(resolution, crs=PACIFIC_EPSG):
+def _gridspec(resolution, crs=PACIFIC_EPSG) -> GridSpec:
     gridspec_origin = XY(-3000000.0, -4000000.0)
 
     side_in_meters = 96_000
@@ -71,7 +153,7 @@ def _gridspec(resolution, crs=PACIFIC_EPSG):
     )
 
 
-def _geodataframe(resolution, crs=PACIFIC_EPSG):
+def _geodataframe(resolution, crs=PACIFIC_EPSG) -> GeoDataFrame:
     return GeoDataFrame(geometry=_geoseries(resolution, crs), crs=crs)
 
 
