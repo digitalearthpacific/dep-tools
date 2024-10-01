@@ -16,41 +16,41 @@ PACIFIC_EPSG = "EPSG:3832"
 
 GADM_FILE = Path(__file__).parent / "gadm_pacific.gpkg"
 GADM_UNION_FILE = Path(__file__).parent / "gadm_pacific_union.gpkg"
+COUNTRIES_AND_CODES = {
+    "American Samoa": "ASM",
+    "Cook Islands": "COK",
+    "Fiji": "FJI",
+    "French Polynesia": "PYF",
+    "Guam": "GUM",
+    "Kiribati": "KIR",
+    "Marshall Islands": "MHL",
+    "Micronesia": "FSM",
+    "Nauru": "NRU",
+    "New Caledonia": "NCL",
+    "Niue": "NIU",
+    "Northern Mariana Islands": "MNP",
+    "Palau": "PLW",
+    "Papua New Guinea": "PNG",
+    "Pitcairn Islands": "PCN",
+    "Solomon Islands": "SLB",
+    "Samoa": "WSM",
+    "Tokelau": "TKL",
+    "Tonga": "TON",
+    "Tuvalu": "TUV",
+    "Vanuatu": "VUT",
+    "Wallis and Futuna": "WLF",
+}
 
 
 def _get_gadm() -> GeoDataFrame:
     if not GADM_FILE.exists() or not GADM_UNION_FILE.exists():
-        countries_and_codes = {
-            "American Samoa": "ASM",
-            "Cook Islands": "COK",
-            "Fiji": "FJI",
-            "French Polynesia": "PYF",
-            "Guam": "GUM",
-            "Kiribati": "KIR",
-            "Marshall Islands": "MHL",
-            "Micronesia": "FSM",
-            "Nauru": "NRU",
-            "New Caledonia": "NCL",
-            "Niue": "NIU",
-            "Northern Mariana Islands": "MNP",
-            "Palau": "PLW",
-            "Papua New Guinea": "PNG",
-            "Pitcairn Islands": "PCN",
-            "Solomon Islands": "SLB",
-            "Samoa": "WSM",
-            "Tokelau": "TKL",
-            "Tonga": "TON",
-            "Tuvalu": "TUV",
-            "Vanuatu": "VUT",
-            "Wallis and Futuna": "WLF",
-        }
-
         all_polys = pd.concat(
             [
                 gpd.read_file(
-                    f"https://geodata.ucdavis.edu/gadm/gadm4.1/gpkg/gadm41_{code}.gpkg"
+                    f"https://geodata.ucdavis.edu/gadm/gadm4.1/gpkg/gadm41_{code}.gpkg",
+                    layer="ADM_ADM_0",
                 )
-                for code in countries_and_codes.values()
+                for code in COUNTRIES_AND_CODES.values()
             ]
         )
 
@@ -70,20 +70,24 @@ def _get_gadm_union() -> GeoDataFrame:
 def get_tiles(
     resolution: int | float = 30,
     country_codes: list[str] | None = None,
-    tight: bool = False,
+    buffer_distance: int | float | None = None,
 ) -> list[(list[int, int], GridSpec)]:
     """Returns a list of tile IDs for the Pacific region, optionally filtered by country code."""
 
     if country_codes is None:
         geometries = _get_gadm_union()
     else:
+        if not all(code in COUNTRIES_AND_CODES.values() for code in country_codes):
+            raise ValueError(
+                f"Invalid country code. Must be one of {', '.join(COUNTRIES_AND_CODES.values())}"
+            )
         geometries = _get_gadm().loc[lambda df: df["GID_0"].isin(country_codes)]
 
     return grid(
         resolution=resolution,
         return_type="GridSpec",
         intersect_with=geometries,
-        tight=tight,
+        buffer_distance=buffer_distance,
     )
 
 
@@ -92,7 +96,7 @@ def grid(
     crs=PACIFIC_EPSG,
     return_type: Literal["GridSpec", "GeoSeries", "GeoDataFrame"] = "GridSpec",
     intersect_with: GeoDataFrame | None = None,
-    tight: bool = True,
+    buffer_distance: int | float | None = None,
 ) -> GridSpec | GeoSeries | GeoDataFrame:
     """Returns a GridSpec or GeoSeries representing the Pacific grid, optionally
     intersected with an area of interest.
@@ -118,7 +122,7 @@ def grid(
             geometry = Geometry(loads(intersect_with.to_json()))
             # This is a bit of a hack, but it works. Geometries that are transformed by the tiles_from_geopolygon
             # are not valid, but doing the simplification and buffer fixes them.
-            buffer = 0.0 if tight else 1000
+            buffer = 0.0 if buffer_distance is None else buffer_distance
             fixed = (
                 geometry.to_crs(PACIFIC_EPSG, check_and_fix=True, wrapdateline=True)
                 .simplify(0.01)
