@@ -30,7 +30,7 @@ def mask_clouds(
             CLOUD_SHADOWS,
             CLOUD_MEDIUM_PROBABILITY,
             CLOUD_HIGH_PROBABILITY,
-            THIN_CIRRUS
+            THIN_CIRRUS,
         ]
     )
 
