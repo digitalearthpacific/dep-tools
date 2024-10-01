@@ -21,7 +21,7 @@ def mask_clouds(
     # UNCLASSIFIED = 7
     CLOUD_MEDIUM_PROBABILITY = 8
     CLOUD_HIGH_PROBABILITY = 9
-    # THIN_CIRRUS = 10
+    THIN_CIRRUS = 10
     # SNOW = 11
 
     cloud_mask = xr.scl.isin(
@@ -30,6 +30,7 @@ def mask_clouds(
             CLOUD_SHADOWS,
             CLOUD_MEDIUM_PROBABILITY,
             CLOUD_HIGH_PROBABILITY,
+            THIN_CIRRUS
         ]
     )
 
