@@ -9,38 +9,42 @@ def mask_clouds(
     xr: DataArray,
     filters: Iterable[Tuple[str, int]] | None = None,
     keep_ints: bool = False,
+    return_mask: bool = False,
 ) -> DataArray:
     # NO_DATA = 0
-    # SATURATED_OR_DEFECTIVE = 1
+    SATURATED_OR_DEFECTIVE = 1
     # DARK_AREA_PIXELS = 2
     CLOUD_SHADOWS = 3
     # VEGETATION = 4
     # NOT_VEGETATED = 5
     # WATER = 6
     # UNCLASSIFIED = 7
-    # CLOUD_MEDIUM_PROBABILITY = 8
+    CLOUD_MEDIUM_PROBABILITY = 8
     CLOUD_HIGH_PROBABILITY = 9
     # THIN_CIRRUS = 10
     # SNOW = 11
 
-    bitmask = 0
-    for field in [CLOUD_SHADOWS, CLOUD_HIGH_PROBABILITY]:
-        bitmask |= 1 << field
-
-    scl = "scl" if "scl" in xr else "SCL"
-
-    try:
-        cloud_mask = xr.sel(band=scl).astype("uint16") & bitmask != 0
-    except KeyError:
-        cloud_mask = xr[scl].astype("uint16") & bitmask != 0
+    cloud_mask = xr.scl.isin(
+        [
+            SATURATED_OR_DEFECTIVE,
+            CLOUD_SHADOWS,
+            CLOUD_MEDIUM_PROBABILITY,
+            CLOUD_HIGH_PROBABILITY,
+        ]
+    )
 
     if filters is not None:
         cloud_mask = mask_cleanup(cloud_mask, filters)
 
     if keep_ints:
-        return erase_bad(xr, cloud_mask)
+        masked = erase_bad(xr, cloud_mask)
     else:
-        return xr.where(~cloud_mask)
+        masked = xr.where(~cloud_mask)
+
+    if return_mask:
+        return masked, cloud_mask
+    else:
+        return masked
 
 
 def harmonize_to_old(data: DataArray) -> DataArray:
