@@ -87,7 +87,12 @@ def write_to_s3(
             s3_dump(buffer.read(), bucket, key, client, **s3_dump_kwargs)
     elif isinstance(d, Item):
         s3_dump(
-            json.dumps(d.to_dict(), indent=4), bucket, key, client, **s3_dump_kwargs
+            json.dumps(d.to_dict(), indent=4),
+            bucket,
+            key,
+            client,
+            ContentType="application/json",
+            **s3_dump_kwargs,
         )
     elif isinstance(d, str):
         s3_dump(d, bucket, key, client, **s3_dump_kwargs)
