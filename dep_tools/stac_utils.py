@@ -21,7 +21,7 @@ class StacCreator(Processor):
         itempath: DepItemPath,
         remote: bool = True,
         collection_url_root: str = "https://stac.staging.digitalearthpacific.org/collections",
-        make_hrefs_https: bool = False,
+        make_hrefs_https: bool = True,
         **kwargs,
     ):
         self._itempath = itempath
@@ -52,7 +52,7 @@ def get_stac_item(
     data: DataArray | Dataset,
     remote: bool = True,
     collection_url_root: str = "https://stac.staging.digitalearthpacific.org/collections",
-    make_hrefs_https: bool = False,
+    make_hrefs_https: bool = True,
     **kwargs,
 ) -> Item | str:
     prefix = Path("./")
@@ -65,7 +65,7 @@ def get_stac_item(
             if make_hrefs_https:
                 # E.g., https://dep-public-prod.s3.us-west-2.amazonaws.com/
                 prefix = URL(
-                    f"https://{getattr(itempath, 'bucket')}.s3/us-west-2.amazonaws.com"
+                    f"https://{getattr(itempath, 'bucket')}.s3.us-west-2.amazonaws.com"
                 )
             else:
                 # E.g., s3://dep-public-prod/

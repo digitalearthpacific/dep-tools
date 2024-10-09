@@ -18,7 +18,7 @@ class GenericItemPath(ItemPath):
         version: str,
         time: str,
         prefix: str = "dep",
-        zero_pad_numbers: bool = False,
+        zero_pad_numbers: bool = True,
     ):
         self.sensor = sensor
         self.dataset_id = dataset_id
@@ -86,7 +86,7 @@ class S3ItemPath(GenericItemPath):
         version: str,
         time: str,
         prefix: str = "dep",
-        zero_pad_numbers: bool = False,
+        zero_pad_numbers: bool = True,
     ):
         super().__init__(
             sensor=sensor,
