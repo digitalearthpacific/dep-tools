@@ -21,11 +21,13 @@ class StacCreator(Processor):
         itempath: DepItemPath,
         remote: bool = True,
         collection_url_root: str = "https://stac.staging.digitalearthpacific.org/collections",
+        make_hrefs_https: bool = False,
         **kwargs,
     ):
         self._itempath = itempath
         self._remote = remote
         self._collection_url_root = collection_url_root
+        self._make_hrefs_https = make_hrefs_https
         self._kwargs = kwargs
 
     def process(
@@ -39,6 +41,7 @@ class StacCreator(Processor):
             data=data,
             remote=self._remote,
             collection_url_root=self._collection_url_root,
+            make_hrefs_https=self._make_hrefs_https,
             **self._kwargs,
         )
 
@@ -49,6 +52,7 @@ def get_stac_item(
     data: DataArray | Dataset,
     remote: bool = True,
     collection_url_root: str = "https://stac.staging.digitalearthpacific.org/collections",
+    make_hrefs_https: bool = False,
     **kwargs,
 ) -> Item | str:
     prefix = Path("./")
@@ -58,7 +62,14 @@ def get_stac_item(
         # Or, isinstance(itempath, S3ItemPath)
         if hasattr(itempath, "bucket"):
             # Writing to S3
-            prefix = URL(f"s3://{getattr(itempath,'bucket')}")
+            if make_hrefs_https:
+                # E.g., https://dep-public-prod.s3.us-west-2.amazonaws.com/
+                prefix = URL(
+                    f"https://{getattr(itempath, 'bucket')}.s3/us-west-2.amazonaws.com"
+                )
+            else:
+                # E.g., s3://dep-public-prod/
+                prefix = URL(f"s3://{getattr(itempath, 'bucket')}")
         else:
             # Default to Azure
             prefix = URL("https://deppcpublicstorage.blob.core.windows.net/output")
