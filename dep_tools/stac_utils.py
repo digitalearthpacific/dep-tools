@@ -64,7 +64,9 @@ def get_stac_item(
             # Writing to S3
             if make_hrefs_https:
                 # E.g., https://dep-public-prod.s3.us-west-2.amazonaws.com/
-                prefix = URL(f"https://{getattr(itempath, 'bucket')}.s3/us-west-2.amazonaws.com")
+                prefix = URL(
+                    f"https://{getattr(itempath, 'bucket')}.s3/us-west-2.amazonaws.com"
+                )
             else:
                 # E.g., s3://dep-public-prod/
                 prefix = URL(f"s3://{getattr(itempath, 'bucket')}")
