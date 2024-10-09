@@ -121,13 +121,12 @@ class AwsStacTask(StacTask):
         processor: Processor,
         post_processor: Processor | None = XrPostProcessor(),
         logger: Logger = getLogger(),
-        make_hrefs_https: bool = True,
         **kwargs,
     ):
         """A StacTask with typical parameters to write to s3 storage."""
         writer = kwargs.pop("writer", AwsDsCogWriter(itempath))
         stac_creator = kwargs.pop("stac_creator", StacCreator(itempath))
-        stac_writer = kwargs.pop("stac_writer", AwsStacWriter(itempath, make_hrefs_https=make_hrefs_https))
+        stac_writer = kwargs.pop("stac_writer", AwsStacWriter(itempath))
         super().__init__(
             id=id,
             area=area,
