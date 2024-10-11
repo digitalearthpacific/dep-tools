@@ -5,7 +5,8 @@ from pathlib import Path
 import numpy as np
 from pandas import DataFrame
 from pystac import Asset, Item, MediaType
-from rio_stac.stac import create_stac_item
+import rasterio
+from rio_stac.stac import create_stac_item, get_raster_info
 from urlpath import URL
 from xarray import DataArray, Dataset
 
@@ -73,14 +74,20 @@ def get_stac_item(
 
     paths = [itempath.path(item_id, variable) for variable in data]
 
-    assets = {
-        variable: Asset(
+    assets = {}
+    for variable, path in zip(data, paths):
+        raster_info = {}
+        full_path = str(prefix / path)
+        if "with_raster" in kwargs.keys() and kwargs["with_raster"]:
+            with rasterio.open(full_path) as src_dst:
+                raster_info = {"raster:bands": get_raster_info(src_dst, max_size=1024)}
+
+        assets[variable] = Asset(
             media_type=MediaType.COG,
-            href=str(prefix / path),
+            href=full_path,
             roles=["data"],
+            extra_fields={**raster_info},
         )
-        for variable, path in zip(data, paths)
-    }
     stac_id = itempath.basename(item_id)
     collection = itempath.item_prefix
     collection_url = f"{collection_url_root}/{collection}"
