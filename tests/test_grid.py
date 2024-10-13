@@ -1,10 +1,10 @@
-from dep_tools.grids import get_tiles, _get_gadm, PACIFIC_EPSG
+from dep_tools.grids import get_tiles, gadm, PACIFIC_EPSG
 from json import loads
 
 from odc.geo import Geometry
 
 def test_get_gadm():
-    all = _get_gadm()
+    all = gadm()
     assert len(all) == 22
 
     # Convert to a ODC Geometry
