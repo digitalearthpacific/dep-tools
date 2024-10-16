@@ -122,16 +122,12 @@ def grid(
             return _intersect_grid(full_grid, intersect_with)
         else:
             gridspec = _gridspec(resolution, crs)
-            geometry = Geometry(loads(intersect_with.to_json()))
-            # This is a bit of a hack, but it works. Geometries that are transformed by the tiles_from_geopolygon
-            # are not valid, but doing the simplification and buffer fixes them.
-            buffer = 0.0 if buffer_distance is None else buffer_distance
-            fixed = (
-                geometry.to_crs(PACIFIC_EPSG, check_and_fix=True, wrapdateline=True)
-                .simplify(0.01)
-                .buffer(buffer)
-            )
-            return gridspec.tiles_from_geopolygon(geopolygon=fixed)
+            geometry = Geometry(intersect_with.to_crs(PACIFIC_EPSG).simplify(10).to_frame().to_geo_dict())
+            if buffer_distance is not None:
+                geometry = geometry.buffer(buffer_distance)
+            else:
+                geometry = geometry.buffer(0.0)
+            return gridspec.tiles_from_geopolygon(geopolygon=geometry)
 
     return {
         "GridSpec": _gridspec,
