@@ -65,11 +65,11 @@ class PystacSearcher(Searcher):
             region=area, client=self._client, **self._kwargs
         )
 
-        if len(item_collection) == 0 and self._raise_errors:
-            raise EmptyCollectionError()
-
         fix_bad_epsgs(item_collection)
         item_collection = remove_bad_items(item_collection)
+
+        if len(item_collection) == 0 and self._raise_errors:
+            raise EmptyCollectionError()
 
         return item_collection
 
@@ -140,16 +140,9 @@ class LandsatPystacSearcher(PystacSearcher):
 
         self._kwargs["query"] = query
 
-        if self._search_intersecting_pathrows:
-            self._landsat_pathrows = read_file(
-                "https://d9-wret.s3.us-west-2.amazonaws.com/assets/palladium/production/s3fs-public/atoms/files/WRS2_descending_0.zip"
-            )
-
     def search(self, area: GeoDataFrame):
         search_area = (
-            pathrows_in_area(area, self._landsat_pathrows)
-            if self._search_intersecting_pathrows
-            else area
+            pathrows_in_area(area) if self._search_intersecting_pathrows else area
         )
         try:
             items = super().search(search_area)
@@ -163,5 +156,8 @@ class LandsatPystacSearcher(PystacSearcher):
 
         if self._search_intersecting_pathrows:
             items = items_in_pathrows(items, search_area)
+
+        if len(items) == 0 and self._raise_errors:
+            raise EmptyCollectionError()
 
         return items
