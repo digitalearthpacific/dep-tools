@@ -91,7 +91,9 @@ class LandsatPystacSearcher(PystacSearcher):
     query, just use :class:PystacSearcher.
 
     Args:
-        client: A search client.
+        catalog: The URL of a stac catalog. if client is specified, this is
+            ignored.
+        client: A search client. Either this or catalog must be specified.
         raise_empty_collection_error: Whether an EmptyCollectionError exception should
             be returned if no stac items are found.
         search_intersecting_pathrows: Whether to use landsat pathrows which
@@ -110,7 +112,8 @@ class LandsatPystacSearcher(PystacSearcher):
 
     def __init__(
         self,
-        catalog: str = "https://planetarycomputer.microsoft.com/api/stac/v1/",
+        catalog: str | None = None,
+        client: Client | None = None,
         collections: list[str] | None = ["landsat-c2-l2"],
         raise_empty_collection_error: bool = True,
         search_intersecting_pathrows: bool = False,
@@ -121,6 +124,7 @@ class LandsatPystacSearcher(PystacSearcher):
     ):
         super().__init__(
             catalog=catalog,
+            client=client,
             raise_empty_collection_error=raise_empty_collection_error,
             **kwargs,
         )
