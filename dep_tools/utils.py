@@ -17,7 +17,13 @@ import planetary_computer
 from pystac import ItemCollection
 import pystac_client
 from retry import retry
-from shapely.geometry import LineString, MultiLineString, GeometryCollection
+from shapely.geometry import (
+    LineString,
+    MultiLineString,
+    GeometryCollection,
+    MultiPolygon,
+)
+from shapely.geometry.polygon import orient
 from xarray import DataArray, Dataset
 
 # Set the timeout to five minutes, which is an extremely long time
@@ -106,6 +112,23 @@ def bbox_across_180(region: GeoDataFrame | GeoBox) -> BBOX | tuple[BBOX, BBOX]:
         return (left_bbox, right_bbox)
     else:
         return BBOX(bbox)
+
+
+from shapely import Geometry
+
+
+def fix_winding(geom: Geometry) -> Geometry:
+    """Fixes the orientation of the exterior coordinates of Polygon and
+    MultiPolygon geometry, which should run counterclockwise.
+    """
+    # This is non-essential but resolves a barrage of warnings from
+    # the antimeridian package
+    if geom.geom_type == "Polygon" and not geom.exterior.is_ccw:
+        return orient(geom)
+    elif geom.geom_type == "MultiPolygon":
+        return MultiPolygon([fix_winding(p) for p in geom.geoms])
+    else:
+        return geom
 
 
 def _fix_geometry(geometry):

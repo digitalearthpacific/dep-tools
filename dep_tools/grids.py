@@ -115,7 +115,6 @@ def grid(
             Otherwise, a GeoDataFrame containing only the portions of each tile
             that intersect the given GeoDataFrame is returned.
     """
-
     if intersect_with is not None:
         if return_type != "GridSpec":
             full_grid = _geoseries(resolution, crs)
