@@ -34,7 +34,9 @@ class PystacSearcher(Searcher):
     :func:`dep_tools.utils.search_across_180`.
 
     Args:
-        client: A search client.
+        catalog: The URL of a stac catalog. if client is specified, this is
+            ignored.
+        client: A search client. Either this or catalog must be specified.
         raise_empty_collection_error: Whether an EmptyCollectionError exception
             should be returned if no stac items are found.
         **kwargs: Additional arguments passed to client.search(). For example,
@@ -44,11 +46,20 @@ class PystacSearcher(Searcher):
 
     def __init__(
         self,
-        catalog: str,
+        catalog: str | None = None,
+        client: Client | None = None,
         raise_empty_collection_error: bool = True,
         **kwargs,
     ):
-        self._client = Client.open(catalog)
+        if client and catalog:
+            warnings.warn(
+                "Arguments for both 'client' and 'catalog' passed to PystacSearcher, ignoring catalog"
+            )
+
+        if not (client or catalog):
+            raise ValueError("Must specify either client or catalog")
+
+        self._client = client if client else Client.open(catalog)
         self._raise_errors = raise_empty_collection_error
         self._kwargs = kwargs
 
