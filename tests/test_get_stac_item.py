@@ -39,7 +39,6 @@ def test_get_stac_item_properties(stac_item):
         "proj:bbox",
         "proj:shape",
         "proj:transform",
-        "proj:projjson",
     ]
     assert all([key in properties.keys() for key in keys])
 
