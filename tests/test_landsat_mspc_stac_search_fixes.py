@@ -27,7 +27,9 @@ def test_pathrows_in_area(near_antimeridian_area):
 
 def test_search_for_stac_items_with_bad_geoms(near_antimeridian_area):
     searcher = LandsatPystacSearcher(
-        datetime=DATETIME, search_intersecting_pathrows=True
+        datetime=DATETIME,
+        search_intersecting_pathrows=True,
+        catalog="https://planetarycomputer.microsoft.com/api/stac/v1/",
     )
 
     items = searcher.search(near_antimeridian_area)

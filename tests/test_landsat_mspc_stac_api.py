@@ -29,6 +29,7 @@ def test_hobart_all(hobart_area):
         exclude_platforms=None,
         only_tier_one=False,
         fall_back_to_tier_two=False,
+        catalog="https://planetarycomputer.microsoft.com/api/stac/v1/",
     )
 
     items = list(searcher.search(hobart_area))
@@ -42,6 +43,7 @@ def test_hobart_tier_one_only(hobart_area):
         exclude_platforms=None,
         only_tier_one=True,
         fall_back_to_tier_two=False,
+        catalog="https://planetarycomputer.microsoft.com/api/stac/v1/",
     )
 
     items = list(searcher.search(hobart_area))
@@ -55,6 +57,7 @@ def test_hobart_tier_exclude_7(hobart_area):
         exclude_platforms=["landsat-7"],
         only_tier_one=False,
         fall_back_to_tier_two=False,
+        catalog="https://planetarycomputer.microsoft.com/api/stac/v1/",
     )
 
     items = list(searcher.search(hobart_area))

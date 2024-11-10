@@ -34,7 +34,9 @@ class PystacSearcher(Searcher):
     :func:`dep_tools.utils.search_across_180`.
 
     Args:
-        client: A search client.
+        catalog: The URL of a stac catalog. if client is specified, this is
+            ignored.
+        client: A search client. Either this or catalog must be specified.
         raise_empty_collection_error: Whether an EmptyCollectionError exception
             should be returned if no stac items are found.
         **kwargs: Additional arguments passed to client.search(). For example,
@@ -44,11 +46,20 @@ class PystacSearcher(Searcher):
 
     def __init__(
         self,
-        catalog: str,
+        catalog: str | None = None,
+        client: Client | None = None,
         raise_empty_collection_error: bool = True,
         **kwargs,
     ):
-        self._client = Client.open(catalog)
+        if client and catalog:
+            warnings.warn(
+                "Arguments for both 'client' and 'catalog' passed to PystacSearcher, ignoring catalog"
+            )
+
+        if not (client or catalog):
+            raise ValueError("Must specify either client or catalog")
+
+        self._client = client if client else Client.open(catalog)
         self._raise_errors = raise_empty_collection_error
         self._kwargs = kwargs
 
@@ -65,11 +76,11 @@ class PystacSearcher(Searcher):
             region=area, client=self._client, **self._kwargs
         )
 
-        if len(item_collection) == 0 and self._raise_errors:
-            raise EmptyCollectionError()
-
         fix_bad_epsgs(item_collection)
         item_collection = remove_bad_items(item_collection)
+
+        if len(item_collection) == 0 and self._raise_errors:
+            raise EmptyCollectionError()
 
         return item_collection
 
@@ -80,7 +91,9 @@ class LandsatPystacSearcher(PystacSearcher):
     query, just use :class:PystacSearcher.
 
     Args:
-        client: A search client.
+        catalog: The URL of a stac catalog. if client is specified, this is
+            ignored.
+        client: A search client. Either this or catalog must be specified.
         raise_empty_collection_error: Whether an EmptyCollectionError exception should
             be returned if no stac items are found.
         search_intersecting_pathrows: Whether to use landsat pathrows which
@@ -99,7 +112,8 @@ class LandsatPystacSearcher(PystacSearcher):
 
     def __init__(
         self,
-        catalog: str = "https://planetarycomputer.microsoft.com/api/stac/v1/",
+        catalog: str | None = None,
+        client: Client | None = None,
         collections: list[str] | None = ["landsat-c2-l2"],
         raise_empty_collection_error: bool = True,
         search_intersecting_pathrows: bool = False,
@@ -110,6 +124,7 @@ class LandsatPystacSearcher(PystacSearcher):
     ):
         super().__init__(
             catalog=catalog,
+            client=client,
             raise_empty_collection_error=raise_empty_collection_error,
             **kwargs,
         )
@@ -140,16 +155,9 @@ class LandsatPystacSearcher(PystacSearcher):
 
         self._kwargs["query"] = query
 
-        if self._search_intersecting_pathrows:
-            self._landsat_pathrows = read_file(
-                "https://d9-wret.s3.us-west-2.amazonaws.com/assets/palladium/production/s3fs-public/atoms/files/WRS2_descending_0.zip"
-            )
-
     def search(self, area: GeoDataFrame):
         search_area = (
-            pathrows_in_area(area, self._landsat_pathrows)
-            if self._search_intersecting_pathrows
-            else area
+            pathrows_in_area(area) if self._search_intersecting_pathrows else area
         )
         try:
             items = super().search(search_area)
@@ -163,5 +171,8 @@ class LandsatPystacSearcher(PystacSearcher):
 
         if self._search_intersecting_pathrows:
             items = items_in_pathrows(items, search_area)
+
+        if len(items) == 0 and self._raise_errors:
+            raise EmptyCollectionError()
 
         return items

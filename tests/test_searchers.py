@@ -36,7 +36,10 @@ def test_PystacSearcher(area, mspc_catalog):
 
 
 def test_LandsatPystacSearcher_exclude_platforms(area):
-    s = LandsatPystacSearcher(exclude_platforms=["landsat-7"])
+    s = LandsatPystacSearcher(
+        exclude_platforms=["landsat-7"],
+        catalog="https://planetarycomputer.microsoft.com/api/stac/v1/",
+    )
     s.search(area)
 
 

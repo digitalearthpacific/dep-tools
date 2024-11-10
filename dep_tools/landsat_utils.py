@@ -6,7 +6,7 @@ from pystac import ItemCollection
 from shapely.geometry import box
 from xarray import DataArray, Dataset
 
-from dep_tools.utils import bbox_across_180
+from dep_tools.utils import bbox_across_180, fix_winding
 
 
 def cloud_mask(
@@ -66,13 +66,20 @@ def mask_clouds(
         return xr.where(~mask)
 
 
+def _pathrows():
+    pathrows = GeoDataFrame(
+        read_file(
+            "https://d9-wret.s3.us-west-2.amazonaws.com/assets/palladium/production/s3fs-public/atoms/files/WRS2_descending_0.zip"
+        )
+    )
+    pathrows["geometry"] = pathrows.geometry.apply(fix_winding)
+    return pathrows
+
+
 def pathrows_in_area(area: GeoDataFrame, pathrows: GeoDataFrame | None = None):
     if pathrows is None:
-        pathrows = GeoDataFrame(
-            read_file(
-                "https://d9-wret.s3.us-west-2.amazonaws.com/assets/palladium/production/s3fs-public/atoms/files/WRS2_descending_0.zip"
-            )
-        )
+        pathrows = _pathrows()
+
     bbox = bbox_across_180(area)
     if isinstance(bbox, tuple):
         return pathrows[
@@ -99,9 +106,7 @@ def items_in_pathrows(
 
 
 def pathrow_with_greatest_area(shapes: GeoDataFrame) -> Tuple[str, str]:
-    pathrows = read_file(
-        "https://d9-wret.s3.us-west-2.amazonaws.com/assets/palladium/production/s3fs-public/atoms/files/WRS2_descending_0.zip"
-    )
+    pathrows = _pathrows()
     intersection = shapes.overlay(pathrows, how="intersection")
     row_with_greatest_area = intersection.iloc[[intersection.geometry.area.idxmax()]]
     return (row_with_greatest_area.PATH.item(), row_with_greatest_area.ROW.item())
