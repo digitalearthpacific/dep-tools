@@ -77,7 +77,7 @@ def bbox_across_180(region: GeoDataFrame | GeoBox) -> BBOX | tuple[BBOX, BBOX]:
         geometry = region.to_crs(4326).geometry.make_valid().explode()
         geometry = geometry[
             geometry.geom_type.isin(["Polygon", "MultiPolygon"])
-        ].unary_union
+        ].union_all()
 
     geometry = _fix_geometry(geometry)
     bbox = antimeridian_bbox(geometry)

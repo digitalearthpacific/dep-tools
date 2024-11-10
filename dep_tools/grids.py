@@ -93,6 +93,7 @@ def get_tiles(
 
 def grid(
     resolution: int | float = 30,
+    simplify_tolerance: float = 0.1,
     crs=PACIFIC_EPSG,
     return_type: Literal["GridSpec", "GeoSeries", "GeoDataFrame"] = "GridSpec",
     intersect_with: GeoDataFrame | None = None,
@@ -121,16 +122,21 @@ def grid(
             return _intersect_grid(full_grid, intersect_with)
         else:
             gridspec = _gridspec(resolution, crs)
-            geometry = Geometry(loads(intersect_with.to_json()))
-            # This is a bit of a hack, but it works. Geometries that are transformed by the tiles_from_geopolygon
-            # are not valid, but doing the simplification and buffer fixes them.
-            buffer = 0.0 if buffer_distance is None else buffer_distance
-            fixed = (
-                geometry.to_crs(PACIFIC_EPSG, check_and_fix=True, wrapdateline=True)
-                .simplify(0.01)
-                .buffer(buffer)
+            simplified = (
+                intersect_with.to_crs(PACIFIC_EPSG)
+                .simplify(simplify_tolerance)
+                .to_frame()
+                .to_geo_dict()
             )
-            return gridspec.tiles_from_geopolygon(geopolygon=fixed)
+            geometry = Geometry(
+                simplified,
+                crs=PACIFIC_EPSG,
+            )
+            if buffer_distance is not None:
+                geometry = geometry.buffer(buffer_distance)
+            else:
+                geometry = geometry.buffer(0.0)
+            return gridspec.tiles_from_geopolygon(geopolygon=geometry)
 
     return {
         "GridSpec": _gridspec,
