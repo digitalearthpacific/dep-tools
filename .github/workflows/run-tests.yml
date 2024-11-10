@@ -53,6 +53,7 @@ jobs:
             build-essential
           pip3 install --upgrade pip setuptools wheel poetry
           pip3 install .
+          pip3 freeze
 
       - name: Run tests
         run: |
