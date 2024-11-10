@@ -93,6 +93,7 @@ def get_tiles(
 
 def grid(
     resolution: int | float = 30,
+    simplify_tolerance: float = 0.1,
     crs=PACIFIC_EPSG,
     return_type: Literal["GridSpec", "GeoSeries", "GeoDataFrame"] = "GridSpec",
     intersect_with: GeoDataFrame | None = None,
@@ -122,11 +123,15 @@ def grid(
             return _intersect_grid(full_grid, intersect_with)
         else:
             gridspec = _gridspec(resolution, crs)
-            geometry = Geometry(
+            simplified = (
                 intersect_with.to_crs(PACIFIC_EPSG)
-                .simplify(0.1)
+                .simplify(simplify_tolerance)
                 .to_frame()
                 .to_geo_dict()
+            )
+            geometry = Geometry(
+                simplified,
+                crs=PACIFIC_EPSG,
             )
             if buffer_distance is not None:
                 geometry = geometry.buffer(buffer_distance)
