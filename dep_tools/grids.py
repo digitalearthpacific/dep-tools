@@ -122,7 +122,12 @@ def grid(
             return _intersect_grid(full_grid, intersect_with)
         else:
             gridspec = _gridspec(resolution, crs)
-            geometry = Geometry(intersect_with.to_crs(PACIFIC_EPSG).simplify(10).to_frame().to_geo_dict())
+            geometry = Geometry(
+                intersect_with.to_crs(PACIFIC_EPSG)
+                .simplify(0.1)
+                .to_frame()
+                .to_geo_dict()
+            )
             if buffer_distance is not None:
                 geometry = geometry.buffer(buffer_distance)
             else:
