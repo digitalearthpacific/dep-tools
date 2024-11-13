@@ -119,7 +119,7 @@ class AwsStacTask(StacTask):
         searcher: Searcher,
         loader: StacLoader,
         processor: Processor,
-        post_processor: Processor | None = XrPostProcessor(),
+        post_processor: Processor | None = None,
         logger: Logger = getLogger(),
         **kwargs,
     ):
