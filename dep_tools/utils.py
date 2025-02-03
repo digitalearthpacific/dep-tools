@@ -236,7 +236,7 @@ def write_to_local_storage(
         d.to_file(path, overwrite=overwrite, **write_args)
     elif isinstance(d, Item):
         d = json.dumps(d.to_dict(), indent=4)
-        if not Path(path).exists or overwrite:
+        if not Path(path).exists() or overwrite:
             with open(path, "w") as dst:
                 dst.write(d)
     elif isinstance(d, str):
