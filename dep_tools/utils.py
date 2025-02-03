@@ -1,3 +1,4 @@
+import json
 from logging import INFO, Formatter, Logger, StreamHandler, getLogger
 from pathlib import Path
 from typing import Dict, List, Union
@@ -14,7 +15,7 @@ import numpy as np
 from odc.geo.geobox import GeoBox as GeoBox
 from odc.geo.xr import write_cog
 import planetary_computer
-from pystac import ItemCollection
+from pystac import ItemCollection, Item
 import pystac_client
 from retry import retry
 from shapely.geometry import (
@@ -48,7 +49,7 @@ def get_logger(prefix: str, name: str) -> Logger:
 
 
 def shift_negative_longitudes(
-    geometry: Union[LineString, MultiLineString]
+    geometry: Union[LineString, MultiLineString],
 ) -> Union[LineString, MultiLineString]:
     """
     Fixes lines that span the antimeridian by adding 360 to any negative
@@ -212,7 +213,7 @@ def scale_and_offset(
 
 
 def write_to_local_storage(
-    d: Union[DataArray, Dataset, GeoDataFrame, str],
+    d: Union[DataArray, Dataset, GeoDataFrame, Item, str],
     path: Union[str, Path],
     write_args: Dict = dict(),
     overwrite: bool = True,
@@ -233,6 +234,11 @@ def write_to_local_storage(
             d.rio.to_raster(path, overwrite=overwrite, **write_args)
     elif isinstance(d, GeoDataFrame):
         d.to_file(path, overwrite=overwrite, **write_args)
+    elif isinstance(d, Item):
+        d = json.dumps(d.to_dict(), indent=4)
+        if not Path(path).exists or overwrite:
+            with open(path, "w") as dst:
+                dst.write(d)
     elif isinstance(d, str):
         if overwrite:
             with open(path, "w") as dst:
