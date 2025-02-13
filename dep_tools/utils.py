@@ -292,8 +292,9 @@ def fix_bad_epsgs(item_collection: ItemCollection) -> None:
     # Will get fixed at some point and we can remove this
     for item in item_collection:
         if item.collection_id == "landsat-c2-l2":
-            epsg = str(item.properties["proj:epsg"])
-            item.properties["proj:epsg"] = int(f"{epsg[0:3]}{int(epsg[3:]):02d}")
+            key = "proj:epsg" if "proj:epsg" in item.properties else "proj:code"
+            epsg = str(item.properties[key])
+            item.properties[key] = int(f"{epsg[0:3]}{int(epsg[3:]):02d}")
 
 
 def remove_bad_items(item_collection: ItemCollection) -> ItemCollection:
