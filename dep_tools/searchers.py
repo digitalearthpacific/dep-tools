@@ -1,7 +1,7 @@
 import warnings
 from abc import ABC, abstractmethod
 
-from geopandas import GeoDataFrame, read_file
+from geopandas import GeoDataFrame
 from odc.geo.geobox import GeoBox
 from pystac import ItemCollection
 from pystac_client import Client
@@ -76,7 +76,8 @@ class PystacSearcher(Searcher):
             region=area, client=self._client, **self._kwargs
         )
 
-        fix_bad_epsgs(item_collection)
+        if self._client.id == "microsoft-pc":
+            fix_bad_epsgs(item_collection)
         item_collection = remove_bad_items(item_collection)
 
         if len(item_collection) == 0 and self._raise_errors:
