@@ -297,7 +297,10 @@ def fix_bad_epsgs(item_collection: ItemCollection) -> None:
                 item.properties["proj:epsg"] = int(f"{epsg[5:]}{int(epsg[3:]):02d}")
             elif "proj:code" in item.properties:
                 # proj:code is 'epsg:XXXXX'
-                epsg = str(item.properties["proj:code"][5:])
+                if item.properties["proj:code"].startswith("epsg:"):
+                    epsg = str(item.properties["proj:code"][5:])
+                else:
+                    epsg = str(item.properties["proj:code"])
                 item.properties["proj:code"] = f"epsg:{epsg[5:]}{int(epsg[3:]):02d}"
 
 
