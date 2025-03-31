@@ -236,7 +236,7 @@ def write_to_local_storage(
         d.to_file(path, overwrite=overwrite, **write_args)
     elif isinstance(d, Item):
         d = json.dumps(d.to_dict(), indent=4)
-        if not Path(path).exists or overwrite:
+        if not Path(path).exists() or overwrite:
             with open(path, "w") as dst:
                 dst.write(d)
     elif isinstance(d, str):
@@ -292,8 +292,12 @@ def fix_bad_epsgs(item_collection: ItemCollection) -> None:
     # Will get fixed at some point and we can remove this
     for item in item_collection:
         if item.collection_id == "landsat-c2-l2":
-            epsg = str(item.properties["proj:epsg"])
-            item.properties["proj:epsg"] = int(f"{epsg[0:3]}{int(epsg[3:]):02d}")
+            if "proj:epsg" in item.properties:
+                epsg = str(item.properties["proj:epsg"])
+                item.properties["proj:epsg"] = int(f"{epsg[0:3]}{int(epsg[3:]):02d}")
+            elif "proj:code" in item.properties:
+                epsg = str(item.ext.proj.epsg)
+                item.ext.proj.epsg = int(f"{epsg[0:3]}{int(epsg[3:]):02d}")
 
 
 def remove_bad_items(item_collection: ItemCollection) -> ItemCollection:
