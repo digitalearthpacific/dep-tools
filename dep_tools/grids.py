@@ -1,4 +1,3 @@
-from json import loads
 from pathlib import Path
 from typing import Literal, Iterator
 
