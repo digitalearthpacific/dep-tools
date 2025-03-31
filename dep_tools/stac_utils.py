@@ -21,7 +21,7 @@ class StacCreator(Processor):
         self,
         itempath: DepItemPath,
         remote: bool = True,
-        collection_url_root: str = "https://stac.staging.digitalearthpacific.org/collections",
+        collection_url_root: str = "https://stac.staging.digitalearthpacific.io/collections",
         make_hrefs_https: bool = True,
         **kwargs,
     ):
