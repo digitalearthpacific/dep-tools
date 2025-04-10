@@ -5,7 +5,7 @@ from geopandas import GeoDataFrame
 
 from .exceptions import EmptyCollectionError, NoOutputError
 from .loaders import Loader, StacLoader
-from .processors import Processor, XrPostProcessor
+from .processors import Processor
 from .namers import S3ItemPath
 from .searchers import Searcher
 from .stac_utils import set_stac_properties, StacCreator

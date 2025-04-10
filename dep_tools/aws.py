@@ -36,7 +36,7 @@ def s3_dump(
 
 
 def write_to_s3(
-    d: Union[DataArray, Dataset, GeoDataFrame, str],
+    d: Union[DataArray, Dataset, GeoDataFrame, Item, str],
     path: Union[str, Path],
     bucket: str,
     overwrite: bool = True,
