@@ -18,13 +18,13 @@ class Loader(ABC):
         pass
 
     @abstractmethod
-    def load(self, area):
+    def load(self, areas):
         pass
 
 
 class StacLoader(Loader):
     @abstractmethod
-    def load(self, items, area):
+    def load(self, items, areas):
         pass
 
 
