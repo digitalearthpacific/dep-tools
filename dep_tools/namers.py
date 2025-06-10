@@ -47,7 +47,6 @@ class GenericItemPath(ItemPath):
 
             return middle_date.strftime("%Y-%m-%d")
 
-
     def _format_item_id(
         self, item_id: list[str | int] | tuple[str | int] | str, join_str="/"
     ) -> str:

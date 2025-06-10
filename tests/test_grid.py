@@ -3,6 +3,7 @@ from json import loads
 
 from odc.geo import Geometry
 
+
 def test_get_gadm():
     all = gadm()
     assert len(all) == 22

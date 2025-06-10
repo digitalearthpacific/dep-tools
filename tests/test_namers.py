@@ -6,7 +6,9 @@ version = "1.0.1"
 time = "2045"
 testItemPath = DepItemPath(sensor, dataset_id, version, time)
 paddedItemPath = DepItemPath(sensor, dataset_id, version, time, zero_pad_numbers=True)
-nonPaddedItemPath = DepItemPath(sensor, dataset_id, version, time, zero_pad_numbers=False)
+nonPaddedItemPath = DepItemPath(
+    sensor, dataset_id, version, time, zero_pad_numbers=False
+)
 
 item_id = "001,002"
 asset_name = "mean"
