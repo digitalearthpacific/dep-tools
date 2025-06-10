@@ -33,7 +33,7 @@ class GenericItemPath(ItemPath):
             f"{self.prefix}_{self.sensor}_{self.dataset_id}/{self.version}"
         )
         self.item_prefix = (
-            f"{self.prefix}_{self.sensor}_{self.dataset_id.replace('/','_')}"
+            f"{self.prefix}_{self.sensor}_{self.dataset_id.replace('/', '_')}"
         )
 
     def _parse_time(self, time: str) -> str:
