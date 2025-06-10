@@ -1,5 +1,7 @@
 from abc import ABC, abstractmethod
 
+from pystac.utils import str_to_datetime
+
 
 class ItemPath(ABC):
     def __init__(self) -> None:
@@ -23,7 +25,7 @@ class GenericItemPath(ItemPath):
         self.sensor = sensor
         self.dataset_id = dataset_id
         self.version = version
-        self.time = time
+        self.time = self._parse_time(time)
         self.prefix = prefix
         self.zero_pad_numbers = zero_pad_numbers
         self.version = self.version.replace(".", "-")
@@ -33,6 +35,18 @@ class GenericItemPath(ItemPath):
         self.item_prefix = (
             f"{self.prefix}_{self.sensor}_{self.dataset_id.replace('/','_')}"
         )
+
+    def _parse_time(self, time: str) -> str:
+        dates_list = time.split("/")
+        if len(dates_list) == 1:
+            return time
+        else:
+            start_date = str_to_datetime(dates_list[0])
+            end_date = str_to_datetime(dates_list[1])
+            middle_date = start_date + (end_date - start_date) / 2
+
+            return middle_date.strftime("%Y-%m-%d")
+
 
     def _format_item_id(
         self, item_id: list[str | int] | tuple[str | int] | str, join_str="/"
