@@ -1,7 +1,5 @@
 from abc import ABC, abstractmethod
 
-from pystac.utils import str_to_datetime
-
 
 class ItemPath(ABC):
     def __init__(self) -> None:
@@ -41,11 +39,7 @@ class GenericItemPath(ItemPath):
         if len(dates_list) == 1:
             return time
         else:
-            start_date = str_to_datetime(dates_list[0])
-            end_date = str_to_datetime(dates_list[1])
-            middle_date = start_date + (end_date - start_date) / 2
-
-            return middle_date.strftime("%Y-%m-%d")
+            return "_".join(dates_list)
 
     def _format_item_id(
         self, item_id: list[str | int] | tuple[str | int] | str, join_str="/"
