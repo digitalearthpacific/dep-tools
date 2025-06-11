@@ -23,7 +23,7 @@ class GenericItemPath(ItemPath):
         self.sensor = sensor
         self.dataset_id = dataset_id
         self.version = version
-        self.time = time
+        self.time = self._parse_time(time)
         self.prefix = prefix
         self.zero_pad_numbers = zero_pad_numbers
         self.version = self.version.replace(".", "-")
@@ -31,8 +31,15 @@ class GenericItemPath(ItemPath):
             f"{self.prefix}_{self.sensor}_{self.dataset_id}/{self.version}"
         )
         self.item_prefix = (
-            f"{self.prefix}_{self.sensor}_{self.dataset_id.replace('/','_')}"
+            f"{self.prefix}_{self.sensor}_{self.dataset_id.replace('/', '_')}"
         )
+
+    def _parse_time(self, time: str) -> str:
+        dates_list = time.split("/")
+        if len(dates_list) == 1:
+            return time
+        else:
+            return "_".join(dates_list)
 
     def _format_item_id(
         self, item_id: list[str | int] | tuple[str | int] | str, join_str="/"

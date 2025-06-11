@@ -1,3 +1,4 @@
+import pytest
 from dep_tools.namers import DepItemPath
 
 sensor = "ls"
@@ -6,7 +7,9 @@ version = "1.0.1"
 time = "2045"
 testItemPath = DepItemPath(sensor, dataset_id, version, time)
 paddedItemPath = DepItemPath(sensor, dataset_id, version, time, zero_pad_numbers=True)
-nonPaddedItemPath = DepItemPath(sensor, dataset_id, version, time, zero_pad_numbers=False)
+nonPaddedItemPath = DepItemPath(
+    sensor, dataset_id, version, time, zero_pad_numbers=False
+)
 
 item_id = "001,002"
 asset_name = "mean"
@@ -21,6 +24,21 @@ def test_path():
 
 def test_log_path():
     assert testItemPath.log_path() == "dep_ls_wofs/1-0-1/logs/dep_ls_wofs_2045_log.csv"
+
+
+@pytest.mark.parametrize(
+    "time, expected",
+    [
+        ("2045", "dep_ls_wofs/1-0-1/001/002/2045/dep_ls_wofs_001_002_2045_mean.tif"),
+        ("1999/2000", "dep_ls_wofs/1-0-1/001/002/1999_2000/dep_ls_wofs_001_002_1999_2000_mean.tif"),
+        ("2023-01/2023-02", "dep_ls_wofs/1-0-1/001/002/2023-01_2023-02/dep_ls_wofs_001_002_2023-01_2023-02_mean.tif"),
+    ],)
+def test_split_date(time, expected):
+    split_testItemPath = DepItemPath(sensor, dataset_id, version, time)
+    assert (
+        split_testItemPath.path(item_id, asset_name)
+        == expected
+    )
 
 
 def test_basename():
