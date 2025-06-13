@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from datetime import datetime
 
 
 class ItemPath(ABC):
@@ -97,6 +98,25 @@ class S3ItemPath(GenericItemPath):
             zero_pad_numbers=zero_pad_numbers,
         )
         self.bucket = bucket
+
+
+class DailyItemPath(S3ItemPath):
+    """An ItemPath which produces approprate paths for "daily" items where the datetime
+    is a particular date. Folders are nested YYYY/mm/dd, and stems have dates in the
+    format YYYY-mm-dd. Example:
+    a time value of 2025-06-13 15:56:54.012509
+    would produce
+    dep_ls_wofl/99/77/2025/06/13/dep_ls_wofl_99_77_2025-06-13.tif
+    """
+
+    def __init__(self, time: datetime | None = None, **kwargs):
+        super().__init__(time=time, **kwargs)
+
+    def _folder(self, item_id) -> str:
+        return f"{self._folder_prefix}/{self._format_item_id(item_id)}/{self.time:%Y/%m/%d}"
+
+    def basename(self, item_id) -> str:
+        return f"{self.item_prefix}_{self._format_item_id(item_id, join_str='_')}_{self.time:%Y-%m-%d}"
 
 
 class LocalPath(DepItemPath):
