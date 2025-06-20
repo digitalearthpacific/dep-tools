@@ -201,7 +201,7 @@ def landsat_grid():
         )
         ls_grid = landsat_pathrows.loc[
             landsat_pathrows.sjoin(
-                gadm_union.to_crs(landsat_pathrows.crs), how="inner"
+                gadm_union().to_crs(landsat_pathrows.crs), how="inner"
             ).index
         ]
         ls_grid.to_file(ls_grid_path)

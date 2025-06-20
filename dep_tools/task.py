@@ -2,13 +2,14 @@ from abc import ABC, abstractmethod
 from logging import Logger, getLogger
 
 from geopandas import GeoDataFrame
+from pystac import Item
 
 from .exceptions import EmptyCollectionError, NoOutputError
 from .loaders import Loader, StacLoader
 from .processors import Processor
 from .namers import S3ItemPath
 from .searchers import Searcher
-from .stac_utils import set_stac_properties, StacCreator
+from .stac_utils import set_stac_properties, StacCreator, copy_stac_properties
 from .writers import Writer, AwsDsCogWriter, AwsStacWriter
 
 TaskID = str
@@ -146,6 +147,7 @@ class ItemStacTask(Task):
     def __init__(
         self,
         id: TaskID,
+        item: Item,
         loader: StacLoader,
         processor: Processor,
         writer: Writer,
@@ -165,11 +167,14 @@ class ItemStacTask(Task):
         self.post_processor = post_processor
         self.stac_creator = stac_creator
         self.stac_writer = stac_writer
+        self.item = item
 
-    def __call__(self, item):
-        input_data = self.loader.load([item])
+    def run(self):
+        input_data = self.loader.load([self.item])
 
-        output_data = copy_stac_properties(item, self.processor.process(input_data))
+        output_data = copy_stac_properties(
+            self.item, self.processor.process(input_data)
+        )
 
         if self.post_processor is not None:
             output_data = self.post_processor.process(output_data)

@@ -40,7 +40,7 @@ class OdcLoader(StacLoader):
         self._clip_to_area = clip_to_area
         self._load_as_dataset = load_as_dataset
 
-    def load(self, items, areas: GeoDataFrame | GeoBox | None) -> Dataset | DataArray:
+    def load(self, items, areas: GeoDataFrame | GeoBox | None = None) -> Dataset | DataArray:
         # If `nodata` is passed as an arg, or the stac item contains the nodata
         # value, xr[variable].nodata will be set on load.
 
