@@ -58,7 +58,7 @@ class GenericItemPath(ItemPath):
     def _folder(self, item_id) -> str:
         return (
             f"{self._folder_prefix}/{self._format_item_id(item_id)}/{self.time}"
-            if self.bucket_prefix is not None
+            if self.bucket_prefix is None
             else f"{self.bucket_prefix}/{self._folder_prefix}/{self._format_item_id(item_id)}/{self.time}"
         )
     def basename(self, item_id) -> str:
