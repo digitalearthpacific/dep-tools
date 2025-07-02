@@ -19,12 +19,14 @@ class GenericItemPath(ItemPath):
         time: str,
         prefix: str = "dep",
         zero_pad_numbers: bool = True,
+        bucket_prefix: str = None,
     ):
         self.sensor = sensor
         self.dataset_id = dataset_id
         self.version = version
         self.time = time
         self.prefix = prefix
+        self.bucket_prefix = bucket_prefix
         self.zero_pad_numbers = zero_pad_numbers
         self.version = self.version.replace(".", "-")
         self._folder_prefix = (
@@ -54,8 +56,11 @@ class GenericItemPath(ItemPath):
         return join_str.join(item_parts)
 
     def _folder(self, item_id) -> str:
-        return f"{self._folder_prefix}/{self._format_item_id(item_id)}/{self.time}"
-
+        return (
+            f"{self._folder_prefix}/{self._format_item_id(item_id)}/{self.time}"
+            if self.bucket_prefix is not None
+            else f"{self.bucket_prefix}/{self._folder_prefix}/{self._format_item_id(item_id)}/{self.time}"
+        )
     def basename(self, item_id) -> str:
         return f"{self.item_prefix}_{self._format_item_id(item_id, join_str='_')}_{self.time}"
 
