@@ -92,6 +92,7 @@ class S3ItemPath(GenericItemPath):
         time: str,
         prefix: str = "dep",
         zero_pad_numbers: bool = True,
+        bucket_prefix: str = None
     ):
         super().__init__(
             sensor=sensor,
@@ -100,6 +101,7 @@ class S3ItemPath(GenericItemPath):
             time=time,
             prefix=prefix,
             zero_pad_numbers=zero_pad_numbers,
+            bucket_prefix=bucket_prefix,
         )
         self.bucket = bucket
 
