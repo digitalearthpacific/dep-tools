@@ -14,3 +14,7 @@ packages = ["dep_tools"]
 
 [tool.setuptools.dynamic]
 dependencies = { file = ["requirements.txt"] }
+
+# Include the file dep_tools/pathrows.txt in the package
+[tool.setuptools.package-data]
+dep_tools = ["pathrows.txt"]
