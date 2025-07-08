@@ -8,6 +8,18 @@ from xarray import DataArray, Dataset
 
 from dep_tools.utils import bbox_across_180, fix_winding
 
+import os
+
+
+def read_pathrows_file() -> list[Tuple[int, int]]:
+    """Read pathrows from a file and return them as a list of tuples."""
+    cwd = os.path.dirname(os.path.abspath(__file__))
+    pathrows_file = os.path.join(cwd, "pathrows.txt")
+
+    with open(pathrows_file, "r") as f:
+        lines = f.readlines()
+    return [tuple(map(int, line.strip().split("/"))) for line in lines if line.strip()]
+
 
 def cloud_mask(
     xr: DataArray | Dataset, filters: Iterable[Tuple[str, int]] | None = None
