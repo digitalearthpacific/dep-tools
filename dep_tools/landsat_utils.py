@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Iterable, Tuple
 
 from geopandas import read_file, GeoDataFrame
@@ -9,6 +10,20 @@ from xarray import DataArray, Dataset
 from dep_tools.utils import bbox_across_180, fix_winding
 
 import os
+
+def landsat_grid():
+    """The official Landsat grid filtered to Pacific Island Countries and
+    Territories as defined by GADM."""
+    ls_grid_path = Path(__file__).parent / "landsat_grid.gpkg"
+    if not ls_grid_path.exists():
+        landsat_pathrows = read_file(
+            "https://d9-wret.s3.us-west-2.amazonaws.com/assets/palladium/production/s3fs-public/atoms/files/WRS2_descending_0.zip"
+        )
+        dep_pathrows = read_pathrows_file()
+        ls_grid = landsat_pathrows.loc[dep_pathrows]
+        ls_grid.to_file(ls_grid_path)
+
+    return read_file(ls_grid_path).set_index(["PATH", "ROW"])
 
 
 def read_pathrows_file() -> list[Tuple[int, int]]:

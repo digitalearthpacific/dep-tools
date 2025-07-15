@@ -191,19 +191,3 @@ PACIFIC_GRID_30 = grid()
 PACIFIC_GRID_10 = grid(resolution=10)
 
 
-def landsat_grid():
-    """The official Landsat grid filtered to Pacific Island Countries and
-    Territories as defined by GADM."""
-    ls_grid_path = Path(__file__).parent / "landsat_grid.gpkg"
-    if not ls_grid_path.exists():
-        landsat_pathrows = gpd.read_file(
-            "https://d9-wret.s3.us-west-2.amazonaws.com/assets/palladium/production/s3fs-public/atoms/files/WRS2_descending_0.zip"
-        )
-        ls_grid = landsat_pathrows.loc[
-            landsat_pathrows.sjoin(
-                gadm_union().to_crs(landsat_pathrows.crs), how="inner"
-            ).index
-        ]
-        ls_grid.to_file(ls_grid_path)
-
-    return gpd.read_file(ls_grid_path).set_index(["PATH", "ROW"])

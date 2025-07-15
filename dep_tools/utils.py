@@ -13,11 +13,13 @@ from antimeridian import (
 from geopandas import GeoDataFrame
 import numpy as np
 from odc.geo.geobox import GeoBox as GeoBox
+from odc.geo.geom import Geometry as OdcGeometry, unary_intersection
 from odc.geo.xr import write_cog
 import planetary_computer
 from pystac import ItemCollection, Item
 import pystac_client
 from retry import retry
+from shapely import Geometry
 from shapely.geometry import (
     LineString,
     MultiLineString,
@@ -27,9 +29,19 @@ from shapely.geometry import (
 from shapely.geometry.polygon import orient
 from xarray import DataArray, Dataset
 
+from dep_tools.grids import gadm_union
+
+def mask_to_gadm(xarr: DataArray | Dataset, area: GeoBox) -> DataArray | Dataset:
+    geom = unary_intersection(
+        [
+            area.boundingbox.polygon,
+            OdcGeometry(gadm_union().to_crs(area.crs).iloc[0].geometry, crs=area.crs),
+        ]
+    )
+    return xarr.odc.mask(geom)
+
 # Set the timeout to five minutes, which is an extremely long time
 TIMEOUT_SECONDS = 60 * 5
-
 
 def get_logger(prefix: str, name: str) -> Logger:
     """Set up a simple logger"""
@@ -115,7 +127,6 @@ def bbox_across_180(region: GeoDataFrame | GeoBox) -> BBOX | tuple[BBOX, BBOX]:
         return BBOX(bbox)
 
 
-from shapely import Geometry
 
 
 def fix_winding(geom: Geometry) -> Geometry:
