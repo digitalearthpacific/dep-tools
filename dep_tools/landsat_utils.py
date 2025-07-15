@@ -11,6 +11,7 @@ from dep_tools.utils import bbox_across_180, fix_winding
 
 import os
 
+
 def landsat_grid():
     """The official Landsat grid filtered to Pacific Island Countries and
     Territories as defined by GADM."""

@@ -189,5 +189,3 @@ PACIFIC_GRID_30 = grid()
 
 # This grid is for Sentinel-2 and has the same footprint
 PACIFIC_GRID_10 = grid(resolution=10)
-
-

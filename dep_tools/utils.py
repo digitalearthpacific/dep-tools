@@ -31,6 +31,7 @@ from xarray import DataArray, Dataset
 
 from dep_tools.grids import gadm_union
 
+
 def mask_to_gadm(xarr: DataArray | Dataset, area: GeoBox) -> DataArray | Dataset:
     geom = unary_intersection(
         [
@@ -40,8 +41,10 @@ def mask_to_gadm(xarr: DataArray | Dataset, area: GeoBox) -> DataArray | Dataset
     )
     return xarr.odc.mask(geom)
 
+
 # Set the timeout to five minutes, which is an extremely long time
 TIMEOUT_SECONDS = 60 * 5
+
 
 def get_logger(prefix: str, name: str) -> Logger:
     """Set up a simple logger"""
@@ -125,8 +128,6 @@ def bbox_across_180(region: GeoDataFrame | GeoBox) -> BBOX | tuple[BBOX, BBOX]:
         return (left_bbox, right_bbox)
     else:
         return BBOX(bbox)
-
-
 
 
 def fix_winding(geom: Geometry) -> Geometry:
