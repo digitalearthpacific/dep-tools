@@ -185,9 +185,14 @@ def copy_stac_properties(item: Item, ds: Dataset) -> Dataset:
     values. Also sets `ds.attrs["stac_properties"]["start_datetime"]` and "end_datetime"
     to item.properties["datetime"].
     """
-    ds.attrs["stac_properties"] = ( item.properties if "stac_properties" not in ds.attrs else   {**ds.attrs["stac_properties"],
-        **item.properties,
-    })
+    ds.attrs["stac_properties"] = (
+        item.properties
+        if "stac_properties" not in ds.attrs
+        else {
+            **ds.attrs["stac_properties"],
+            **item.properties,
+        }
+    )
     ds.attrs["stac_properties"]["start_datetime"] = ds.attrs["stac_properties"][
         "datetime"
     ]
