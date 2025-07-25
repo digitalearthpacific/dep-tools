@@ -32,12 +32,12 @@ class OdcLoader(StacLoader):
     def __init__(
         self,
         load_as_dataset: bool = True,
-        clip_to_area: bool = False,
+        clip_to_areas: bool = False,
         **kwargs,
     ):
         super().__init__()
         self._kwargs = kwargs
-        self._clip_to_area = clip_to_area
+        self._clip_to_area = clip_to_areas
         self._load_as_dataset = load_as_dataset
 
     def load(
@@ -84,8 +84,11 @@ class OdcLoader(StacLoader):
             ds = ds.odc.mask(geom)
 
         if not self._load_as_dataset:
-            da = ds.to_array("band").rename("data").rio.write_crs(data.odc.crs)
-            return da
+            return (
+                ds.to_array("band")
+                .rename(band="data")
+                .rio.write_crs(ds[list(ds.data_vars)[0]].odc.crs)
+            )
 
         return ds
 
