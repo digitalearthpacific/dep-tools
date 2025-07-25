@@ -74,7 +74,7 @@ def landsat_grid() -> GeoDataFrame:
     ls_grid_path = Path(__file__).parent / "landsat_grid.gpkg"
     if not ls_grid_path.exists():
         dep_pathrows = read_pathrows_file()
-        ls_grid = _pathrows().loc[dep_pathrows]
+        ls_grid = _pathrows().set_index(["PATH", "ROW"]).loc[dep_pathrows]
         ls_grid.to_file(ls_grid_path)
 
     return GeoDataFrame(read_file(ls_grid_path).set_index(["PATH", "ROW"]))
