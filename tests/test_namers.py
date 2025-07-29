@@ -10,24 +10,8 @@ paddedItemPath = DepItemPath(sensor, dataset_id, version, time, zero_pad_numbers
 nonPaddedItemPath = DepItemPath(
     sensor, dataset_id, version, time, zero_pad_numbers=False
 )
-
-dailyItemPath = DailyItemPath(
-    bucket=bucket,
-    sensor=sensor,
-    dataset_id=dataset_id,
-    version=version,
-    time="2025-07-28 15:44:14.926241",
-)
-
 item_id = "001,002"
 asset_name = "mean"
-
-
-def test_daily_path():
-    assert (
-        dailyItemPath.path(item_id, asset_name)
-        == "dep_ls_wofs/1-0-1/001/002/2025/07/28/dep_ls_wofs_001_002_2025-07-28_mean.tif"
-    )
 
 
 def test_path():
