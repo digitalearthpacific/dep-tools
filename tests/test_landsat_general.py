@@ -1,4 +1,15 @@
-from dep_tools.landsat_utils import read_pathrows_file
+from collections import Counter
+
+from geopandas import GeoDataFrame
+
+from dep_tools.landsat_utils import landsat_grid, read_pathrows_file
+
+
+def test_landsat_grid():
+    grid = landsat_grid()
+    pathrows = read_pathrows_file()
+    assert isinstance(grid, GeoDataFrame)
+    assert Counter(grid.index.tolist()) == Counter(pathrows)
 
 
 def test_read_pathrows_file():

@@ -4,7 +4,8 @@ from pathlib import Path
 
 import numpy as np
 from pandas import DataFrame
-from pystac import Asset, Item, MediaType
+from pystac import Asset, Item, MediaType, read_dict
+import pystac_client
 import rasterio
 from rio_stac.stac import create_stac_item, get_raster_info
 from urlpath import URL
@@ -177,3 +178,56 @@ def set_stac_properties(
     )
 
     return output_xr
+
+
+def copy_stac_properties(item: Item, ds: Dataset) -> Dataset:
+    """Copy item's properties to ds["stac_properties"], merging/updating any existing
+    values. Also sets `ds.attrs["stac_properties"]["start_datetime"]` and "end_datetime"
+    to item.properties["datetime"].
+    """
+    ds.attrs["stac_properties"] = (
+        item.properties.copy()
+        if "stac_properties" not in ds.attrs
+        else {
+            **ds.attrs["stac_properties"],
+            **item.properties,
+        }
+    )
+    ds.attrs["stac_properties"]["start_datetime"] = ds.attrs["stac_properties"][
+        "datetime"
+    ]
+    ds.attrs["stac_properties"]["end_datetime"] = ds.attrs["stac_properties"][
+        "datetime"
+    ]
+    return ds
+
+
+def use_alternate_s3_href(modifiable: pystac_client.Modifiable) -> None:
+    """Fixes the urls in the official USGS Landsat Stac Server
+    (https://landsatlook.usgs.gov/stac-server) so the alternate (s3)
+    urls are used. Can be used like
+
+    client = pystac_client.Client.open(
+        "https://landsatlook.usgs.gov/stac-server",
+        modifier=use_alternate_s3_href,
+    )
+
+    Modifies in place, according to best practices from
+    https://pystac-client.readthedocs.io/en/stable/usage.html#automatically-modifying-results.
+    """
+    if isinstance(modifiable, dict):
+        if modifiable["type"] == "FeatureCollection":
+            new_features = list()
+            for item_dict in modifiable["features"]:
+                use_alternate_s3_href(item_dict)
+                new_features.append(item_dict)
+            modifiable["features"] = new_features
+        else:
+            stac_object = read_dict(modifiable)
+            use_alternate_s3_href(stac_object)
+            modifiable.update(stac_object.to_dict())
+    else:
+        for _, asset in modifiable.assets.items():
+            asset_dict = asset.to_dict()
+            if "alternate" in asset_dict.keys():
+                asset.href = asset.to_dict()["alternate"]["s3"]["href"]

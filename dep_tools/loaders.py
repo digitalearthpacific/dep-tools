@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+import warnings
 
 from geopandas import GeoDataFrame
 from odc.geo.geobox import GeoBox
@@ -17,13 +18,13 @@ class Loader(ABC):
         pass
 
     @abstractmethod
-    def load(self, area):
+    def load(self, areas):
         pass
 
 
 class StacLoader(Loader):
     @abstractmethod
-    def load(self, items, area):
+    def load(self, items, areas):
         pass
 
 
@@ -31,23 +32,26 @@ class OdcLoader(StacLoader):
     def __init__(
         self,
         load_as_dataset: bool = True,
-        clip_to_area: bool = False,
+        clip_to_areas: bool = False,
         **kwargs,
     ):
         super().__init__()
         self._kwargs = kwargs
-        self._clip_to_area = clip_to_area
+        self._clip_to_area = clip_to_areas
         self._load_as_dataset = load_as_dataset
 
-    def load(self, items, areas: GeoDataFrame | GeoBox) -> Dataset | DataArray:
+    def load(
+        self, items, areas: GeoDataFrame | GeoBox | None = None
+    ) -> Dataset | DataArray:
         # If `nodata` is passed as an arg, or the stac item contains the nodata
         # value, xr[variable].nodata will be set on load.
 
-        load_geometry = (
-            dict(geopolygon=areas)
-            if isinstance(areas, GeoDataFrame)
-            else dict(geobox=areas)
-        )
+        if isinstance(areas, GeoDataFrame):
+            load_geometry = dict(geopolygons=areas)
+        elif isinstance(areas, GeoBox):
+            load_geometry = dict(geobox=areas)
+        else:
+            load_geometry = dict()
 
         ds = stac_load(
             items,
@@ -73,12 +77,18 @@ class OdcLoader(StacLoader):
                     "Clip not supported for GeoBox (nor should it be needed)"
                 )
 
+            if areas is None:
+                warnings.warn("clip_to_area is True but areas is None, ignoring")
+
             geom = Geometry(areas.geometry.unary_union, crs=areas.crs)
             ds = ds.odc.mask(geom)
 
         if not self._load_as_dataset:
-            da = ds.to_array("band").rename("data").rio.write_crs(data.odc.crs)
-            return da
+            return (
+                ds.to_array("band")
+                .rename(band="data")
+                .rio.write_crs(ds[list(ds.data_vars)[0]].odc.crs)
+            )
 
         return ds
 

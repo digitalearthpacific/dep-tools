@@ -2,13 +2,14 @@ from abc import ABC, abstractmethod
 from logging import Logger, getLogger
 
 from geopandas import GeoDataFrame
+from pystac import Item
 
 from .exceptions import EmptyCollectionError, NoOutputError
 from .loaders import Loader, StacLoader
 from .processors import Processor
 from .namers import S3ItemPath
 from .searchers import Searcher
-from .stac_utils import set_stac_properties, StacCreator
+from .stac_utils import set_stac_properties, StacCreator, copy_stac_properties
 from .writers import Writer, AwsDsCogWriter, AwsStacWriter
 
 TaskID = str
@@ -140,6 +141,51 @@ class AwsStacTask(StacTask):
             logger=logger,
             **kwargs,
         )
+
+
+class ItemStacTask(Task):
+    def __init__(
+        self,
+        id: TaskID,
+        item: Item,
+        loader: StacLoader,
+        processor: Processor,
+        writer: Writer,
+        post_processor: Processor | None = None,
+        stac_creator: StacCreator | None = None,
+        stac_writer: Writer | None = None,
+        logger: Logger = getLogger(),
+    ):
+        """A task for a single stac item. Used for example, to create output for
+        every Landsat or Sentinel-2 scene. The two differences from the "usual"
+        processing via `StacTask` or `AreaTask` is that thre is no `area` parameter,
+        and that all properties from the input stac item are copied to the output
+        xarray."""
+        super().__init__(
+            task_id=id, loader=loader, processor=processor, writer=writer, logger=logger
+        )
+        self.post_processor = post_processor
+        self.stac_creator = stac_creator
+        self.stac_writer = stac_writer
+        self.item = item
+
+    def run(self):
+        input_data = self.loader.load([self.item])
+
+        output_data = copy_stac_properties(
+            self.item, self.processor.process(input_data)
+        )
+
+        if self.post_processor is not None:
+            output_data = self.post_processor.process(output_data)
+
+        paths = self.writer.write(output_data, self.id)
+
+        if self.stac_creator is not None and self.stac_writer is not None:
+            stac_item = self.stac_creator.process(output_data, self.id)
+            self.stac_writer.write(stac_item, self.id)
+
+        return paths
 
 
 class ErrorCategoryAreaTask(AreaTask):

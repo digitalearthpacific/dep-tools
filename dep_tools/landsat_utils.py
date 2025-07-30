@@ -1,3 +1,5 @@
+import os
+from pathlib import Path
 from typing import Iterable, Tuple
 
 from geopandas import read_file, GeoDataFrame
@@ -7,18 +9,6 @@ from shapely.geometry import box
 from xarray import DataArray, Dataset
 
 from dep_tools.utils import bbox_across_180, fix_winding
-
-import os
-
-
-def read_pathrows_file() -> list[Tuple[int, int]]:
-    """Read pathrows from a file and return them as a list of tuples."""
-    cwd = os.path.dirname(os.path.abspath(__file__))
-    pathrows_file = os.path.join(cwd, "pathrows.txt")
-
-    with open(pathrows_file, "r") as f:
-        lines = f.readlines()
-    return [tuple(map(int, line.strip().split("/"))) for line in lines if line.strip()]
 
 
 def cloud_mask(
@@ -78,7 +68,19 @@ def mask_clouds(
         return xr.where(~mask)
 
 
-def _pathrows():
+def landsat_grid() -> GeoDataFrame:
+    """The official Landsat grid filtered to Pacific Island Countries and
+    Territories as defined by GADM."""
+    ls_grid_path = Path(__file__).parent / "landsat_grid.gpkg"
+    if not ls_grid_path.exists():
+        dep_pathrows = read_pathrows_file()
+        ls_grid = _pathrows().set_index(["PATH", "ROW"]).loc[dep_pathrows]
+        ls_grid.to_file(ls_grid_path)
+
+    return GeoDataFrame(read_file(ls_grid_path).set_index(["PATH", "ROW"]))
+
+
+def _pathrows() -> GeoDataFrame:
     pathrows = GeoDataFrame(
         read_file(
             "https://d9-wret.s3.us-west-2.amazonaws.com/assets/palladium/production/s3fs-public/atoms/files/WRS2_descending_0.zip"
@@ -86,6 +88,17 @@ def _pathrows():
     )
     pathrows["geometry"] = pathrows.geometry.apply(fix_winding)
     return pathrows
+
+
+def read_pathrows_file() -> list[Tuple[int, int]]:
+    """Read list of pathrows for the DE Pacific aoi
+    from a file and return them as a list of tuples."""
+    cwd = os.path.dirname(os.path.abspath(__file__))
+    pathrows_file = os.path.join(cwd, "pathrows.txt")
+
+    with open(pathrows_file, "r") as f:
+        lines = f.readlines()
+    return [tuple(map(int, line.strip().split("/"))) for line in lines if line.strip()]
 
 
 def pathrows_in_area(area: GeoDataFrame, pathrows: GeoDataFrame | None = None):
