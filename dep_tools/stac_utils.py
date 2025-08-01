@@ -8,7 +8,6 @@ from pystac import Asset, Item, MediaType, read_dict
 import pystac_client
 import rasterio
 from rio_stac.stac import create_stac_item, get_raster_info
-from urlpath import URL
 from xarray import DataArray, Dataset
 
 
@@ -57,7 +56,7 @@ def get_stac_item(
     make_hrefs_https: bool = True,
     **kwargs,
 ) -> Item | str:
-    prefix = Path("./")
+    prefix = "./"
     # Remote means not local
     # TODO: neaten local file writing up
     if remote:
@@ -66,15 +65,15 @@ def get_stac_item(
             # Writing to S3
             if make_hrefs_https:
                 # E.g., https://dep-public-prod.s3.us-west-2.amazonaws.com/
-                prefix = URL(
-                    f"https://{getattr(itempath, 'bucket')}.s3.us-west-2.amazonaws.com"
+                prefix = (
+                    f"https://{getattr(itempath, 'bucket')}.s3.us-west-2.amazonaws.com/"
                 )
             else:
                 # E.g., s3://dep-public-prod/
-                prefix = URL(f"s3://{getattr(itempath, 'bucket')}")
+                prefix = f"s3://{getattr(itempath, 'bucket')}/"
         else:
             # Default to Azure
-            prefix = URL("https://deppcpublicstorage.blob.core.windows.net/output")
+            prefix = "https://deppcpublicstorage.blob.core.windows.net/output/"
 
     properties = {}
     if "stac_properties" in data.attrs:
@@ -89,7 +88,7 @@ def get_stac_item(
     assets = {}
     for variable, path in zip(data, paths):
         raster_info = {}
-        full_path = str(prefix / path)
+        full_path = f"{prefix.rstrip('/')}/{path.lstrip('/')}"
         if "with_raster" in kwargs.keys() and kwargs["with_raster"]:
             with rasterio.open(full_path) as src_dst:
                 raster_info = {"raster:bands": get_raster_info(src_dst, max_size=1024)}
@@ -112,7 +111,7 @@ def get_stac_item(
         input_datetime = datetime.strptime(input_datetime, format_string)
 
     item = create_stac_item(
-        str(prefix / paths[0]),
+        f"{prefix.rstrip('/')}/{paths[0].lstrip('/')}",
         id=stac_id,
         input_datetime=input_datetime,
         assets=assets,
