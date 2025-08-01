@@ -47,6 +47,13 @@ class StacCreator(Processor):
         )
 
 
+def _join_path_or_url(prefix: Path | str, file: str) -> str:
+    if isinstance(prefix, Path):
+        return str(prefix / file)
+    else:
+        return prefix.rstrip("/") + "/" + file.lstrip("/")
+
+
 def get_stac_item(
     itempath: DepItemPath,
     item_id: str,
@@ -56,7 +63,7 @@ def get_stac_item(
     make_hrefs_https: bool = True,
     **kwargs,
 ) -> Item | str:
-    prefix = "./"
+    prefix = Path("./")
     # Remote means not local
     # TODO: neaten local file writing up
     if remote:
@@ -88,7 +95,7 @@ def get_stac_item(
     assets = {}
     for variable, path in zip(data, paths):
         raster_info = {}
-        full_path = f"{prefix.rstrip('/')}/{path.lstrip('/')}"
+        full_path = _join_path_or_url(prefix, path)
         if "with_raster" in kwargs.keys() and kwargs["with_raster"]:
             with rasterio.open(full_path) as src_dst:
                 raster_info = {"raster:bands": get_raster_info(src_dst, max_size=1024)}
@@ -111,7 +118,7 @@ def get_stac_item(
         input_datetime = datetime.strptime(input_datetime, format_string)
 
     item = create_stac_item(
-        f"{prefix.rstrip('/')}/{paths[0].lstrip('/')}",
+        _join_path_or_url(prefix, paths[0]),
         id=stac_id,
         input_datetime=input_datetime,
         assets=assets,
@@ -122,7 +129,7 @@ def get_stac_item(
         **kwargs,
     )
 
-    stac_url = str(prefix / itempath.stac_path(item_id))
+    stac_url = _join_path_or_url(prefix, itempath.stac_path(item_id))
     item.set_self_href(stac_url)
 
     return item
