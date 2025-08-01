@@ -21,12 +21,7 @@ def stac_item():
     )
     tif = itempath.path("12,34", asset_name="wofs")
     test_xr = rioxarray.open_rasterio(tif).to_dataset(name="wofs")
-    item = get_stac_item(
-        itempath=itempath,
-        item_id="12,34",
-        data=test_xr,
-        remote=False
-    )
+    item = get_stac_item(itempath=itempath, item_id="12,34", data=test_xr, remote=False)
 
     return item
 

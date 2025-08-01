@@ -8,7 +8,6 @@ from pystac import Asset, Item, MediaType, read_dict
 import pystac_client
 import rasterio
 from rio_stac.stac import create_stac_item, get_raster_info
-from urlpath import URL
 from xarray import DataArray, Dataset
 
 
@@ -48,6 +47,13 @@ class StacCreator(Processor):
         )
 
 
+def _join_path_or_url(prefix: Path | str, file: str) -> str:
+    if isinstance(prefix, Path):
+        return str(prefix / file)
+    else:
+        return prefix.rstrip("/") + "/" + file.lstrip("/")
+
+
 def get_stac_item(
     itempath: DepItemPath,
     item_id: str,
@@ -66,15 +72,15 @@ def get_stac_item(
             # Writing to S3
             if make_hrefs_https:
                 # E.g., https://dep-public-prod.s3.us-west-2.amazonaws.com/
-                prefix = URL(
-                    f"https://{getattr(itempath, 'bucket')}.s3.us-west-2.amazonaws.com"
+                prefix = (
+                    f"https://{getattr(itempath, 'bucket')}.s3.us-west-2.amazonaws.com/"
                 )
             else:
                 # E.g., s3://dep-public-prod/
-                prefix = URL(f"s3://{getattr(itempath, 'bucket')}")
+                prefix = f"s3://{getattr(itempath, 'bucket')}/"
         else:
             # Default to Azure
-            prefix = URL("https://deppcpublicstorage.blob.core.windows.net/output")
+            prefix = "https://deppcpublicstorage.blob.core.windows.net/output/"
 
     properties = {}
     if "stac_properties" in data.attrs:
@@ -89,7 +95,7 @@ def get_stac_item(
     assets = {}
     for variable, path in zip(data, paths):
         raster_info = {}
-        full_path = str(prefix / path)
+        full_path = _join_path_or_url(prefix, path)
         if "with_raster" in kwargs.keys() and kwargs["with_raster"]:
             with rasterio.open(full_path) as src_dst:
                 raster_info = {"raster:bands": get_raster_info(src_dst, max_size=1024)}
@@ -112,7 +118,7 @@ def get_stac_item(
         input_datetime = datetime.strptime(input_datetime, format_string)
 
     item = create_stac_item(
-        str(prefix / paths[0]),
+        _join_path_or_url(prefix, paths[0]),
         id=stac_id,
         input_datetime=input_datetime,
         assets=assets,
@@ -123,7 +129,7 @@ def get_stac_item(
         **kwargs,
     )
 
-    stac_url = str(prefix / itempath.stac_path(item_id))
+    stac_url = _join_path_or_url(prefix, itempath.stac_path(item_id))
     item.set_self_href(stac_url)
 
     return item
