@@ -16,5 +16,4 @@ rio-stac>=0.8.0
 stackstac
 retry
 tqdm
-urlpath>=1.2.0
 xarray
