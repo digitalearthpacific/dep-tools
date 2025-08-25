@@ -42,10 +42,6 @@ def mask_to_gadm(xarr: DataArray | Dataset, area: GeoBox) -> DataArray | Dataset
     return xarr.odc.mask(geom)
 
 
-# Set the timeout to five minutes, which is an extremely long time
-TIMEOUT_SECONDS = 60 * 5
-
-
 def get_logger(prefix: str, name: str) -> Logger:
     """Set up a simple logger"""
     console = StreamHandler()
