@@ -8,19 +8,18 @@ from pystac import Asset, Item, MediaType, read_dict
 import pystac_client
 import rasterio
 from rio_stac.stac import create_stac_item, get_raster_info
-from urlpath import URL
 from xarray import DataArray, Dataset
 
 
 from .aws import object_exists
-from .namers import DepItemPath, S3ItemPath
+from .namers import GenericItemPath, S3ItemPath
 from .processors import Processor
 
 
 class StacCreator(Processor):
     def __init__(
         self,
-        itempath: DepItemPath,
+        itempath: GenericItemPath,
         remote: bool = True,
         collection_url_root: str = "https://stac.staging.digitalearthpacific.io/collections",
         make_hrefs_https: bool = True,
@@ -48,8 +47,29 @@ class StacCreator(Processor):
         )
 
 
+def join_path_or_url(prefix: Path | str, file: str) -> str:
+    """Joins a prefix with a file name, with a slash in-between.
+
+    Args:
+        prefix: A folder-like thing, local or remote. Can begin
+            with things like ./, https:// and s3://. Can end with a
+            forward-slash or not.
+        file: A stem-plus-extension file name. Can begin with a
+            forward-slash or not.
+
+    Returns:
+        A string containing the joined prefix and file, with a
+        forward-slash in between.
+    """
+    return (
+        str(prefix / file)
+        if isinstance(prefix, Path)
+        else prefix.rstrip("/") + "/" + file.lstrip("/")
+    )
+
+
 def get_stac_item(
-    itempath: DepItemPath,
+    itempath: GenericItemPath,
     item_id: str,
     data: DataArray | Dataset,
     remote: bool = True,
@@ -66,15 +86,15 @@ def get_stac_item(
             # Writing to S3
             if make_hrefs_https:
                 # E.g., https://dep-public-prod.s3.us-west-2.amazonaws.com/
-                prefix = URL(
-                    f"https://{getattr(itempath, 'bucket')}.s3.us-west-2.amazonaws.com"
+                prefix = (
+                    f"https://{getattr(itempath, 'bucket')}.s3.us-west-2.amazonaws.com/"
                 )
             else:
                 # E.g., s3://dep-public-prod/
-                prefix = URL(f"s3://{getattr(itempath, 'bucket')}")
+                prefix = f"s3://{getattr(itempath, 'bucket')}/"
         else:
             # Default to Azure
-            prefix = URL("https://deppcpublicstorage.blob.core.windows.net/output")
+            prefix = "https://deppcpublicstorage.blob.core.windows.net/output/"
 
     properties = {}
     if "stac_properties" in data.attrs:
@@ -89,7 +109,7 @@ def get_stac_item(
     assets = {}
     for variable, path in zip(data, paths):
         raster_info = {}
-        full_path = str(prefix / path)
+        full_path = join_path_or_url(prefix, path)
         if "with_raster" in kwargs.keys() and kwargs["with_raster"]:
             with rasterio.open(full_path) as src_dst:
                 raster_info = {"raster:bands": get_raster_info(src_dst, max_size=1024)}
@@ -112,7 +132,7 @@ def get_stac_item(
         input_datetime = datetime.strptime(input_datetime, format_string)
 
     item = create_stac_item(
-        str(prefix / paths[0]),
+        join_path_or_url(prefix, paths[0]),
         id=stac_id,
         input_datetime=input_datetime,
         assets=assets,
@@ -123,7 +143,7 @@ def get_stac_item(
         **kwargs,
     )
 
-    stac_url = str(prefix / itempath.stac_path(item_id))
+    stac_url = join_path_or_url(prefix, itempath.stac_path(item_id))
     item.set_self_href(stac_url)
 
     return item

@@ -48,7 +48,7 @@ class AreaTask(Task):
         super().__init__(id, loader, processor, writer, logger)
         self.area = area
 
-    def run(self):
+    def run(self) -> list[str]:
         input_data = self.loader.load(self.area)
 
         processor_kwargs = (

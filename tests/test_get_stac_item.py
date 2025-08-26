@@ -2,7 +2,7 @@ import rioxarray
 
 from dep_tools.namers import LocalPath
 
-from dep_tools.stac_utils import get_stac_item
+from dep_tools.stac_utils import get_stac_item, join_path_or_url
 from pathlib import Path
 import pytest
 
@@ -11,7 +11,7 @@ DATA_DIR = Path(__file__).parent / "data"
 
 @pytest.fixture
 def stac_item():
-    itempath = LocalPath(
+    local_itempath = LocalPath(
         str(DATA_DIR),
         sensor="spysat",
         dataset_id="wofs",
@@ -19,13 +19,10 @@ def stac_item():
         time="2021-01-01",
         zero_pad_numbers=False,
     )
-    tif = itempath.path("12,34", asset_name="wofs")
+    tif = local_itempath.path("12,34", asset_name="wofs")
     test_xr = rioxarray.open_rasterio(tif).to_dataset(name="wofs")
     item = get_stac_item(
-        itempath=itempath,
-        item_id="12,34",
-        data=test_xr,
-        remote=False
+        itempath=local_itempath, item_id="12,34", data=test_xr, remote=False
     )
 
     return item
@@ -52,3 +49,23 @@ def test_stac_asset_href_is_valid(stac_item):
         DATA_DIR
         / "dep_spysat_wofs/1-0-0/12/34/2021-01-01/dep_spysat_wofs_12_34_2021-01-01_wofs.tif"
     )
+
+
+def test_join_path_or_url_file():
+    joined = join_path_or_url("/home/data/", "test.txt")
+    assert joined == "/home/data/test.txt"
+
+
+def test_join_path_or_url_slashes_everywhere():
+    joined = join_path_or_url("/home/data/", "/test.txt")
+    assert joined == "/home/data/test.txt"
+
+
+def test_join_path_or_url_s3():
+    joined = join_path_or_url("s3://home/data", "test.txt")
+    assert joined == "s3://home/data/test.txt"
+
+
+def test_join_path_or_url_https():
+    joined = join_path_or_url("https://home.com/data", "test.txt")
+    assert joined == "https://home.com/data/test.txt"

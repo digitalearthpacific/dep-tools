@@ -14,6 +14,9 @@ from osgeo import gdal
 from pystac import Item
 from xarray import DataArray, Dataset
 
+# Set the timeout to five minutes, which is an extremely long time
+TIMEOUT_SECONDS = 60 * 5
+
 
 def get_container_client(
     storage_account: str = os.environ.get("AZURE_STORAGE_ACCOUNT"),
