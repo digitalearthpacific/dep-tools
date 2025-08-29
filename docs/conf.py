@@ -5,6 +5,7 @@
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
+import subprocess
 
 project = "dep-tools"
 copyright = "2025, Digital Earth Pacific"
@@ -33,3 +34,13 @@ exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
 html_theme = "sphinx_rtd_theme"
 html_static_path = ["_static"]
+
+# -- Make files for each module
+
+subprocess.run([
+    "sphinx-apidoc",
+    "-o", "docs/api",
+    "dep_tools",
+    "--separate",
+    "--force"
+])

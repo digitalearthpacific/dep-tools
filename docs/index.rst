@@ -3,10 +3,9 @@ dep-tools
 
 .. toctree::
    :maxdepth: 1
-   :caption: Modules
+   :caption: API Reference
 
-   aws
-   grids
+   api/modules
 
 Indices and tables
 ==================

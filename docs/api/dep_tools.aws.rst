@@ -1,5 +1,5 @@
-dep_tools.aws
-=================
+dep\_tools.aws module
+=====================
 
 .. automodule:: dep_tools.aws
    :members:

@@ -1,5 +1,5 @@
-dep_tools.grids
-=================
+dep\_tools.grids module
+=======================
 
 .. automodule:: dep_tools.grids
    :members:
