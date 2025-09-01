@@ -10,6 +10,7 @@ import rasterio
 from rio_stac.stac import create_stac_item, get_raster_info
 from xarray import DataArray, Dataset
 
+from odc.loader._aws import auto_find_region
 
 from .aws import object_exists
 from .namers import GenericItemPath, S3ItemPath
@@ -23,13 +24,39 @@ class StacCreator(Processor):
         remote: bool = True,
         collection_url_root: str = "https://stac.staging.digitalearthpacific.io/collections",
         make_hrefs_https: bool = True,
+        asset_url_prefix: str | None = None,
         **kwargs,
     ):
         self._itempath = itempath
         self._remote = remote
         self._collection_url_root = collection_url_root
         self._make_hrefs_https = make_hrefs_https
+        self._asset_url_prefix = asset_url_prefix
         self._kwargs = kwargs
+
+    @property
+    def prefix(self):
+        # Or, isinstance(itempath, S3ItemPath)
+        if hasattr(self._itempath, "bucket"):
+            # Writing to S3
+            if self._make_hrefs_https:
+                if self._asset_url_prefix is not None:
+                    prefix = self._asset_url_prefix
+                else:
+                    # E.g., https://dep-public-prod.s3.us-west-2.amazonaws.com/
+                    aws_region = auto_find_region()
+                    prefix = f"https://{getattr(self._itempath, 'bucket')}.s3.{aws_region}.amazonaws.com/"
+            else:
+                # E.g., s3://dep-public-prod/
+                prefix = f"s3://{getattr(self._itempath, 'bucket')}/"
+        else:
+            # Default to Azure
+            prefix = "https://deppcpublicstorage.blob.core.windows.net/output/"
+
+        return prefix
+
+    def stac_url(self, item_id: str) -> str:
+        return join_path_or_url(self.prefix, self._itempath.stac_path(item_id))
 
     def process(
         self,
@@ -41,8 +68,9 @@ class StacCreator(Processor):
             item_id=item_id,
             data=data,
             remote=self._remote,
+            stac_url=self.stac_url(item_id),
             collection_url_root=self._collection_url_root,
-            make_hrefs_https=self._make_hrefs_https,
+            asset_url_prefix=self.prefix,
             **self._kwargs,
         )
 
@@ -73,28 +101,16 @@ def get_stac_item(
     item_id: str,
     data: DataArray | Dataset,
     remote: bool = True,
+    stac_url: str | None = None,
     collection_url_root: str = "https://stac.staging.digitalearthpacific.org/collections",
-    make_hrefs_https: bool = True,
+    asset_url_prefix: str | None = None,
     **kwargs,
 ) -> Item | str:
     prefix = Path("./")
     # Remote means not local
-    # TODO: neaten local file writing up
     if remote:
-        # Or, isinstance(itempath, S3ItemPath)
-        if hasattr(itempath, "bucket"):
-            # Writing to S3
-            if make_hrefs_https:
-                # E.g., https://dep-public-prod.s3.us-west-2.amazonaws.com/
-                prefix = (
-                    f"https://{getattr(itempath, 'bucket')}.s3.us-west-2.amazonaws.com/"
-                )
-            else:
-                # E.g., s3://dep-public-prod/
-                prefix = f"s3://{getattr(itempath, 'bucket')}/"
-        else:
-            # Default to Azure
-            prefix = "https://deppcpublicstorage.blob.core.windows.net/output/"
+        assert asset_url_prefix is not None, "Must provide asset_url_prefix if remote"
+        prefix = asset_url_prefix
 
     properties = {}
     if "stac_properties" in data.attrs:
@@ -143,7 +159,6 @@ def get_stac_item(
         **kwargs,
     )
 
-    stac_url = join_path_or_url(prefix, itempath.stac_path(item_id))
     item.set_self_href(stac_url)
 
     return item

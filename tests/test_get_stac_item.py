@@ -2,7 +2,8 @@ import rioxarray
 
 from dep_tools.namers import LocalPath
 
-from dep_tools.stac_utils import get_stac_item, join_path_or_url
+from dep_tools.stac_utils import get_stac_item, join_path_or_url, StacCreator
+from dep_tools.namers import S3ItemPath
 from pathlib import Path
 import pytest
 
@@ -69,3 +70,20 @@ def test_join_path_or_url_s3():
 def test_join_path_or_url_https():
     joined = join_path_or_url("https://home.com/data", "test.txt")
     assert joined == "https://home.com/data/test.txt"
+
+
+def test_stac_url():
+    item_path = S3ItemPath(
+        "test-bucket", "nose", "aroma", "test", "2024"
+    )
+    stac_creator = StacCreator(
+        itempath=item_path,
+        remote=True,
+        collection_url_root="https://stac.staging.digitalearthpacific.io/collections",
+        make_hrefs_https=True,
+        asset_url_prefix="https://test.com/",
+    )
+
+    assert stac_creator.prefix == "https://test.com/"
+
+    assert stac_creator.stac_url((99, 66)) == "https://test.com/dep_nose_aroma/test/099/066/2024/dep_nose_aroma_099_066_2024.stac-item.json"
