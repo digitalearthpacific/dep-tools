@@ -10,7 +10,6 @@ import rasterio
 from rio_stac.stac import create_stac_item, get_raster_info
 from xarray import DataArray, Dataset
 
-from odc.loader._aws import auto_find_region
 
 from .aws import object_exists
 from .namers import GenericItemPath, S3ItemPath
@@ -23,40 +22,12 @@ class StacCreator(Processor):
         itempath: GenericItemPath,
         remote: bool = True,
         collection_url_root: str = "https://stac.staging.digitalearthpacific.io/collections",
-        make_hrefs_https: bool = True,
-        asset_url_prefix: str | None = None,
         **kwargs,
     ):
         self._itempath = itempath
         self._remote = remote
         self._collection_url_root = collection_url_root
-        self._make_hrefs_https = make_hrefs_https
-        self._asset_url_prefix = asset_url_prefix
         self._kwargs = kwargs
-
-    @property
-    def prefix(self):
-        # Or, isinstance(itempath, S3ItemPath)
-        if hasattr(self._itempath, "bucket"):
-            # Writing to S3
-            if self._make_hrefs_https:
-                if self._asset_url_prefix is not None:
-                    prefix = self._asset_url_prefix
-                else:
-                    # E.g., https://dep-public-prod.s3.us-west-2.amazonaws.com/
-                    aws_region = auto_find_region()
-                    prefix = f"https://{getattr(self._itempath, 'bucket')}.s3.{aws_region}.amazonaws.com/"
-            else:
-                # E.g., s3://dep-public-prod/
-                prefix = f"s3://{getattr(self._itempath, 'bucket')}/"
-        else:
-            # Default to Azure
-            prefix = "https://deppcpublicstorage.blob.core.windows.net/output/"
-
-        return prefix
-
-    def stac_url(self, item_id: str) -> str:
-        return join_path_or_url(self.prefix, self._itempath.stac_path(item_id))
 
     def process(
         self,
@@ -68,49 +39,18 @@ class StacCreator(Processor):
             item_id=item_id,
             data=data,
             remote=self._remote,
-            stac_url=self.stac_url(item_id),
             collection_url_root=self._collection_url_root,
-            asset_url_prefix=self.prefix,
             **self._kwargs,
         )
-
-
-def join_path_or_url(prefix: Path | str, file: str) -> str:
-    """Joins a prefix with a file name, with a slash in-between.
-
-    Args:
-        prefix: A folder-like thing, local or remote. Can begin
-            with things like ./, https:// and s3://. Can end with a
-            forward-slash or not.
-        file: A stem-plus-extension file name. Can begin with a
-            forward-slash or not.
-
-    Returns:
-        A string containing the joined prefix and file, with a
-        forward-slash in between.
-    """
-    return (
-        str(prefix / file)
-        if isinstance(prefix, Path)
-        else prefix.rstrip("/") + "/" + file.lstrip("/")
-    )
 
 
 def get_stac_item(
     itempath: GenericItemPath,
     item_id: str,
     data: DataArray | Dataset,
-    remote: bool = True,
-    stac_url: str | None = None,
     collection_url_root: str = "https://stac.staging.digitalearthpacific.org/collections",
-    asset_url_prefix: str | None = None,
     **kwargs,
 ) -> Item | str:
-    prefix = Path("./")
-    # Remote means not local
-    if remote:
-        assert asset_url_prefix is not None, "Must provide asset_url_prefix if remote"
-        prefix = asset_url_prefix
 
     properties = {}
     if "stac_properties" in data.attrs:
@@ -120,13 +60,11 @@ def get_stac_item(
             else data.attrs["stac_properties"]
         )
 
-    paths = [itempath.path(item_id, variable) for variable in data]
-
     assets = {}
-    for variable, path in zip(data, paths):
+    for variable in data:
         raster_info = {}
-        full_path = join_path_or_url(prefix, path)
-        if "with_raster" in kwargs.keys() and kwargs["with_raster"]:
+        full_path = itempath.path(item_id, variable, absolute=True)
+        if kwargs.get("with_raster"):
             with rasterio.open(full_path) as src_dst:
                 raster_info = {"raster:bands": get_raster_info(src_dst, max_size=1024)}
 
@@ -147,8 +85,9 @@ def get_stac_item(
         )
         input_datetime = datetime.strptime(input_datetime, format_string)
 
+    an_href = next(iter(assets.values())).href
     item = create_stac_item(
-        join_path_or_url(prefix, paths[0]),
+        an_href,
         id=stac_id,
         input_datetime=input_datetime,
         assets=assets,
@@ -159,7 +98,7 @@ def get_stac_item(
         **kwargs,
     )
 
-    item.set_self_href(stac_url)
+    item.set_self_href(itempath.stac_path(item_id, absolute=True))
 
     return item
 

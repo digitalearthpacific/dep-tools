@@ -1,5 +1,10 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
+from pathlib import Path
+
+from odc.loader._aws import auto_find_region
+
+from dep_tools.utils import join_path_or_url
 
 
 class ItemPath(ABC):
@@ -7,7 +12,7 @@ class ItemPath(ABC):
         pass
 
     @abstractmethod
-    def path(self) -> str:
+    def path(self, *args, **kwargs) -> str:
         return ""
 
 
@@ -20,6 +25,7 @@ class GenericItemPath(ItemPath):
         time: str,
         prefix: str = "dep",
         zero_pad_numbers: bool = True,
+        full_path_prefix: str | Path | None = Path("./"),
     ):
         self.sensor = sensor
         self.dataset_id = dataset_id
@@ -28,6 +34,7 @@ class GenericItemPath(ItemPath):
         self.prefix = prefix
         self.zero_pad_numbers = zero_pad_numbers
         self.version = self.version.replace(".", "-")
+        self.full_path_prefix = full_path_prefix
         self._folder_prefix = (
             f"{self.prefix}_{self.sensor}_{self.dataset_id}/{self.version}"
         )
@@ -60,15 +67,21 @@ class GenericItemPath(ItemPath):
     def basename(self, item_id) -> str:
         return f"{self.item_prefix}_{self._format_item_id(item_id, join_str='_')}_{self.time}"
 
-    def path(self, item_id, asset_name=None, ext=".tif") -> str:
-        return (
+    def path(self, item_id, asset_name=None, ext=".tif", absolute: bool = False) -> str:
+        relative_path = (
             f"{self._folder(item_id)}/{self.basename(item_id)}_{asset_name}{ext}"
             if asset_name is not None
             else f"{self._folder(item_id)}/{self.basename(item_id)}{ext}"
         )
 
-    def stac_path(self, item_id):
-        return self.path(item_id, ext=".stac-item.json")
+        return (
+            join_path_or_url(self.full_path_prefix, relative_path)
+            if absolute and self.full_path_prefix is not None
+            else relative_path
+        )
+
+    def stac_path(self, item_id, **kwargs):
+        return self.path(item_id, ext=".stac-item.json", **kwargs)
 
     def log_path(self) -> str:
         return f"{self._folder_prefix}/logs/{self.item_prefix}_{self.time}_log.csv"
@@ -88,6 +101,8 @@ class S3ItemPath(GenericItemPath):
         time: str,
         prefix: str = "dep",
         zero_pad_numbers: bool = True,
+        make_hrefs_https: bool = True,
+        full_path_prefix: str | None = None,
     ):
         super().__init__(
             sensor=sensor,
@@ -98,6 +113,17 @@ class S3ItemPath(GenericItemPath):
             zero_pad_numbers=zero_pad_numbers,
         )
         self.bucket = bucket
+        if make_hrefs_https:
+            if self.full_path_prefix is not None:
+                self.full_path_prefix = full_path_prefix
+            else:
+                # E.g., https://dep-public-prod.s3.us-west-2.amazonaws.com/
+                aws_region = auto_find_region()
+                self.full_path_prefix = (
+                    f"https://{self.bucket}.s3.{aws_region}.amazonaws.com/"
+                )
+        else:
+            self.full_path_prefix = f"s3://{self.bucket}/"
 
 
 class DailyItemPath(S3ItemPath):
@@ -123,7 +149,7 @@ class DailyItemPath(S3ItemPath):
 
 class LocalPath(DepItemPath):
     def __init__(self, local_folder: str, prefix: str = "dep", **kwargs):
-        super().__init__(**kwargs)
-        self._folder_prefix = (
-            f"{local_folder}/{prefix}_{self.sensor}_{self.dataset_id}/{self.version}"
-        )
+        super().__init__(full_path_prefix=local_folder, prefix=prefix, **kwargs)
+
+    def path(self, item_id, asset_name=None, ext=".tif") -> str:
+        return super().path(item_id, asset_name=asset_name, ext=ext, absolute=True)

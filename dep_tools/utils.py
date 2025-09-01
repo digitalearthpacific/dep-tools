@@ -32,6 +32,27 @@ from xarray import DataArray, Dataset
 from dep_tools.grids import gadm_union
 
 
+def join_path_or_url(prefix: Path | str, file: str) -> str:
+    """Joins a prefix with a file name, with a slash in-between.
+
+    Args:
+        prefix: A folder-like thing, local or remote. Can begin
+            with things like ./, https:// and s3://. Can end with a
+            forward-slash or not.
+        file: A stem-plus-extension file name. Can begin with a
+            forward-slash or not.
+
+    Returns:
+        A string containing the joined prefix and file, with a
+        forward-slash in between.
+    """
+    return (
+        str(prefix / file)
+        if isinstance(prefix, Path)
+        else prefix.rstrip("/") + "/" + file.lstrip("/")
+    )
+
+
 def mask_to_gadm(xarr: DataArray | Dataset, area: GeoBox) -> DataArray | Dataset:
     geom = unary_intersection(
         [
