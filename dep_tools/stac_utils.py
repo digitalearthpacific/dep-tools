@@ -20,12 +20,10 @@ class StacCreator(Processor):
     def __init__(
         self,
         itempath: GenericItemPath,
-        remote: bool = True,
         collection_url_root: str = "https://stac.staging.digitalearthpacific.io/collections",
         **kwargs,
     ):
         self._itempath = itempath
-        self._remote = remote
         self._collection_url_root = collection_url_root
         self._kwargs = kwargs
 
@@ -38,7 +36,6 @@ class StacCreator(Processor):
             itempath=self._itempath,
             item_id=item_id,
             data=data,
-            remote=self._remote,
             collection_url_root=self._collection_url_root,
             **self._kwargs,
         )
