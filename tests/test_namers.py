@@ -79,7 +79,8 @@ def test_non_padded_format_item_id_list_as_string():
 
 
 def test_daily_path(s3):
-    s3.create_bucket(Bucket=bucket)
+    s3.create_bucket(Bucket=bucket, CreateBucketConfiguration={
+        'LocationConstraint': 'us-west-2'})
     dailyItemPath = DailyItemPath(
         bucket=bucket,
         sensor=sensor,
