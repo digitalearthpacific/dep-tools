@@ -6,7 +6,7 @@ from typing import Callable, Hashable, List
 from xarray import Dataset
 
 from .aws import write_to_s3, write_stac_s3
-from .namers import DepItemPath, S3ItemPath
+from .namers import GenericItemPath, ItemPath, S3ItemPath
 from .utils import write_to_local_storage
 
 
@@ -14,14 +14,14 @@ class Writer(ABC):
     """The base abstract class for writing."""
 
     @abstractmethod
-    def write(self, data, item_id) -> str | list[str]:
+    def write(self, *args, **kwargs) -> str | list[str]:
         pass
 
 
 class DsCogWriter(Writer):
     def __init__(
         self,
-        itempath: DepItemPath,
+        itempath: ItemPath,
         write_multithreaded: bool = False,
         load_before_write: bool = False,
         write_function: Callable = write_to_s3,
@@ -94,7 +94,7 @@ class LocalDsCogWriter(DsCogWriter):
 class StacWriter(Writer):
     def __init__(
         self,
-        itempath: DepItemPath,
+        itempath: GenericItemPath,
         write_stac_function: Callable = write_stac_s3,
         **kwargs,
     ):

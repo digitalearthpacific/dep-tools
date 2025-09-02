@@ -27,6 +27,8 @@ extensions = [
 
 templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
+# Combine class & class __init__ function docstrings
+autoclass_content = "both"
 
 
 # -- Options for HTML output -------------------------------------------------
@@ -37,10 +39,6 @@ html_static_path = ["_static"]
 
 # -- Make files for each module
 
-subprocess.run([
-    "sphinx-apidoc",
-    "-o", "docs/api",
-    "dep_tools",
-    "--separate",
-    "--force"
-])
+subprocess.run(
+    ["sphinx-apidoc", "-o", "docs/api", "dep_tools", "--separate", "--force"]
+)
