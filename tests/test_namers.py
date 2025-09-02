@@ -1,6 +1,12 @@
+import os
+
+import boto3
+import moto
+import pytest
+
 from dep_tools.namers import DailyItemPath, DepItemPath
 
-bucket = "dep-public-staging"
+bucket = "test-bucket"
 sensor = "ls"
 dataset_id = "wofs"
 version = "1.0.1"
@@ -12,6 +18,25 @@ nonPaddedItemPath = DepItemPath(
 )
 item_id = "001,002"
 asset_name = "mean"
+
+
+@pytest.fixture(scope="function")
+def aws_credentials():
+    """Mocked AWS Credentials for moto."""
+    os.environ["AWS_ACCESS_KEY_ID"] = "testing"
+    os.environ["AWS_SECRET_ACCESS_KEY"] = "testing"
+    os.environ["AWS_SECURITY_TOKEN"] = "testing"
+    os.environ["AWS_SESSION_TOKEN"] = "testing"
+    os.environ["AWS_DEFAULT_REGION"] = "us-east-1"
+
+
+@pytest.fixture(scope="function")
+def s3():
+    """
+    Return a mocked S3 client
+    """
+    with moto.mock_aws():
+        yield boto3.client("s3", region_name="us-east-1")
 
 
 def test_path():
@@ -77,16 +102,16 @@ def test_non_padded_format_item_id_list_as_string():
     assert nonPaddedItemPath._format_item_id("001,002", "_") == "001_002"
 
 
-dailyItemPath = DailyItemPath(
-    bucket=bucket,
-    sensor=sensor,
-    dataset_id=dataset_id,
-    version=version,
-    time="2025-07-28 15:44:14.926241",
-)
+def test_daily_path(s3):
+    s3.create_bucket(Bucket=bucket)
+    dailyItemPath = DailyItemPath(
+        bucket=bucket,
+        sensor=sensor,
+        dataset_id=dataset_id,
+        version=version,
+        time="2025-07-28 15:44:14.926241",
+    )
 
-
-def test_daily_path():
     assert (
         dailyItemPath.path(item_id, asset_name)
         == "dep_ls_wofs/1-0-1/001/002/2025/07/28/dep_ls_wofs_001_002_2025-07-28_mean.tif"
