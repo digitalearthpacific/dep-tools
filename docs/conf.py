@@ -29,6 +29,7 @@ templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 # Combine class & class __init__ function docstrings
 autoclass_content = "both"
+autodoc_member_order = "bysource"
 
 
 # -- Options for HTML output -------------------------------------------------

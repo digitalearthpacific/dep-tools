@@ -1,10 +1,14 @@
+"""Loaders are things that load data."""
+
 from abc import ABC, abstractmethod
+from typing import Any, Iterable
 import warnings
 
 from geopandas import GeoDataFrame
 from odc.geo.geobox import GeoBox
 from odc.geo.geom import Geometry
 from odc.stac import load as stac_load
+from pystac import Item
 from rasterio.errors import RasterioError, RasterioIOError
 import rioxarray
 from stackstac import stack
@@ -12,7 +16,7 @@ from xarray import DataArray, Dataset, concat
 
 
 class Loader(ABC):
-    """A loader loads data."""
+    """A Loader loads data"""
 
     def __init__(self):
         pass
@@ -24,11 +28,30 @@ class Loader(ABC):
 
 class StacLoader(Loader):
     @abstractmethod
-    def load(self, items, areas):
+    def load(self, items, areas) -> Any:
         pass
 
 
 class OdcLoader(StacLoader):
+    """OdcLoader is a wrapper around :func:`odc.stac.load`.
+
+    In addition to allowing conformance to the :class:`Loader` paradigm, this
+    class offers a number of convenience operations which compliment
+    :func:`odc.stac.load`:
+
+        - If the data is loaded as floating point, any nodata values (as defined
+          by `data.attrs["nodata"]`) are set to NaN, and the attribute is set
+          to NaN.
+        - The nodata value is also set to be accessed rioxarray accessor (`.rio.nodata`).
+
+    Args:
+        load_as_dataset: If False, load as a DataArray with each variable in the
+            `band` dimension.
+        clip_to_areas: If True, loaded data is clipped to the given areas using
+            :func:`odc.geo.mask`.
+        **kwargs: Additional arguments to :func:`odc.stac.load`.
+    """
+
     def __init__(
         self,
         load_as_dataset: bool = True,
@@ -41,11 +64,26 @@ class OdcLoader(StacLoader):
         self._load_as_dataset = load_as_dataset
 
     def load(
-        self, items, areas: GeoDataFrame | GeoBox | None = None
+        self, items: Iterable[Item], areas: GeoDataFrame | GeoBox | None = None
     ) -> Dataset | DataArray:
-        # If `nodata` is passed as an arg, or the stac item contains the nodata
-        # value, xr[variable].nodata will be set on load.
+        """Load STAC Items into an xarray object.
 
+        If `nodata` is passed as a kwarg on initialization, or the stac item
+        contains the nodata value, xr[variable].nodata will be set on load.
+
+        Args:
+            items: The items to load.
+            areas: If `clip_to_areas` is True, the output is clipped to these areas.
+
+        Returns:
+            If `load_to_dataset` is True on initialization, a :class:`xarray.Dataset`
+            is returned. Otherwise a :class:`xarray:DataArray` is returned, with
+            variables set on the "band" dimension.
+
+
+        Raises:
+            ValueError: If `areas` is a GeoBox and `clip_to_areas` is set.
+        """
         if isinstance(areas, GeoDataFrame):
             load_geometry = dict(geopolygons=areas)
         elif isinstance(areas, GeoBox):
