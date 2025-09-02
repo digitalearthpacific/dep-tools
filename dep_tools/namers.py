@@ -2,9 +2,8 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 from pathlib import Path
 
-from odc.loader._aws import auto_find_region
-
-from dep_tools.utils import join_path_or_url
+from .aws import get_s3_bucket_region
+from .utils import join_path_or_url
 
 
 class ItemPath(ABC):
@@ -25,7 +24,7 @@ class GenericItemPath(ItemPath):
         time: str,
         prefix: str = "dep",
         zero_pad_numbers: bool = True,
-        full_path_prefix: str | Path | None = Path("./"),
+        full_path_prefix: str | Path | None = None,
     ):
         self.sensor = sensor
         self.dataset_id = dataset_id
@@ -101,8 +100,8 @@ class S3ItemPath(GenericItemPath):
         time: str,
         prefix: str = "dep",
         zero_pad_numbers: bool = True,
-        make_hrefs_https: bool = True,
         full_path_prefix: str | None = None,
+        make_hrefs_https: bool = True,
     ):
         super().__init__(
             sensor=sensor,
@@ -113,17 +112,14 @@ class S3ItemPath(GenericItemPath):
             zero_pad_numbers=zero_pad_numbers,
         )
         self.bucket = bucket
-        if make_hrefs_https:
-            if self.full_path_prefix is not None:
-                self.full_path_prefix = full_path_prefix
-            else:
-                # E.g., https://dep-public-prod.s3.us-west-2.amazonaws.com/
-                aws_region = auto_find_region()
-                self.full_path_prefix = (
-                    f"https://{self.bucket}.s3.{aws_region}.amazonaws.com/"
-                )
+        if full_path_prefix is not None:
+            self.full_path_prefix = full_path_prefix
+        elif make_hrefs_https:
+            aws_region = get_s3_bucket_region(bucket)
+            # E.g., https://dep-public-prod.s3.us-west-2.amazonaws.com/
+            self.full_path_prefix = f"https://{bucket}.s3.{aws_region}.amazonaws.com/"
         else:
-            self.full_path_prefix = f"s3://{self.bucket}/"
+            self.full_path_prefix = f"s3://{bucket}/"
 
 
 class DailyItemPath(S3ItemPath):

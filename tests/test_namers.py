@@ -1,6 +1,6 @@
 from dep_tools.namers import DailyItemPath, DepItemPath
 
-bucket = "dep-staging-public"
+bucket = "dep-public-staging"
 sensor = "ls"
 dataset_id = "wofs"
 version = "1.0.1"

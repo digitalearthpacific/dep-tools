@@ -1,7 +1,12 @@
 from geopandas import GeoDataFrame
 from shapely import box
 
-from dep_tools.aws import write_to_s3, object_exists
+from dep_tools.aws import get_s3_bucket_region
+
+
+def test_get_s3_bucket_region():
+    region = get_s3_bucket_region("dep-public-staging")
+    assert region == "us-west-2"
 
 
 # def test_write_to_s3_kwargs():
