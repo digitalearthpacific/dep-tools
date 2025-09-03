@@ -1,29 +1,29 @@
-import rioxarray
-
-from dep_tools.namers import LocalPath
-
-from dep_tools.stac_utils import get_stac_item, join_path_or_url
 from pathlib import Path
 import pytest
+import rioxarray
+
+from dep_tools.namers import GenericItemPath
+
+from dep_tools.stac_utils import get_stac_item
+from dep_tools.namers import S3ItemPath
+from dep_tools.utils import join_path_or_url
 
 DATA_DIR = Path(__file__).parent / "data"
 
 
 @pytest.fixture
 def stac_item():
-    local_itempath = LocalPath(
-        str(DATA_DIR),
+    local_itempath = GenericItemPath(
         sensor="spysat",
         dataset_id="wofs",
         version="1.0.0",
         time="2021-01-01",
         zero_pad_numbers=False,
+        full_path_prefix=str(DATA_DIR),
     )
-    tif = local_itempath.path("12,34", asset_name="wofs")
+    tif = local_itempath.path("12,34", asset_name="wofs", absolute=True)
     test_xr = rioxarray.open_rasterio(tif).to_dataset(name="wofs")
-    item = get_stac_item(
-        itempath=local_itempath, item_id="12,34", data=test_xr, remote=False
-    )
+    item = get_stac_item(itempath=local_itempath, item_id="12,34", data=test_xr)
 
     return item
 
@@ -69,3 +69,22 @@ def test_join_path_or_url_s3():
 def test_join_path_or_url_https():
     joined = join_path_or_url("https://home.com/data", "test.txt")
     assert joined == "https://home.com/data/test.txt"
+
+
+def test_stac_url():
+    item_path = S3ItemPath(
+        "test-bucket",
+        "nose",
+        "aroma",
+        "test",
+        "2024",
+        make_hrefs_https=True,
+        full_path_prefix="https://test.com/",
+    )
+
+    assert item_path.full_path_prefix == "https://test.com/"
+
+    assert (
+        item_path.stac_path((99, 66), absolute=True)
+        == "https://test.com/dep_nose_aroma/test/099/066/2024/dep_nose_aroma_099_066_2024.stac-item.json"
+    )

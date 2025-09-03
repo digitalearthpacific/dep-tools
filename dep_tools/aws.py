@@ -114,3 +114,19 @@ def write_stac_s3(
     )
 
     return stac_path
+
+
+def get_s3_bucket_region(bucket_name: str, client: BaseClient | None = None) -> str:
+    """Return the AWS region for a given bucket.
+
+    Args:
+        bucket_name: The name of the bucket
+
+    Returns:
+        The name of the region.
+
+    """
+    if client is None:
+        client: BaseClient = boto3.client("s3")
+    response = client.head_bucket(Bucket=bucket_name)
+    return response["BucketRegion"]
