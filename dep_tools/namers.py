@@ -132,9 +132,11 @@ class DailyItemPath(S3ItemPath):
     dep_ls_wofl/99/77/2025/06/13/dep_ls_wofl_99_77_2025-06-13.tif
     """
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.datetime = datetime.fromisoformat(self.time)
+    def __init__(self, time: str | datetime, **kwargs):
+        super().__init__(time=str(time), **kwargs)
+        self.datetime = (
+            datetime.fromisoformat(time) if not isinstance(time, datetime) else time
+        )
 
     def _folder(self, item_id) -> str:
         return f"{self._folder_prefix}/{self._format_item_id(item_id)}/{self.datetime:%Y/%m/%d}"
