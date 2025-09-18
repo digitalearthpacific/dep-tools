@@ -57,10 +57,10 @@ def test_set_geometry_from_input(itempath, dataset):
     # test that we can set the geometry to what we want if necessary
     test_geometry = {"type": "Point", "coordinates": [0, 0]}
     test_dataset = dataset.assign_attrs(
+        stac_geometry=test_geometry,
         stac_properties={
             "datetime": "2020-01-01T12:00:00.123Z",
-            "proj:geometry": test_geometry,
-        }
+        },
     )
     stac_item = get_stac_item(
         itempath, "12,34", test_dataset, set_geometry_from_input=True

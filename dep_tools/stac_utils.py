@@ -123,8 +123,8 @@ def get_stac_item(
         **kwargs,
     )
     if set_geometry_from_input:
-        if "proj:geometry" in data.attrs["stac_properties"]:
-            item.geometry = data.attrs["stac_properties"]["proj:geometry"]
+        if "stac_geometry" in data.attrs:
+            item.geometry = data.attrs["stac_geometry"]
         else:
             warnings.warn(
                 "set_geometry_from_input=True, but no geometry found in 'stac_properties' attribute of input data, skipping."
@@ -187,9 +187,20 @@ def set_stac_properties(
 
 
 def copy_stac_properties(item: Item, ds: Dataset) -> Dataset:
-    """Copy item's properties to ds["stac_properties"], merging/updating any existing
-    values. Also sets `ds.attrs["stac_properties"]["start_datetime"]` and "end_datetime"
-    to item.properties["datetime"].
+    """Copy properties from an :class:`pystac.Item` to the attrs of an :class:`xarray.Dataset`.
+
+    Copy `item`'s properties to `ds["stac_properties"]`, merging/updating any existing
+    values. Sets `ds.attrs["stac_properties"]["start_datetime"]` and
+    `ds.attrs["stac_properties"]["end_datetime"]` to item.properties["datetime"].
+     Finally, `item.geometry` is copied to the `ds.attrs["stac_geometry"].
+
+    Args:
+        item: A STAC Item.
+        ds: An xarray Dataset.
+
+    Returns:
+        The input dataset with additional attributes as described above.
+
     """
     ds.attrs["stac_properties"] = (
         item.properties.copy()
@@ -205,6 +216,7 @@ def copy_stac_properties(item: Item, ds: Dataset) -> Dataset:
     ds.attrs["stac_properties"]["end_datetime"] = ds.attrs["stac_properties"][
         "datetime"
     ]
+    ds.attrs["stac_geometry"] = item.geometry
     return ds
 
 
