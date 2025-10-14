@@ -1,6 +1,6 @@
 from datetime import datetime
 import json
-from pathlib import Path
+import warnings
 
 import numpy as np
 from pandas import DataFrame
@@ -45,16 +45,44 @@ def get_stac_item(
     itempath: GenericItemPath,
     item_id: str,
     data: DataArray | Dataset,
-    collection_url_root: str = "https://stac.staging.digitalearthpacific.org/collections",
+    collection_url_root: str = "https://stac.staging.digitalearthpacific.io/collections",
+    set_geometry_from_input: bool = False,
     **kwargs,
-) -> Item | str:
+) -> Item:
+    """Create a STAC Item.
 
+    This is a wrapper around :func:`rio_stac.create_stac_item` which adds the folllowing
+    functionality:
+        - It copies information at the "stac_properties" attribute of `data` to the
+          properties of the output.
+        - If the kwargs include "with_raster=True" and `data` is an
+          :class:`xarray.Dataset`, raster information is created for each variable.
+        - The self href of the output is set, using `itempath.stac_path`.
+
+    Args:
+        itempath: The :class:`ItemPath` for the raster output.
+        item_id: The identifier passed to `itempath.path`.
+        data: The data for which this item is to be created. Anything at the
+            `stac_properties` attribute will be copied to the properties of
+            the output.
+        collection_url_root: The URL to the collections endpoint where this STAC Item
+            belongs.
+        set_geometry_from_input: Whether the geometry property should be copied from
+            the `stac_properties` attribute of `data`. If this property is missing,
+            a warning is emitted and nothing is set.
+        **kwargs: Additional arguments to :func:`rio_stac.create_stac_item`.
+
+    Returns:
+        A STAC Item.
+    """
     properties = {}
     if "stac_properties" in data.attrs:
+        # Copying properties or `create_stac_item` modifies them.
+        data_properties = data.attrs["stac_properties"].copy()
         properties = (
-            json.loads(data.attrs["stac_properties"].replace("'", '"'))
+            json.loads(data_properties.replace("'", '"'))
             if isinstance(data.attrs["stac_properties"], str)
-            else data.attrs["stac_properties"]
+            else data_properties
         )
 
     assets = {}
@@ -94,6 +122,13 @@ def get_stac_item(
         collection=collection,
         **kwargs,
     )
+    if set_geometry_from_input:
+        if "stac_geometry" in data.attrs:
+            item.geometry = data.attrs["stac_geometry"]
+        else:
+            warnings.warn(
+                "set_geometry_from_input=True, but no geometry found in 'stac_properties' attribute of input data, skipping."
+            )
 
     item.set_self_href(itempath.stac_path(item_id, absolute=True))
 
@@ -152,9 +187,20 @@ def set_stac_properties(
 
 
 def copy_stac_properties(item: Item, ds: Dataset) -> Dataset:
-    """Copy item's properties to ds["stac_properties"], merging/updating any existing
-    values. Also sets `ds.attrs["stac_properties"]["start_datetime"]` and "end_datetime"
-    to item.properties["datetime"].
+    """Copy properties from an :class:`pystac.Item` to the attrs of an :class:`xarray.Dataset`.
+
+    Copy `item`'s properties to `ds["stac_properties"]`, merging/updating any existing
+    values. Sets `ds.attrs["stac_properties"]["start_datetime"]` and
+    `ds.attrs["stac_properties"]["end_datetime"]` to item.properties["datetime"].
+     Finally, `item.geometry` is copied to the `ds.attrs["stac_geometry"].
+
+    Args:
+        item: A STAC Item.
+        ds: An xarray Dataset.
+
+    Returns:
+        The input dataset with additional attributes as described above.
+
     """
     ds.attrs["stac_properties"] = (
         item.properties.copy()
@@ -170,6 +216,7 @@ def copy_stac_properties(item: Item, ds: Dataset) -> Dataset:
     ds.attrs["stac_properties"]["end_datetime"] = ds.attrs["stac_properties"][
         "datetime"
     ]
+    ds.attrs["stac_geometry"] = item.geometry
     return ds
 
 

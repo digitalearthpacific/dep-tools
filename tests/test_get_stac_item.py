@@ -1,6 +1,8 @@
 from pathlib import Path
+from pystac import Item
 import pytest
 import rioxarray
+from xarray import Dataset
 
 from dep_tools.namers import GenericItemPath
 
@@ -12,8 +14,8 @@ DATA_DIR = Path(__file__).parent / "data"
 
 
 @pytest.fixture
-def stac_item():
-    local_itempath = GenericItemPath(
+def itempath() -> GenericItemPath:
+    return GenericItemPath(
         sensor="spysat",
         dataset_id="wofs",
         version="1.0.0",
@@ -21,11 +23,49 @@ def stac_item():
         zero_pad_numbers=False,
         full_path_prefix=str(DATA_DIR),
     )
-    tif = local_itempath.path("12,34", asset_name="wofs", absolute=True)
-    test_xr = rioxarray.open_rasterio(tif).to_dataset(name="wofs")
-    item = get_stac_item(itempath=local_itempath, item_id="12,34", data=test_xr)
 
+
+@pytest.fixture
+def dataset(itempath: GenericItemPath) -> Dataset:
+    tif = itempath.path("12,34", asset_name="wofs", absolute=True)
+    return rioxarray.open_rasterio(tif).to_dataset(name="wofs")
+
+
+@pytest.fixture
+def stac_item(itempath: GenericItemPath, dataset: Dataset) -> Item:
+    item = get_stac_item(itempath=itempath, item_id="12,34", data=dataset)
     return item
+
+
+def test_dont_set_geometry_from_input(stac_item):
+    # ensure the geometry is set from the data by default
+    assert stac_item.geometry == {
+        "type": "Polygon",
+        "coordinates": [
+            [
+                (178.419653974838, -18.27433771663508),
+                (178.73756194627958, -18.27433771663508),
+                (178.73756194627958, -17.97026123112962),
+                (178.419653974838, -17.97026123112962),
+                (178.419653974838, -18.27433771663508),
+            ]
+        ],
+    }
+
+
+def test_set_geometry_from_input(itempath, dataset):
+    # test that we can set the geometry to what we want if necessary
+    test_geometry = {"type": "Point", "coordinates": [0, 0]}
+    test_dataset = dataset.assign_attrs(
+        stac_geometry=test_geometry,
+        stac_properties={
+            "datetime": "2020-01-01T12:00:00.123Z",
+        },
+    )
+    stac_item = get_stac_item(
+        itempath, "12,34", test_dataset, set_geometry_from_input=True
+    )
+    assert stac_item.geometry == test_geometry
 
 
 def test_get_stac_item_properties(stac_item):
