@@ -1,4 +1,4 @@
-"""Loaders are things that load data."""
+"""ABC definition and implementation of Loader objects."""
 
 from abc import ABC, abstractmethod
 from typing import Any, Iterable

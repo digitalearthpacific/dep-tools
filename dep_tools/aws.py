@@ -1,4 +1,5 @@
 """Utility / helper functions for using Amazon S3 Storage."""
+
 import json
 from io import BytesIO
 from pathlib import Path
@@ -9,9 +10,8 @@ from botocore.client import BaseClient
 from fiona.io import MemoryFile
 from geopandas import GeoDataFrame
 from odc.geo.xr import to_cog
-from xarray import DataArray, Dataset
-
 from pystac import Item
+from xarray import DataArray, Dataset
 
 
 def object_exists(bucket: str, key: str, client: BaseClient | None = None) -> bool:
@@ -24,10 +24,10 @@ def object_exists(bucket: str, key: str, client: BaseClient | None = None) -> bo
 
     Returns:
         True if the object is in the bucket, otherwise False.
-        
+
     """
     if client is None:
-        client = boto3.client("s3")
+        client: BaseClient = boto3.client("s3")
 
     try:
         client.head_object(Bucket=bucket, Key=key)
@@ -50,7 +50,7 @@ def s3_dump(
 
     Returns:
         True if the operation was successful, otherwise False.
-        
+
     """
 
     r = client.put_object(Bucket=bucket, Key=key, Body=data, **kwargs)
@@ -91,7 +91,7 @@ def write_to_s3(
             :py:class:`xarray.Dataset`.
 
     Raises:
-        ValueError: 
+        ValueError:
     """
     if client is None:
         client = boto3.client("s3")
@@ -166,7 +166,7 @@ def write_stac_s3(
 
     Returns:
         The stac_path.
-        
+
     """
     item_string = json.dumps(item.to_dict(), indent=4)
     write_to_s3(
