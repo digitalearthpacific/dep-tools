@@ -16,7 +16,7 @@ from xarray import DataArray, Dataset, concat
 
 
 class Loader(ABC):
-    """A Loader loads data"""
+    """A base class for something that loads data based on input areas."""
 
     def __init__(self):
         pass
@@ -27,15 +27,16 @@ class Loader(ABC):
 
 
 class StacLoader(Loader):
+    """A loader which loads data based on items (e.g. STAC items) and areas."""
     @abstractmethod
     def load(self, items, areas) -> Any:
         pass
 
 
 class OdcLoader(StacLoader):
-    """OdcLoader is a wrapper around :func:`odc.stac.load`.
+    """A wrapper around :func:`odc.stac.load`.
 
-    In addition to allowing conformance to the :class:`Loader` paradigm, this
+    In addition to allowing conformance to the :class:`Loader` form, this
     class offers a number of convenience operations which compliment
     :func:`odc.stac.load`:
 

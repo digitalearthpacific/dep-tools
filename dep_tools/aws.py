@@ -65,7 +65,7 @@ def write_to_s3(
     overwrite: bool = True,
     use_odc_writer: bool = True,
     client: BaseClient | None = None,
-    s3_dump_kwargs=dict(),
+    s3_dump_kwargs: dict =dict(),
     **kwargs,
 ):
     """Writes a given object to s3.

@@ -19,12 +19,12 @@ def cloud_mask(
     Args:
         xr: An xarray object containing Landsat data, including the `qa_pixel` band.
         filters: List of filters to apply to the cloud mask. Each filter is a tuple of
-            (filter name, filter size). Valid filter names are 'opening' and 'dilation'.
-            If None, no filters will be applied.
-            For example: [("closing", 10),("opening", 2),("dilation", 2)]
+            (filter name, filter size). Valid filter names are `'opening'` and 
+            `'dilation'`. If `None`, no filters will be applied.
+            For example: `[("closing", 10),("opening", 2),("dilation", 2)]`.
 
     Returns:
-        The cloud mask defined by the `qa_pixel` band, with optional filters applied.
+        The cloud mask defined by the `'qa_pixel'` band, with optional filters applied.
 
     """
     CLOUD = 3
@@ -58,7 +58,7 @@ def mask_clouds(
         filters: List of filters to apply to the cloud mask. Each filter is a tuple of
             (filter name, filter size). Valid filter names are 'opening' and 'dilation'.
             If None, no filters will be applied.
-            For example: [("closing", 10),("opening", 2),("dilation", 2)]
+            For example: `[("closing", 10),("opening", 2),("dilation", 2)]`.
         keep_ints: If True, return the masked data as integers. Otherwise, return
             the masked data as floats.
 
@@ -79,7 +79,7 @@ def landsat_grid() -> GeoDataFrame:
     Territories as defined by GADM.
 
     Returns:
-        A GeoDataFrame, indexed by "PATH" & "ROW".
+        A GeoDataFrame, indexed by `'PATH'` & `'ROW'`.
     """
     ls_grid_path = Path(__file__).parent / "landsat_grid.gpkg"
     if not ls_grid_path.exists():
@@ -101,11 +101,11 @@ def _pathrows() -> GeoDataFrame:
 
 
 def read_pathrows_file() -> list[Tuple[int, ...]]:
-    """Read list of pathrows containing land within DE Pacific aoi from a file and return
-    them as a list of tuples.
+    """Read list of pathrows containing land within the Digital Earth Pacific aoi
+    from a file and return them as a list of tuples.
 
     Returns:
-        A list of tuples with values (PATH, ROW).
+        A list of tuples of the form `(<path>, <row>)`.
     """
     cwd = os.path.dirname(os.path.abspath(__file__))
     pathrows_file = os.path.join(cwd, "pathrows.txt")
@@ -150,10 +150,10 @@ def items_in_pathrows(
 
     Args:
         items: A :py:class:`pystac.ItemCollection`. The Landsat pathrow of each
-            item is identified by the properties `landsat:wrs_path` and
-            `landsat:wrs_row`.
+            item is identified by the properties `'landsat:wrs_path'` and
+            `'landsat:wrs_row'`.
         some_pathrows:
-            The Landsat pathrows of interest. The columns "PATH" and "ROW", containing
+            The Landsat pathrows of interest. The columns `'PATH'` and `'ROW'`, containing
             integer or string values are used to identify the pathrows.
 
     Returns:
@@ -181,7 +181,7 @@ def pathrow_with_greatest_area(shapes: GeoDataFrame) -> Tuple[str, str]:
             multipolygons.
 
     Returns:
-        A tuple of the form (<path>, <row>), indicating the Landsat pathrow
+        A tuple of the form `(<path>, <row>)`, indicating the Landsat pathrow
         with the greatest overlap.
     """
     pathrows = _pathrows()

@@ -1,4 +1,4 @@
-"""ABC and implementation of various "Namer" objects, which are used to
+"""ABC and implementation of various :class:`Namer` objects, which are used to
 define paths for output data and accompanying files, such as STAC Items.
 """
 
@@ -22,21 +22,7 @@ class ItemPath(ABC):
 
 
 class GenericItemPath(ItemPath):
-    """A GenericItemPath represents a path on a network or local drive.
-
-    Attributes:
-        sensor: The satellite sensor, typically "ls" for Landsat or "s2"
-            for Sentinel-2.
-        dataset_id: The identifier for this product, such as "geomad".
-        version: A version identified.
-        time: A time, such as "2012".
-        prefix: The prefix for the product, typically representing the
-            data producer, such as "dep" for Digital Earth Pacific.
-        zero_pad_numbers: Whether to pad numbers in the item id (see below)
-            to three digits.
-        full_path_prefix: Something to put at the beginning of the full path
-            representation of the path, such as "/home/".
-    """
+    """A GenericItemPath represents a path on a network or local drive."""
 
     def __init__(
         self,
@@ -48,6 +34,20 @@ class GenericItemPath(ItemPath):
         zero_pad_numbers: bool = True,
         full_path_prefix: str | Path | None = None,
     ):
+        """
+        Args:
+            sensor: The satellite sensor, typically "ls" for Landsat or "s2"
+                for Sentinel-2.
+            dataset_id: The identifier for this product, such as "geomad".
+            version: A version identified.
+            time: A time, such as "2012".
+            prefix: The prefix for the product, typically representing the
+                data producer, such as "dep" for Digital Earth Pacific.
+            zero_pad_numbers: Whether to pad numbers in the item id (see below)
+                to three digits.
+            full_path_prefix: Something to put at the beginning of the full path
+                representation of the path, such as "/home/".
+        """
         self.sensor = sensor
         self.dataset_id = dataset_id
         self.version = version
@@ -90,7 +90,7 @@ class GenericItemPath(ItemPath):
 
         Args:
             item_id: The item id. If a list, items are converted to string, optionally
-                zero-padded (according to the class value for `zero_pad_numbers`),
+                zero-padded (according to the class parameter `zero_pad_numbers`),
                 and joined using an underscore. Otherwise, the value is used directly.
 
         Returns:
@@ -170,7 +170,6 @@ class S3ItemPath(GenericItemPath):
     Attributes:
         bucket: The name of the bucket.
     """
-
     def __init__(
         self,
         bucket: str,
@@ -207,13 +206,9 @@ class DailyItemPath(S3ItemPath):
     is a datetime parseable by datetime.datetime.fromisoformat.
     Folders will have format YYYY/mm/dd, and stems will have dates in the
     format YYYY-mm-dd.
-    Example: a time value of "2025-06-13 15:56:54.012509"
+    Example: a time value of `"2025-06-13 15:56:54.012509"`
     would produce
     dep_ls_wofl/99/77/2025/06/13/dep_ls_wofl_99_77_2025-06-13.tif
-
-    Args:
-        time: The time.
-        **kwargs: Additonal arguments to :py:class:`S3ItemPath`.
     """
 
     def __init__(self, time: str | datetime, **kwargs):
@@ -221,6 +216,11 @@ class DailyItemPath(S3ItemPath):
         self.datetime = (
             datetime.fromisoformat(time) if not isinstance(time, datetime) else time
         )
+    """
+        Args:
+            time: The time.
+            **kwargs: Additonal arguments to :py:class:`S3ItemPath`.
+    """
 
     def _folder(self, item_id) -> str:
         return f"{self._folder_prefix}/{self._format_item_id(item_id)}/{self.datetime:%Y/%m/%d}"
