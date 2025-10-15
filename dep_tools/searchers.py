@@ -1,3 +1,5 @@
+"""This module contains the definition and implementation of :class:`Searcher` objects."""
+
 import warnings
 from abc import ABC, abstractmethod
 
@@ -12,7 +14,7 @@ from dep_tools.utils import fix_bad_epsgs, remove_bad_items, search_across_180
 
 
 class Searcher(ABC):
-    """An abstract base class which searches for something based on an area."""
+    """An onbject which searches for something, based on an area."""
 
     def __init__(self):
         pass
@@ -23,26 +25,6 @@ class Searcher(ABC):
 
 
 class PystacSearcher(Searcher):
-    """A Searcher which searches for stac items using pystac_client.Client.search.
-
-    Fixes include correctly searching across the antimeridian by splitting the
-    bounding box of the target area on either side and removal of known "bad"
-    stac items (using dep_tools.utils.remove_bad_items).
-
-    This is written to be used with the :class:`Task` framework. If you just
-    want to search for stac items and handle the antimeridian correctly, use
-    :func:`dep_tools.utils.search_across_180`.
-
-    Args:
-        catalog: The URL of a stac catalog. if client is specified, this is
-            ignored.
-        client: A search client. Either this or catalog must be specified.
-        raise_empty_collection_error: Whether an EmptyCollectionError exception
-            should be returned if no stac items are found.
-        **kwargs: Additional arguments passed to client.search(). For example,
-            passing `collections=["sentinel-2-l2a"]` will restrict results to
-            Sentinel 2 stac items.
-    """
 
     def __init__(
         self,
@@ -51,6 +33,26 @@ class PystacSearcher(Searcher):
         raise_empty_collection_error: bool = True,
         **kwargs,
     ):
+        """A Searcher which searches for stac items using pystac_client.Client.search.
+
+        Fixes include correctly searching across the antimeridian by splitting the
+        bounding box of the target area on either side and removal of known "bad"
+        stac items (using dep_tools.utils.remove_bad_items).
+
+        This is written to be used with the :class:`Task` framework. If you just
+        want to search for stac items and handle the antimeridian correctly, use
+        :func:`dep_tools.utils.search_across_180`.
+
+        Args:
+            catalog: The URL of a stac catalog. if client is specified, this is
+                ignored.
+            client: A search client. Either this or catalog must be specified.
+            raise_empty_collection_error: Whether an EmptyCollectionError exception
+                should be returned if no stac items are found.
+            **kwargs: Additional arguments passed to client.search(). For example,
+                passing `collections=["sentinel-2-l2a"]` will restrict results to
+                Sentinel 2 stac items.
+        """
         if client and catalog:
             warnings.warn(
                 "Arguments for both 'client' and 'catalog' passed to PystacSearcher, ignoring catalog"
@@ -87,30 +89,6 @@ class PystacSearcher(Searcher):
 
 
 class LandsatPystacSearcher(PystacSearcher):
-    """A PystacSearcher with special functionality for landsat data on the
-    MSPC. Currently it overwrites any `query` kwarg, so if you want a direct
-    query, just use :class:PystacSearcher.
-
-    Args:
-        catalog: The URL of a stac catalog. if client is specified, this is
-            ignored.
-        client: A search client. Either this or catalog must be specified.
-        raise_empty_collection_error: Whether an EmptyCollectionError exception should
-            be returned if no stac items are found.
-        search_intersecting_pathrows: Whether to use landsat pathrows which
-            intersect the area passed to :func:search rather than the area itself.
-            This is a workaround for bad geometry in some stac items which
-            cross the antimeridian.
-        exclude_platforms: A list of platforms (e.g. ["landsat-7"]) to exclude
-            from searching.
-        only_tier_one: Whether to only search for tier one landsat data.
-        fall_back_to_tier_two: If `only_tier_one` is set to True and no items
-            are returned from the search, search again with tier two data
-            included.
-        **kwargs: Additional arguments passed to client.search(). `collections`
-            and `query` arguments will be overwritten.
-    """
-
     def __init__(
         self,
         catalog: str | None = None,
@@ -123,6 +101,29 @@ class LandsatPystacSearcher(PystacSearcher):
         fall_back_to_tier_two: bool = False,
         **kwargs,
     ):
+        """A PystacSearcher with special functionality for landsat data on the
+        MSPC. Currently it overwrites any `query` kwarg, so if you want a direct
+        query, just use :class:PystacSearcher.
+
+        Args:
+            catalog: The URL of a stac catalog. if client is specified, this is
+                ignored.
+            client: A search client. Either this or catalog must be specified.
+            raise_empty_collection_error: Whether an EmptyCollectionError exception should
+                be returned if no stac items are found.
+            search_intersecting_pathrows: Whether to use landsat pathrows which
+                intersect the area passed to :func:search rather than the area itself.
+                This is a workaround for bad geometry in some stac items which
+                cross the antimeridian.
+            exclude_platforms: A list of platforms (e.g. ["landsat-7"]) to exclude
+                from searching.
+            only_tier_one: Whether to only search for tier one landsat data.
+            fall_back_to_tier_two: If `only_tier_one` is set to True and no items
+                are returned from the search, search again with tier two data
+                included.
+            **kwargs: Additional arguments passed to client.search(). `collections`
+                and `query` arguments will be overwritten.
+        """
         super().__init__(
             catalog=catalog,
             client=client,
@@ -157,6 +158,17 @@ class LandsatPystacSearcher(PystacSearcher):
         self._kwargs["query"] = query
 
     def search(self, area: GeoDataFrame):
+        """Perform the search.
+
+        Args:
+            area: Any area.
+
+        Returns:
+            An ItemCollection.
+
+        Raises:
+            EmptyCollectionError: If the search finds no items.
+        """
         search_area = (
             pathrows_in_area(area) if self._search_intersecting_pathrows else area
         )

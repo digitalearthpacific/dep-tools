@@ -1,3 +1,5 @@
+"""This module contains classes and functions to aid in STAC Item creation."""
+
 from datetime import datetime
 import json
 import warnings
@@ -23,6 +25,16 @@ class StacCreator(Processor):
         collection_url_root: str = "https://stac.staging.digitalearthpacific.io/collections",
         **kwargs,
     ):
+        """A :class:`Processor` which creates STAC Items.
+
+        This is a wrapper around :func:`get_stac_item`.
+
+        Args:
+            itempath: A :class:`GenericItemPath` used to identify the output.
+            collection_url_root: The collections endpoint of the target STAC
+                catalog.
+            **kwargs: Additional arguments to :func:`get_stac_item`.
+        """
         self._itempath = itempath
         self._collection_url_root = collection_url_root
         self._kwargs = kwargs
@@ -53,11 +65,12 @@ def get_stac_item(
 
     This is a wrapper around :func:`rio_stac.create_stac_item` which adds the folllowing
     functionality:
-        - It copies information at the "stac_properties" attribute of `data` to the
-          properties of the output.
-        - If the kwargs include "with_raster=True" and `data` is an
-          :class:`xarray.Dataset`, raster information is created for each variable.
-        - The self href of the output is set, using `itempath.stac_path`.
+
+    - It copies information at the "stac_properties" attribute of `data` to the
+      properties of the output.
+    - If the kwargs include "with_raster=True" and `data` is an
+      :class:`xarray.Dataset`, raster information is created for each variable.
+    - The self href of the output is set, using `itempath.stac_path`.
 
     Args:
         itempath: The :class:`ItemPath` for the raster output.
@@ -136,12 +149,29 @@ def get_stac_item(
 
 
 def write_stac_local(item: Item, stac_path: str) -> None:
+    """Writes a STAC Item to a local file.
+
+    The item is converted to json with appropriate indentation.
+
+    Args:
+        item: A STAC Item.
+        stac_path: The output path.
+    """
     with open(stac_path, "w") as f:
         json.dump(item.to_dict(), f, indent=4)
 
 
 def existing_stac_items(possible_ids: list, itempath: S3ItemPath) -> list:
-    """Returns only those ids which have an existing stac item."""
+    """Return the list of input IDs which have an existing STAC Item.
+
+    Args:
+        possible_ids: Identifiers, each passed as the first argument
+            to `itempath.stac_path`.
+        itempath: The S3ItemPath which identifies the STAC Items to compare.
+
+    Returns:
+        A list of IDs, filtered to those for which a STAC Item already exists.
+    """
     return [
         id
         for id in possible_ids
@@ -151,7 +181,14 @@ def existing_stac_items(possible_ids: list, itempath: S3ItemPath) -> list:
 
 def remove_items_with_existing_stac(grid: DataFrame, itempath: S3ItemPath) -> DataFrame:
     """Filter a dataframe to only include items which don't have an existing stac output.
-    The dataframe must have an index which corresponds to ids for the given itempath.
+
+    Args:
+        grid: A DataFram, whose index corresponds to ids for the given itempath.
+        itempath: The :class:`S3ItemPath` used to identify Items.
+
+    Returns:
+        The input :class:`DataFrame`, only including rows which don't already
+        have a STAC Item (as identified by the dataframe index).
     """
     return grid[~grid.index.isin(existing_stac_items(list(grid.index), itempath))]
 
@@ -159,12 +196,21 @@ def remove_items_with_existing_stac(grid: DataFrame, itempath: S3ItemPath) -> Da
 def set_stac_properties(
     input_xr: DataArray | Dataset, output_xr: DataArray | Dataset
 ) -> Dataset | DataArray:
-    """Sets an attribute called "stac_properties" in the output which is a
+    """Set the `"stac_properties"` attribute of an Xarray object based on another.
+
+    Sets an attribute called `"stac_properties"` in the output which is a
     dictionary containing the following properties for use in stac writing:
-    "start_datetime", "end_datetime", "datetime", and "created". These are
+    `"start_datetime"`, `"end_datetime"`, `"datetime"`, and `"created"`. These are
     set from the input_xr.time coordinate. Typically, `input_xr` would be
     an array of EO data (e.g. Landsat) containing data over a range of
     dates (such as a year).
+
+    Args:
+        input_xr: The object whose `time` coordinate is used.
+        output_xr: The object whose properties are set.
+
+    Returns:
+        `output_xr` with the `"stac_properties"` attribute set as described.
     """
     start_datetime = np.datetime_as_string(
         np.datetime64(input_xr.time.min().values, "Y"), unit="ms", timezone="UTC"
@@ -191,8 +237,8 @@ def copy_stac_properties(item: Item, ds: Dataset) -> Dataset:
 
     Copy `item`'s properties to `ds["stac_properties"]`, merging/updating any existing
     values. Sets `ds.attrs["stac_properties"]["start_datetime"]` and
-    `ds.attrs["stac_properties"]["end_datetime"]` to item.properties["datetime"].
-     Finally, `item.geometry` is copied to the `ds.attrs["stac_geometry"].
+    `ds.attrs["stac_properties"]["end_datetime"]` to `item.properties["datetime"]`.
+    Finally, `item.geometry` is copied to the `ds.attrs["stac_geometry"]`.
 
     Args:
         item: A STAC Item.
@@ -223,12 +269,12 @@ def copy_stac_properties(item: Item, ds: Dataset) -> Dataset:
 def use_alternate_s3_href(modifiable: pystac_client.Modifiable) -> None:
     """Fixes the urls in the official USGS Landsat Stac Server
     (https://landsatlook.usgs.gov/stac-server) so the alternate (s3)
-    urls are used. Can be used like
+    urls are used. Can be used like::
 
-    client = pystac_client.Client.open(
-        "https://landsatlook.usgs.gov/stac-server",
-        modifier=use_alternate_s3_href,
-    )
+        client = pystac_client.Client.open(
+            "https://landsatlook.usgs.gov/stac-server",
+            modifier=use_alternate_s3_href,
+        )
 
     Modifies in place, according to best practices from
     https://pystac-client.readthedocs.io/en/stable/usage.html#automatically-modifying-results.

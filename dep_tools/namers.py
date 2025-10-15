@@ -1,4 +1,4 @@
-"""ABC and implementation of various :class:`Namer` objects, which are used to
+"""Base class and implementation of :class:`Namer` objects, which are used to
 define paths for output data and accompanying files, such as STAC Items.
 """
 

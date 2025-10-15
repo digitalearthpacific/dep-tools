@@ -27,7 +27,7 @@ class Loader(ABC):
 
 
 class StacLoader(Loader):
-    """A loader which loads data based on items (e.g. STAC items) and areas."""
+    """A loader which loads data based on (STAC) items and areas."""
     @abstractmethod
     def load(self, items, areas) -> Any:
         pass
@@ -41,9 +41,10 @@ class OdcLoader(StacLoader):
     :func:`odc.stac.load`:
 
         - If the data is loaded as floating point, any nodata values (as defined
-          by `data.attrs["nodata"]`) are set to NaN, and the attribute is set
-          to NaN.
-        - The nodata value is also set to be accessed rioxarray accessor (`.rio.nodata`).
+          by the `"nodata"` attribute of the loaded data) are set to NaN, and 
+          the attribute itself is reset to NaN.
+        - The nodata value is also set to be accessed via the 
+          rioxarray accessor (`.rio.nodata`).
 
     Args:
         load_as_dataset: If False, load as a DataArray with each variable in the
@@ -70,20 +71,20 @@ class OdcLoader(StacLoader):
         """Load STAC Items into an xarray object.
 
         If `nodata` is passed as a kwarg on initialization, or the stac item
-        contains the nodata value, xr[variable].nodata will be set on load.
+        contains the nodata value, `xr[variable].nodata` will be set on load.
 
         Args:
             items: The items to load.
-            areas: If `clip_to_areas` is True, the output is clipped to these areas.
+            areas: If `clip_to_areas` is `True`, the output is clipped to these areas.
 
         Returns:
             If `load_to_dataset` is True on initialization, a :class:`xarray.Dataset`
             is returned. Otherwise a :class:`xarray:DataArray` is returned, with
-            variables set on the "band" dimension.
+            variables set on the `"band"` dimension.
 
 
         Raises:
-            ValueError: If `areas` is a GeoBox and `clip_to_areas` is set.
+            ValueError: If `areas` is a GeoBox and `clip_to_areas` is set to `True`.
         """
         if isinstance(areas, GeoDataFrame):
             load_geometry = dict(geopolygons=areas)

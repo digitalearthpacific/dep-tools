@@ -1,3 +1,5 @@
+"""This module contains useful functions for working with Sentinel-2 data."""
+
 import datetime
 from typing import Iterable, Tuple
 
@@ -11,6 +13,26 @@ def mask_clouds(
     keep_ints: bool = False,
     return_mask: bool = False,
 ) -> DataArray:
+    """Mask Sentinel-2 data using the `"SCL"` band, with optional filters.
+
+    The following classes are masked:
+        - `"SATURATED_OR_DEFECTIVE"` (SCL value 1)
+        - `"CLOUD_SHADOWS"` (3)
+        - `"CLOUD_MEDIUM_PROBABILITY"` (8)
+        - `"CLOUD_HIGH_PROBABILITY"` (9)
+        - `"THIN_CIRRUS"` (10)
+
+    Args:
+        xr: Input Sentinel-2 data.
+        filters: Filters to apply, passed to :func:`odc.algo.mask_cleanup`.
+        keep_ints: If True, data is kept as input (typically integer) data
+            type, and masking is performed using :func:`odc.algo.erase_bad`.
+        return_mask: Whether to return the mask itself along with the data.
+
+    Returns:
+        If `return_mask` is `False`, the input data is returned, with the
+        specified masking applied, If `True`, then a tuple of `(<data>, <mask>)`.
+    """
     # NO_DATA = 0
     SATURATED_OR_DEFECTIVE = 1
     # DARK_AREA_PIXELS = 2
