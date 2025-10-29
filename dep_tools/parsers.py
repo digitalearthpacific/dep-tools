@@ -32,18 +32,35 @@ the parameter must have a name and a value.
 """
 
 
+<<<<<<< Updated upstream
 def datetime_parser(datetime: str) -> list[str]:
     """Parse a string in the format <year> or <year 1>_<year 2>. If a
     single year, it is returned as a single item list. Otherwise a generator
     producing integer values in the range [year1, year2 + 1] is returned.
-    """
-    years = datetime.split("_")
-    if len(years) == 2:
-        years = [str(year) for year in range(int(years[0]), int(years[1]) + 1)]
-    elif len(years) > 2:
-        ValueError(f"{datetime} is not a valid value for --datetime")
-    return years
+=======
+def datetime_parser(datetime: str, splitter: str = "_") -> list[str]:
+    """Parse a string representing a year or multiple years.
 
+    Args:
+        datetime: A string of the format `'<year>'` or 
+            `'<year x>`splitter`<year y>'`. If the latter, the 
+            years must be in ascending order.
+
+    Returns: 
+        If `datetime` is a single year, it is returned as a single item list.
+        Otherwise a generator producing integer values in the range 
+        `[<year x>, <year y> + 1]` is returned.
+>>>>>>> Stashed changes
+    """
+    if splitter in datetime:
+        years = datetime.split(splitter)
+        if len(years) == 2:
+            years = range(int(years[0]), int(years[1]) + 1)
+        elif len(years) > 2:
+            ValueError(f"{datetime} is not a valid value for datetime")
+        return [str(y) for y in years]
+    else:
+        return [datetime]
 
 def bool_parser(raw: str) -> bool:
     """Convert the input string into a boolean, which is False if the input is
