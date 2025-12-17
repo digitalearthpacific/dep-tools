@@ -16,11 +16,12 @@ from .utils import scale_and_offset, scale_to_int16
 class Processor(ABC):
     """A Processor converts input data to output data.
 
-    Args: 
+    Args:
         send_area_to_processor: Whether to send the input area
             (typically used by a loader to load appropriate data)
             to the processor.
     """
+
     def __init__(self, send_area_to_processor: bool = False):
         self.send_area_to_processor = send_area_to_processor
 
@@ -48,17 +49,17 @@ class LandsatProcessor(Processor):
         Landsat data
 
         Args:
-            scale_and_offset: 
+            scale_and_offset:
                 Whether to scale and offset the input data.
                 Landsat data is typically stored in 16-bit integers, this applies
                 the standard scale and offset values to each band for surface
                 reflectance data and (as a side effect) converts the data type
                 to floating point.
-            mask_clouds: 
-                Whether to mask_clouds, 
+            mask_clouds:
+                Whether to mask_clouds,
                 using :func:`dep_tools.landsat_utils.mask_clouds_landsat`.
-            mask_clouds_kwargs: 
-                Additional arguments to 
+            mask_clouds_kwargs:
+                Additional arguments to
                 :func:`dep_tools.landsat_utils.mask_clouds_landsat`.
         """
         super().__init__(send_area_to_processor)
@@ -74,7 +75,7 @@ class LandsatProcessor(Processor):
                 class, input should be Landsat surface reflectance data,
                 typically with the `"QA_PIXEL"` band as well.
         Returns:
-            The input data, optionally with clouds masked and/or scale and 
+            The input data, optionally with clouds masked and/or scale and
             offset applied.
         """
         if self.mask_clouds:
@@ -106,17 +107,17 @@ class S2Processor(Processor):
         Sentinel-2 data.
 
         Args:
-            scale_and_offset: 
+            scale_and_offset:
                 Whether to scale and offset the input data.
                 Landsat data is typically stored in 16-bit integers, this applies
                 the standard scale and offset values to each band for surface
                 reflectance data and (as a side effect) converts the data type
                 to floating point.
-            mask_clouds: 
-                Whether to mask_clouds, 
+            mask_clouds:
+                Whether to mask_clouds,
                 using :func:`dep_tools.s2_utils.mask_clouds`.
-            mask_clouds_kwargs: 
-                Additional arguments to 
+            mask_clouds_kwargs:
+                Additional arguments to
                 :func:`dep_tools.s2_utils.mask_clouds`.
         """
         super().__init__(send_area_to_processor)
@@ -129,10 +130,10 @@ class S2Processor(Processor):
 
         Args:
             xr: Any input data, but to benefit from the functionality of this
-                class, input should be Sentinel-2 data, typically including the 
+                class, input should be Sentinel-2 data, typically including the
                 `"SCL"` band.
         Returns:
-            The input data, optionally with clouds masked and/or scale and 
+            The input data, optionally with clouds masked and/or scale and
             offset applied.
         """
         if self.mask_clouds:

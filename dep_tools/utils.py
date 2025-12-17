@@ -84,7 +84,7 @@ def get_logger(prefix: str, name: str) -> Logger:
 
     Returns:
         A :class:Logger:.
-        
+
     """
     console = StreamHandler()
     time_format = "%Y-%m-%d %H:%M:%S"
@@ -138,8 +138,8 @@ def bbox_across_180(region: GeoDataFrame | GeoBox) -> BBOX | tuple[BBOX, BBOX]:
         region: The region of interest.
 
     Returns:
-        A list of floats, or a two-tuple containing lists of floats. 
-        
+        A list of floats, or a two-tuple containing lists of floats.
+
     """
     if isinstance(region, GeoBox):
         geometry = region.geographic_extent.geom
@@ -231,10 +231,10 @@ def search_across_180(
     """Conduct a STAC search that handles data crossing the antimeridian correctly.
 
     Sometimes search results that cross the antimeridian will make the output data
-    span the globe when loaded by e.g. :func:`odc.stac.load`. This works by first 
+    span the globe when loaded by e.g. :func:`odc.stac.load`. This works by first
     calling :func:`bbox_across_180`, and then searching within each bounding box
     and combining the results if there is more than one.
-    
+
     Args:
         region: A GeoDataFrame.
         **kwargs: Arguments besides `bbox` and `intersects` passed to
@@ -279,7 +279,7 @@ def copy_attrs(
     Returns:
         The destination object, with source attributes, encoding, and nodata value
         set.
-        
+
     """
     if isinstance(destination, DataArray):
         destination.rio.write_crs(source.rio.crs, inplace=True)
@@ -296,7 +296,7 @@ def scale_and_offset(
     da: DataArray | Dataset,
     scale: List[float] = [1],
     offset: float = 0,
-    keep_attrs: bool=True,
+    keep_attrs: bool = True,
 ) -> DataArray | Dataset:
     """Applies a scale and offset to data.
 
@@ -312,7 +312,7 @@ def scale_and_offset(
     Returns:
         The input data, with scale and offset applied.
     """
-        
+
     output = da * scale + offset
     if keep_attrs:
         output = copy_attrs(da, output)
@@ -443,8 +443,8 @@ def remove_bad_items(item_collection: ItemCollection) -> ItemCollection:
     """Remove some error-causing STAC Items from an item collection.
 
     Remove really bad items which clobber processes even if `fail_on_error` is
-    set to False for :func:`odc.stac.load` or the equivalent for 
-    :func:`stackstac.stack`. 
+    set to False for :func:`odc.stac.load` or the equivalent for
+    :func:`stackstac.stack`.
     See https://github.com/microsoft/PlanetaryComputer/discussions/101
 
     Args:

@@ -55,7 +55,7 @@ def gadm() -> GeoDataFrame:
 
     Returns:
         A GeoDataFrame
-        
+
     """
     if not GADM_FILE.exists() or not GADM_UNION_FILE.exists():
         all_polys = pd.concat(
@@ -79,7 +79,7 @@ def gadm_union() -> GeoDataFrame:
 
     Returns:
         A GeoDataFrame.
-        
+
     """
     if not GADM_UNION_FILE.exists():
         gadm()
@@ -92,7 +92,7 @@ def get_tiles(
     country_codes: list[str] | None = None,
     buffer_distance: int | float | None = None,
 ) -> Iterator[tuple[tuple[int, int], GeoBox]]:
-    """ Returns a list of tile IDs for the Pacific region, optionally filtered 
+    """Returns a list of tile IDs for the Pacific region, optionally filtered
     by country code.
 
     Args:
@@ -102,7 +102,7 @@ def get_tiles(
         buffer_distance: As for :py:func:`grid`.
 
     Returns:
-        
+
 
     Raises:
         ValueError: If country codes are not in :py:const:`COUNTRIES_AND_CODES`.

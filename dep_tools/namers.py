@@ -170,6 +170,7 @@ class S3ItemPath(GenericItemPath):
     Attributes:
         bucket: The name of the bucket.
     """
+
     def __init__(
         self,
         bucket: str,
@@ -216,6 +217,7 @@ class DailyItemPath(S3ItemPath):
         self.datetime = (
             datetime.fromisoformat(time) if not isinstance(time, datetime) else time
         )
+
     """
         Args:
             time: The time.

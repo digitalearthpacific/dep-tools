@@ -28,6 +28,7 @@ class Loader(ABC):
 
 class StacLoader(Loader):
     """A loader which loads data based on (STAC) items and areas."""
+
     @abstractmethod
     def load(self, items, areas) -> Any:
         pass
@@ -41,9 +42,9 @@ class OdcLoader(StacLoader):
     :func:`odc.stac.load`:
 
         - If the data is loaded as floating point, any nodata values (as defined
-          by the `"nodata"` attribute of the loaded data) are set to NaN, and 
+          by the `"nodata"` attribute of the loaded data) are set to NaN, and
           the attribute itself is reset to NaN.
-        - The nodata value is also set to be accessed via the 
+        - The nodata value is also set to be accessed via the
           rioxarray accessor (`.rio.nodata`).
 
     Args:

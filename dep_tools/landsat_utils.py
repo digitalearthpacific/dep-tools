@@ -19,7 +19,7 @@ def cloud_mask(
     Args:
         xr: An xarray object containing Landsat data, including the `qa_pixel` band.
         filters: List of filters to apply to the cloud mask. Each filter is a tuple of
-            `(<filter name>, <filter size>)`. Valid filter names are `'opening'` and 
+            `(<filter name>, <filter size>)`. Valid filter names are `'opening'` and
             `'dilation'`. If `None`, no filters will be applied.
             For example: `[("closing", 10),("opening", 2),("dilation", 2)]`.
 

@@ -40,9 +40,9 @@ def datetime_parser(datetime: str) -> list[str]:
         datetime: A string of the format `'<year>'` or `'<year x>_<year y>'`.
             If the latter, the years must be in order.
 
-    Returns: 
+    Returns:
         If `datetime` is a single year, it is returned as a single item list.
-        Otherwise a generator producing integer values in the range 
+        Otherwise a generator producing integer values in the range
         `[<year x>, <year y> + 1]` is returned.
     """
     years = datetime.split("_")
@@ -59,7 +59,7 @@ def bool_parser(raw: str) -> bool:
     Args:
         raw: Either "False" or something else.
 
-    Returns: 
+    Returns:
         False if `raw` is `"False"'` and true otherwise.
     """
     return False if raw == "False" else True
