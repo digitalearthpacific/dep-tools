@@ -122,7 +122,7 @@ class AwsDsCogWriter(DsCogWriter):
 
 class LocalDsCogWriter(DsCogWriter):
     """A :class:`DsCogWriter` which writes to local storage using
-    :func:`dep_tools.utils.write_to_local_storage."""
+    :func:`dep_tools.utils.write_to_local_storage`."""
 
     def __init__(self, **kwargs):
         super().__init__(

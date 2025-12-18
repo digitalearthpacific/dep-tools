@@ -16,14 +16,15 @@ def mask_clouds(
     """Mask Sentinel-2 data using the `"SCL"` band, with optional filters.
 
     The following classes are masked:
-        - `"SATURATED_OR_DEFECTIVE"` (SCL value 1)
-        - `"CLOUD_SHADOWS"` (3)
-        - `"CLOUD_MEDIUM_PROBABILITY"` (8)
-        - `"CLOUD_HIGH_PROBABILITY"` (9)
-        - `"THIN_CIRRUS"` (10)
+        - `"SATURATED_OR_DEFECTIVE"` (SCL = 1)
+        - `"CLOUD_SHADOWS"` (SCL = 3)
+        - `"CLOUD_MEDIUM_PROBABILITY"` (SCL = 8)
+        - `"CLOUD_HIGH_PROBABILITY"` (SCL = 9)
+        - `"THIN_CIRRUS"` (SCL = 10)
 
     Args:
-        xr: Input Sentinel-2 data.
+        xr: Input Sentinel-2 data including, at least, a variable called
+            "scl", which contains the scene classification band.
         filters: Filters to apply, passed to :func:`odc.algo.mask_cleanup`.
         keep_ints: If True, data is kept as input (typically integer) data
             type, and masking is performed using :func:`odc.algo.erase_bad`.
@@ -71,8 +72,8 @@ def mask_clouds(
 
 
 def harmonize_to_old(data: DataArray) -> DataArray:
-    """
-    Harmonize new Sentinel-2 data to the old baseline.
+    """Harmonize new Sentinel-2 data to the old baseline.
+
     Inspired by https://planetarycomputer.microsoft.com/dataset/sentinel-2-l2a#Baseline-Change
 
     Parameters

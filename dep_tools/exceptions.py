@@ -1,5 +1,9 @@
 class EmptyCollectionError(Exception):
-    """Raised when a STAC search returns and empty :py:class:`pystac.ItemCollection`."""
+    """Indicates an empty collection.
+
+    Typically raised when a STAC search returns an empty
+    :py:class:`pystac.ItemCollection`.
+    """
 
     pass
 

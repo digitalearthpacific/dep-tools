@@ -8,7 +8,6 @@ Submodules
    :maxdepth: 4
 
    dep_tools.aws
-   dep_tools.azure
    dep_tools.exceptions
    dep_tools.grids
    dep_tools.landsat_utils

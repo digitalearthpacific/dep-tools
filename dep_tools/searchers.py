@@ -14,7 +14,7 @@ from dep_tools.utils import fix_bad_epsgs, remove_bad_items, search_across_180
 
 
 class Searcher(ABC):
-    """An onbject which searches for something, based on an area."""
+    """An object which searches for something, based on an area."""
 
     def __init__(self):
         pass

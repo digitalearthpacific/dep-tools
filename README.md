@@ -1,4 +1,4 @@
-# dep-tools python package
+# dep-tools Python Package
 
 This repository hosts a python package containing a set of tools to help load,
 process, write, and keep track of geospatial products created as part of the
@@ -6,6 +6,14 @@ Digital Earth Pacific project. It was conceived to provide a framework to aid
 scaling products across the Pacific.
 
 ## Installation
+
+This package requires a local installation of gdal.
+
+dep-tools itself can be installed using pip:
+
+```
+$ pip install git+https://github.com/digitalearthpacific/dep-tools.git
+```
 
 ## What is here
 
@@ -17,7 +25,7 @@ tiling schemes for DE Pacific products at 10 or 30 meter resolution.
 ### Utility functions
 
 There are general and specific functions that can be applied
-primarily to Xarray datasets and arrays related to Azure (dep_tools/azure.py),
+primarily to Xarray datasets and arrays related to AWS (dep_tools/aws.py),
 Landsat (dep_tools/landsat_utils.py), Sentinel-2 (dep_tools/s2_utils.py) and
 spatial temporal asset catalogs (i.e. STAC, dep_tools./stac_utils.py).
 

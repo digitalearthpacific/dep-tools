@@ -41,6 +41,8 @@ def s3_dump(
 ) -> bool:
     """Write data to an s3 bucket.
 
+    This is a wrapper around :py:func:`boto3.client.put_object`.
+
     Args:
         data: The data to write.
         bucket: The name of the bucket.
@@ -72,8 +74,8 @@ def write_to_s3(
 
     This is a specialized version of :py:func:`s3_dump`. If the object is a GeoDataFrame,
     :py:func:`geopandas.to_file` is used. If an xarray DataArray or Dataset,
-    :py:func:`odc.geo.xr.to_cog` is used if `use_odc_writer` is True, otherwise
-    :py:func:`rioxarray.to.raster` is used. If a :py:class:`pystac.Item`, d is first
+    :py:func:`odc.geo.xr.to_cog` is used if `use_odc_writer` is `True`, otherwise
+    :py:func:`rioxarray.to.raster` is used. If a :py:class:`pystac.Item`, `d` is first
     dumped to json.
 
     Args:
@@ -91,7 +93,7 @@ def write_to_s3(
             :py:class:`xarray.Dataset`.
 
     Raises:
-        ValueError:
+        ValueError: If `d` is not of the allowed types.
     """
     if client is None:
         client = boto3.client("s3")

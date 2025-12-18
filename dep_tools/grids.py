@@ -216,7 +216,7 @@ def _geoseries(resolution, crs) -> GeoSeries:
         if crs == 4326:
             gs = gs.apply(lambda geom: shape(antimeridian.fix_shape(geom)))
 
-    return gpd.GeoSeries(gs)
+    return gs
 
 
 # The origin is in the projected CRS. This works for Landsat.
