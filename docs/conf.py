@@ -10,7 +10,7 @@ import subprocess
 project = "dep-tools"
 copyright = "2025, Digital Earth Pacific"
 author = "Jesse Anderson, Alex Leith, Nicholas Metherall"
-release = "0.5.3"
+release = "0.5.4"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -20,9 +20,9 @@ extensions = [
     "sphinx.ext.viewcode",
     "sphinx.ext.napoleon",
     "sphinx_autodoc_typehints",
-#    "nbsphinx",
-#    "nbsphinx_link",
-#    "myst_parser",
+    #    "nbsphinx",
+    #    "nbsphinx_link",
+    #    "myst_parser",
 ]
 
 templates_path = ["_templates"]
