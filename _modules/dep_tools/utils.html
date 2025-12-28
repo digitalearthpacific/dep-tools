@@ -1,0 +1,615 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>dep_tools.utils &mdash; dep-tools 0.5.4 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=e1a677a5"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            dep-tools
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api/modules.html">dep_tools</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">dep-tools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">dep_tools.utils</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for dep_tools.utils</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;This module contains utility functions which don&#39;t belong elsewhere.&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">INFO</span><span class="p">,</span> <span class="n">Formatter</span><span class="p">,</span> <span class="n">Logger</span><span class="p">,</span> <span class="n">StreamHandler</span><span class="p">,</span> <span class="n">getLogger</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">antimeridian</span><span class="w"> </span><span class="kn">import</span> <span class="n">bbox</span> <span class="k">as</span> <span class="n">antimeridian_bbox</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">antimeridian</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">fix_multi_polygon</span><span class="p">,</span>
+    <span class="n">fix_polygon</span><span class="p">,</span>
+    <span class="n">fix_line_string</span><span class="p">,</span>
+    <span class="n">fix_multi_line_string</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">geopandas</span><span class="w"> </span><span class="kn">import</span> <span class="n">GeoDataFrame</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">odc.geo.geobox</span><span class="w"> </span><span class="kn">import</span> <span class="n">GeoBox</span> <span class="k">as</span> <span class="n">GeoBox</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">odc.geo.geom</span><span class="w"> </span><span class="kn">import</span> <span class="n">Geometry</span> <span class="k">as</span> <span class="n">OdcGeometry</span><span class="p">,</span> <span class="n">unary_intersection</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">odc.geo.xr</span><span class="w"> </span><span class="kn">import</span> <span class="n">write_cog</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">planetary_computer</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pystac</span><span class="w"> </span><span class="kn">import</span> <span class="n">ItemCollection</span><span class="p">,</span> <span class="n">Item</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pystac_client</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">retry</span><span class="w"> </span><span class="kn">import</span> <span class="n">retry</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">shapely</span><span class="w"> </span><span class="kn">import</span> <span class="n">Geometry</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">shapely.geometry</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">LineString</span><span class="p">,</span>
+    <span class="n">MultiLineString</span><span class="p">,</span>
+    <span class="n">GeometryCollection</span><span class="p">,</span>
+    <span class="n">MultiPolygon</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">shapely.geometry.polygon</span><span class="w"> </span><span class="kn">import</span> <span class="n">orient</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">xarray</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataArray</span><span class="p">,</span> <span class="n">Dataset</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">dep_tools.grids</span><span class="w"> </span><span class="kn">import</span> <span class="n">gadm_union</span>
+
+
+<div class="viewcode-block" id="join_path_or_url">
+<a class="viewcode-back" href="../../api/dep_tools.utils.html#dep_tools.utils.join_path_or_url">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">join_path_or_url</span><span class="p">(</span><span class="n">prefix</span><span class="p">:</span> <span class="n">Path</span> <span class="o">|</span> <span class="nb">str</span><span class="p">,</span> <span class="n">file</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Joins a prefix with a file name, with a slash in-between.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        prefix: A folder-like thing, local or remote. Can begin</span>
+<span class="sd">            with things like ./, https:// and s3://. Can end with a</span>
+<span class="sd">            forward-slash or not.</span>
+<span class="sd">        file: A stem-plus-extension file name. Can begin with a</span>
+<span class="sd">            forward-slash or not.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A string containing the joined prefix and file, with a</span>
+<span class="sd">        forward-slash in between.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">(</span>
+        <span class="nb">str</span><span class="p">(</span><span class="n">prefix</span> <span class="o">/</span> <span class="n">file</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">prefix</span><span class="p">,</span> <span class="n">Path</span><span class="p">)</span>
+        <span class="k">else</span> <span class="n">prefix</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;/&quot;</span> <span class="o">+</span> <span class="n">file</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="mask_to_gadm">
+<a class="viewcode-back" href="../../api/dep_tools.utils.html#dep_tools.utils.mask_to_gadm">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">mask_to_gadm</span><span class="p">(</span><span class="n">xarr</span><span class="p">:</span> <span class="n">DataArray</span> <span class="o">|</span> <span class="n">Dataset</span><span class="p">,</span> <span class="n">area</span><span class="p">:</span> <span class="n">GeoBox</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataArray</span> <span class="o">|</span> <span class="n">Dataset</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Masks an input xarray object to GADM.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        xarr: The input xarray object.</span>
+<span class="sd">        area: An area used to limit the GADM footprint so the operation doesn&#39;t</span>
+<span class="sd">            take as long.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The input xarray object, masked to GADM.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">geom</span> <span class="o">=</span> <span class="n">unary_intersection</span><span class="p">(</span>
+        <span class="p">[</span>
+            <span class="n">area</span><span class="o">.</span><span class="n">boundingbox</span><span class="o">.</span><span class="n">polygon</span><span class="p">,</span>
+            <span class="n">OdcGeometry</span><span class="p">(</span><span class="n">gadm_union</span><span class="p">()</span><span class="o">.</span><span class="n">to_crs</span><span class="p">(</span><span class="n">area</span><span class="o">.</span><span class="n">crs</span><span class="p">)</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">geometry</span><span class="p">,</span> <span class="n">crs</span><span class="o">=</span><span class="n">area</span><span class="o">.</span><span class="n">crs</span><span class="p">),</span>
+        <span class="p">]</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">xarr</span><span class="o">.</span><span class="n">odc</span><span class="o">.</span><span class="n">mask</span><span class="p">(</span><span class="n">geom</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="get_logger">
+<a class="viewcode-back" href="../../api/dep_tools.utils.html#dep_tools.utils.get_logger">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_logger</span><span class="p">(</span><span class="n">prefix</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Logger</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Set up a simple logger.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        prefix: The prefix to attach to each message.</span>
+<span class="sd">        name: The name of the logger.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A :class:Logger:.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">console</span> <span class="o">=</span> <span class="n">StreamHandler</span><span class="p">()</span>
+    <span class="n">time_format</span> <span class="o">=</span> <span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2"> %H:%M:%S&quot;</span>
+    <span class="n">console</span><span class="o">.</span><span class="n">setFormatter</span><span class="p">(</span>
+        <span class="n">Formatter</span><span class="p">(</span>
+            <span class="n">fmt</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;%(asctime)s %(levelname)s (</span><span class="si">{</span><span class="n">prefix</span><span class="si">}</span><span class="s2">):  %(message)s&quot;</span><span class="p">,</span>
+            <span class="n">datefmt</span><span class="o">=</span><span class="n">time_format</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="n">log</span> <span class="o">=</span> <span class="n">getLogger</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">addHandler</span><span class="p">(</span><span class="n">console</span><span class="p">)</span>
+    <span class="n">log</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">INFO</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">log</span></div>
+
+
+
+<div class="viewcode-block" id="shift_negative_longitudes">
+<a class="viewcode-back" href="../../api/dep_tools.utils.html#dep_tools.utils.shift_negative_longitudes">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">shift_negative_longitudes</span><span class="p">(</span>
+    <span class="n">geometry</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">LineString</span><span class="p">,</span> <span class="n">MultiLineString</span><span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">LineString</span><span class="p">,</span> <span class="n">MultiLineString</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Fixes lines spanning the antimeridian by adding 360 to any negative longitudes.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        geometry: The geometry to fix.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The fixed geometry.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># This is likely a pacific-specific test.</span>
+    <span class="k">if</span> <span class="nb">abs</span><span class="p">(</span><span class="n">geometry</span><span class="o">.</span><span class="n">bounds</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">-</span> <span class="n">geometry</span><span class="o">.</span><span class="n">bounds</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">&lt;</span> <span class="mi">180</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">geometry</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">geometry</span><span class="p">,</span> <span class="n">MultiLineString</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">MultiLineString</span><span class="p">(</span>
+            <span class="p">[</span><span class="n">shift_negative_longitudes</span><span class="p">(</span><span class="n">geom</span><span class="p">)</span> <span class="k">for</span> <span class="n">geom</span> <span class="ow">in</span> <span class="n">geometry</span><span class="o">.</span><span class="n">geoms</span><span class="p">]</span>
+        <span class="p">)</span>
+
+    <span class="c1"># If this doesn&#39;t work, shift, split, then unshift</span>
+    <span class="k">return</span> <span class="n">LineString</span><span class="p">([(((</span><span class="n">pt</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="mi">360</span><span class="p">)</span> <span class="o">%</span> <span class="mi">360</span><span class="p">),</span> <span class="n">pt</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="k">for</span> <span class="n">pt</span> <span class="ow">in</span> <span class="n">geometry</span><span class="o">.</span><span class="n">coords</span><span class="p">])</span></div>
+
+
+
+<span class="n">BBOX</span> <span class="o">=</span> <span class="nb">list</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="bbox_across_180">
+<a class="viewcode-back" href="../../api/dep_tools.utils.html#dep_tools.utils.bbox_across_180">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">bbox_across_180</span><span class="p">(</span><span class="n">region</span><span class="p">:</span> <span class="n">GeoDataFrame</span> <span class="o">|</span> <span class="n">GeoBox</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BBOX</span> <span class="o">|</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">BBOX</span><span class="p">,</span> <span class="n">BBOX</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Calculate a bounding box or boxes for an input region.</span>
+
+<span class="sd">    If the given region crosses the antimeridian, the bounding box is split</span>
+<span class="sd">    into two, which straddle but do not cross it.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        region: The region of interest.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A list of floats, or a two-tuple containing lists of floats.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">region</span><span class="p">,</span> <span class="n">GeoBox</span><span class="p">):</span>
+        <span class="n">geometry</span> <span class="o">=</span> <span class="n">region</span><span class="o">.</span><span class="n">geographic_extent</span><span class="o">.</span><span class="n">geom</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">geometry</span> <span class="o">=</span> <span class="n">region</span><span class="o">.</span><span class="n">to_crs</span><span class="p">(</span><span class="mi">4326</span><span class="p">)</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">make_valid</span><span class="p">()</span><span class="o">.</span><span class="n">explode</span><span class="p">()</span>
+        <span class="n">geometry</span> <span class="o">=</span> <span class="n">geometry</span><span class="p">[</span>
+            <span class="n">geometry</span><span class="o">.</span><span class="n">geom_type</span><span class="o">.</span><span class="n">isin</span><span class="p">([</span><span class="s2">&quot;Polygon&quot;</span><span class="p">,</span> <span class="s2">&quot;MultiPolygon&quot;</span><span class="p">])</span>
+        <span class="p">]</span><span class="o">.</span><span class="n">union_all</span><span class="p">()</span>
+
+    <span class="n">geometry</span> <span class="o">=</span> <span class="n">_fix_geometry</span><span class="p">(</span><span class="n">geometry</span><span class="p">)</span>
+    <span class="n">bbox</span> <span class="o">=</span> <span class="n">antimeridian_bbox</span><span class="p">(</span><span class="n">geometry</span><span class="p">)</span>
+    <span class="c1"># Sometimes they still come through with the negative value first, see</span>
+    <span class="c1"># https://github.com/gadomski/antimeridian/issues/134</span>
+    <span class="k">if</span> <span class="n">bbox</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">bbox</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="n">bbox</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">bbox</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">bbox</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">bbox</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="c1"># Now fix some coord issues</span>
+    <span class="c1"># If the lower left X coordinate is greater than 180 it needs to shift</span>
+    <span class="k">if</span> <span class="n">bbox</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">180</span><span class="p">:</span>
+        <span class="n">bbox</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">bbox</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mi">360</span>
+        <span class="c1"># If the upper right X coordinate is greater than 180 it needs to shift</span>
+        <span class="c1"># but only if the lower left one did too... otherwise we split it below</span>
+        <span class="k">if</span> <span class="n">bbox</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">180</span><span class="p">:</span>
+            <span class="n">bbox</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">=</span> <span class="n">bbox</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">-</span> <span class="mi">360</span>
+
+    <span class="c1"># These are Pacific specific tests, meaning e.g. we know that these aren&#39;t</span>
+    <span class="c1"># areas that are crossing 0 longitude.</span>
+    <span class="n">bbox_crosses_antimeridian</span> <span class="o">=</span> <span class="p">(</span><span class="n">bbox</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">bbox</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span>
+        <span class="n">bbox</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">180</span> <span class="ow">and</span> <span class="n">bbox</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">180</span>
+    <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">bbox_crosses_antimeridian</span><span class="p">:</span>
+        <span class="c1"># Split into two bboxes across the antimeridian</span>
+        <span class="n">xmin</span><span class="p">,</span> <span class="n">ymin</span> <span class="o">=</span> <span class="n">bbox</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">bbox</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">xmax</span><span class="p">,</span> <span class="n">ymax</span> <span class="o">=</span> <span class="n">bbox</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="n">bbox</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span>
+
+        <span class="n">xmax</span> <span class="o">=</span> <span class="n">xmax</span> <span class="o">-</span> <span class="mi">360</span> <span class="k">if</span> <span class="n">xmax</span> <span class="o">&gt;</span> <span class="mi">180</span> <span class="k">else</span> <span class="n">xmax</span>
+        <span class="n">left_bbox</span> <span class="o">=</span> <span class="n">BBOX</span><span class="p">([</span><span class="n">xmin</span><span class="p">,</span> <span class="n">ymin</span><span class="p">,</span> <span class="mi">180</span><span class="p">,</span> <span class="n">ymax</span><span class="p">])</span>
+        <span class="n">right_bbox</span> <span class="o">=</span> <span class="n">BBOX</span><span class="p">([</span><span class="o">-</span><span class="mi">180</span><span class="p">,</span> <span class="n">ymin</span><span class="p">,</span> <span class="n">xmax</span><span class="p">,</span> <span class="n">ymax</span><span class="p">])</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">left_bbox</span><span class="p">,</span> <span class="n">right_bbox</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">BBOX</span><span class="p">(</span><span class="n">bbox</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="fix_winding">
+<a class="viewcode-back" href="../../api/dep_tools.utils.html#dep_tools.utils.fix_winding">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">fix_winding</span><span class="p">(</span><span class="n">geom</span><span class="p">:</span> <span class="n">Geometry</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Geometry</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Orient the geometry coordinates to run counter-clockwise.</span>
+
+<span class="sd">    This is usually non-essential but resolves a barrage of warnings from</span>
+<span class="sd">    the antimeridian package.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        geom: An input Geometry</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The input Geometry, which orientation fixed if needed.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">geom</span><span class="o">.</span><span class="n">geom_type</span> <span class="o">==</span> <span class="s2">&quot;Polygon&quot;</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">geom</span><span class="o">.</span><span class="n">exterior</span><span class="o">.</span><span class="n">is_ccw</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">orient</span><span class="p">(</span><span class="n">geom</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">geom</span><span class="o">.</span><span class="n">geom_type</span> <span class="o">==</span> <span class="s2">&quot;MultiPolygon&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">MultiPolygon</span><span class="p">([</span><span class="n">fix_winding</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">geom</span><span class="o">.</span><span class="n">geoms</span><span class="p">])</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">geom</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_fix_geometry</span><span class="p">(</span><span class="n">geometry</span><span class="p">):</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">geometry</span><span class="p">,</span> <span class="n">GeometryCollection</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">GeometryCollection</span><span class="p">(</span>
+            <span class="p">[</span><span class="n">_fix_geometry</span><span class="p">(</span><span class="n">a_geometry</span><span class="p">)</span> <span class="k">for</span> <span class="n">a_geometry</span> <span class="ow">in</span> <span class="n">geometry</span><span class="o">.</span><span class="n">geoms</span><span class="p">]</span>
+        <span class="p">)</span>
+    <span class="k">match</span> <span class="n">geometry</span><span class="o">.</span><span class="n">geom_type</span><span class="p">:</span>
+        <span class="k">case</span> <span class="s2">&quot;Polygon&quot;</span><span class="p">:</span>
+            <span class="n">geometry</span> <span class="o">=</span> <span class="n">fix_polygon</span><span class="p">(</span><span class="n">geometry</span><span class="p">)</span>
+        <span class="k">case</span> <span class="s2">&quot;MultiPolygon&quot;</span><span class="p">:</span>
+            <span class="n">geometry</span> <span class="o">=</span> <span class="n">fix_multi_polygon</span><span class="p">(</span><span class="n">geometry</span><span class="p">)</span>
+        <span class="k">case</span> <span class="s2">&quot;LineString&quot;</span><span class="p">:</span>
+            <span class="n">geometry</span> <span class="o">=</span> <span class="n">fix_line_string</span><span class="p">(</span><span class="n">geometry</span><span class="p">)</span>
+        <span class="k">case</span> <span class="s2">&quot;MultiLineString&quot;</span><span class="p">:</span>
+            <span class="n">geometry</span> <span class="o">=</span> <span class="n">fix_multi_line_string</span><span class="p">(</span><span class="n">geometry</span><span class="p">)</span>
+        <span class="k">case</span><span class="w"> </span><span class="k">_</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unsupported geometry type: </span><span class="si">{</span><span class="n">geometry</span><span class="o">.</span><span class="n">type</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">geometry</span>
+
+
+<span class="c1"># retry is for search timeouts which occasionally occur</span>
+<div class="viewcode-block" id="search_across_180">
+<a class="viewcode-back" href="../../api/dep_tools.utils.html#dep_tools.utils.search_across_180">[docs]</a>
+<span class="nd">@retry</span><span class="p">(</span><span class="n">tries</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="n">delay</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">search_across_180</span><span class="p">(</span>
+    <span class="n">region</span><span class="p">:</span> <span class="n">GeoDataFrame</span> <span class="o">|</span> <span class="n">GeoBox</span><span class="p">,</span> <span class="n">client</span><span class="p">:</span> <span class="n">pystac_client</span><span class="o">.</span><span class="n">Client</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ItemCollection</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Conduct a STAC search that handles data crossing the antimeridian correctly.</span>
+
+<span class="sd">    Sometimes search results that cross the antimeridian will make the output data</span>
+<span class="sd">    span the globe when loaded by e.g. :func:`odc.stac.load`. This works by first</span>
+<span class="sd">    calling :func:`bbox_across_180`, and then searching within each bounding box</span>
+<span class="sd">    and combining the results if there is more than one.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        region: A GeoDataFrame.</span>
+<span class="sd">        **kwargs: Arguments besides `bbox` and `intersects` passed to</span>
+<span class="sd">            :func:`pystac_client.Client.search`.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        An ItemCollection.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">client</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">client</span> <span class="o">=</span> <span class="n">pystac_client</span><span class="o">.</span><span class="n">Client</span><span class="o">.</span><span class="n">open</span><span class="p">(</span>
+            <span class="s2">&quot;https://planetarycomputer.microsoft.com/api/stac/v1&quot;</span><span class="p">,</span>
+            <span class="n">modifier</span><span class="o">=</span><span class="n">planetary_computer</span><span class="o">.</span><span class="n">sign_inplace</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="n">bbox</span> <span class="o">=</span> <span class="n">bbox_across_180</span><span class="p">(</span><span class="n">region</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">bbox</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+        <span class="n">first_result</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">client</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">bbox</span><span class="o">=</span><span class="n">bbox</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+        <span class="n">first_ids</span> <span class="o">=</span> <span class="p">[</span><span class="n">item</span><span class="o">.</span><span class="n">id</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">first_result</span><span class="p">]</span>
+
+        <span class="n">second_result</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">client</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">bbox</span><span class="o">=</span><span class="n">bbox</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span><span class="o">.</span><span class="n">items</span><span class="p">())</span>
+        <span class="n">unique_second_result</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">item</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">second_result</span> <span class="k">if</span> <span class="n">item</span><span class="o">.</span><span class="n">id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">first_ids</span>
+        <span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">ItemCollection</span><span class="p">(</span><span class="n">first_result</span> <span class="o">+</span> <span class="n">unique_second_result</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">client</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">bbox</span><span class="o">=</span><span class="n">bbox</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span><span class="o">.</span><span class="n">item_collection</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="copy_attrs">
+<a class="viewcode-back" href="../../api/dep_tools.utils.html#dep_tools.utils.copy_attrs">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">copy_attrs</span><span class="p">(</span>
+    <span class="n">source</span><span class="p">:</span> <span class="n">DataArray</span> <span class="o">|</span> <span class="n">Dataset</span><span class="p">,</span> <span class="n">destination</span><span class="p">:</span> <span class="n">DataArray</span> <span class="o">|</span> <span class="n">Dataset</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataArray</span> <span class="o">|</span> <span class="n">Dataset</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Copy attributes from one xarray object to another.</span>
+
+<span class="sd">    See https://corteva.github.io/rioxarray/html/getting_started/manage_information_loss.html This function Doesn&#39;t account for situations where the inputs don&#39;t have the same</span>
+<span class="sd">    variables.</span>
+<span class="sd">    Args:</span>
+<span class="sd">        source: The source object.</span>
+<span class="sd">        destination: The destination object.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The destination object, with source attributes, encoding, and nodata value</span>
+<span class="sd">        set.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">destination</span><span class="p">,</span> <span class="n">DataArray</span><span class="p">):</span>
+        <span class="n">destination</span><span class="o">.</span><span class="n">rio</span><span class="o">.</span><span class="n">write_crs</span><span class="p">(</span><span class="n">source</span><span class="o">.</span><span class="n">rio</span><span class="o">.</span><span class="n">crs</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">destination</span><span class="o">.</span><span class="n">rio</span><span class="o">.</span><span class="n">update_attrs</span><span class="p">(</span><span class="n">source</span><span class="o">.</span><span class="n">attrs</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">destination</span><span class="o">.</span><span class="n">rio</span><span class="o">.</span><span class="n">update_encoding</span><span class="p">(</span><span class="n">source</span><span class="o">.</span><span class="n">encoding</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">destination</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">variable</span> <span class="ow">in</span> <span class="n">destination</span><span class="p">:</span>
+            <span class="n">destination</span><span class="p">[</span><span class="n">variable</span><span class="p">]</span> <span class="o">=</span> <span class="n">copy_attrs</span><span class="p">(</span><span class="n">source</span><span class="p">[</span><span class="n">variable</span><span class="p">],</span> <span class="n">destination</span><span class="p">[</span><span class="n">variable</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">destination</span></div>
+
+
+
+<div class="viewcode-block" id="scale_and_offset">
+<a class="viewcode-back" href="../../api/dep_tools.utils.html#dep_tools.utils.scale_and_offset">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">scale_and_offset</span><span class="p">(</span>
+    <span class="n">da</span><span class="p">:</span> <span class="n">DataArray</span> <span class="o">|</span> <span class="n">Dataset</span><span class="p">,</span>
+    <span class="n">scale</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+    <span class="n">offset</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="n">keep_attrs</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataArray</span> <span class="o">|</span> <span class="n">Dataset</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Applies a scale and offset to data.</span>
+
+<span class="sd">    If the process converts e.g. an integer to a floating point, the dtype will</span>
+<span class="sd">    change.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        da: The input data.</span>
+<span class="sd">        scale: The scale to apply.</span>
+<span class="sd">        offset: The offset to apply, after scaling.</span>
+<span class="sd">        keep_attrs: Whether to retain the input attributes in the output.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The input data, with scale and offset applied.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">output</span> <span class="o">=</span> <span class="n">da</span> <span class="o">*</span> <span class="n">scale</span> <span class="o">+</span> <span class="n">offset</span>
+    <span class="k">if</span> <span class="n">keep_attrs</span><span class="p">:</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="n">copy_attrs</span><span class="p">(</span><span class="n">da</span><span class="p">,</span> <span class="n">output</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">output</span></div>
+
+
+
+<div class="viewcode-block" id="write_to_local_storage">
+<a class="viewcode-back" href="../../api/dep_tools.utils.html#dep_tools.utils.write_to_local_storage">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">write_to_local_storage</span><span class="p">(</span>
+    <span class="n">d</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">DataArray</span><span class="p">,</span> <span class="n">Dataset</span><span class="p">,</span> <span class="n">GeoDataFrame</span><span class="p">,</span> <span class="n">Item</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span>
+    <span class="n">path</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Path</span><span class="p">],</span>
+    <span class="n">write_args</span><span class="p">:</span> <span class="n">Dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(),</span>
+    <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">use_odc_writer</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>  <span class="c1"># for compatibiilty only</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Write something to local storage.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        d: What to write.</span>
+<span class="sd">        path: Where to write it.</span>
+<span class="sd">        write_args: Additional arguments to the writer.</span>
+<span class="sd">        overwrite: Whether to overwrite existing data.</span>
+<span class="sd">        use_odc_writer: Whether to use :func:`write_cog` for xarray objects. Othewise</span>
+<span class="sd">            :func:`rioxarray.rio.to_raster` is used.</span>
+<span class="sd">        **kwargs: Not used.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: If the input data is not of the available types.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+
+    <span class="c1"># Create the target folder if it doesn&#39;t exist</span>
+    <span class="n">path</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="p">(</span><span class="n">DataArray</span><span class="p">,</span> <span class="n">Dataset</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="n">use_odc_writer</span><span class="p">:</span>
+            <span class="k">del</span> <span class="n">write_args</span><span class="p">[</span><span class="s2">&quot;driver&quot;</span><span class="p">]</span>
+            <span class="n">write_cog</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="n">overwrite</span><span class="p">,</span> <span class="o">**</span><span class="n">write_args</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">d</span><span class="o">.</span><span class="n">rio</span><span class="o">.</span><span class="n">to_raster</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="n">overwrite</span><span class="p">,</span> <span class="o">**</span><span class="n">write_args</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">GeoDataFrame</span><span class="p">):</span>
+        <span class="n">d</span><span class="o">.</span><span class="n">to_file</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="n">overwrite</span><span class="p">,</span> <span class="o">**</span><span class="n">write_args</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">Item</span><span class="p">):</span>
+        <span class="n">d</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(),</span> <span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">Path</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span> <span class="ow">or</span> <span class="n">overwrite</span><span class="p">:</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">dst</span><span class="p">:</span>
+                <span class="n">dst</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">overwrite</span><span class="p">:</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">dst</span><span class="p">:</span>
+                <span class="n">dst</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">&quot;You can only write an Xarray DataArray or Dataset, Geopandas GeoDataFrame, or string&quot;</span>
+        <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="scale_to_int16">
+<a class="viewcode-back" href="../../api/dep_tools.utils.html#dep_tools.utils.scale_to_int16">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">scale_to_int16</span><span class="p">(</span>
+    <span class="n">xr</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">DataArray</span><span class="p">,</span> <span class="n">Dataset</span><span class="p">],</span>
+    <span class="n">output_multiplier</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">output_nodata</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">scale_int16s</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">DataArray</span><span class="p">,</span> <span class="n">Dataset</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Scale an xarray object to a 16-bit integer.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        xr: The input data.</span>
+<span class="sd">        output_multiplier: The multiplier to apply to the input data.</span>
+<span class="sd">        output_nodata: The output nodata value. Any null values in the input</span>
+<span class="sd">            will be set to this. Additional the `&quot;nodata&quot;` attribute will be</span>
+<span class="sd">            set to this.</span>
+<span class="sd">        scale_int16s: Whether to scale data which is already an integer.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        This input data, with scaling applied.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">scale_da</span><span class="p">(</span><span class="n">da</span><span class="p">:</span> <span class="n">DataArray</span><span class="p">):</span>
+        <span class="c1"># I exclude int64 here as it seems to cause issues</span>
+        <span class="n">int_types</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;int8&quot;</span><span class="p">,</span> <span class="s2">&quot;int16&quot;</span><span class="p">,</span> <span class="s2">&quot;uint8&quot;</span><span class="p">,</span> <span class="s2">&quot;uint16&quot;</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">da</span><span class="o">.</span><span class="n">dtype</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">int_types</span> <span class="ow">or</span> <span class="n">scale_int16s</span><span class="p">:</span>
+            <span class="n">da</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">(</span><span class="n">da</span><span class="p">,</span> <span class="n">output_multiplier</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="n">da</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">da</span><span class="o">.</span><span class="n">notnull</span><span class="p">(),</span> <span class="n">output_nodata</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">&quot;int16&quot;</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">rio</span><span class="o">.</span><span class="n">write_nodata</span><span class="p">(</span><span class="n">output_nodata</span><span class="p">)</span>  <span class="c1"># for rioxarray</span>
+            <span class="o">.</span><span class="n">assign_attrs</span><span class="p">(</span><span class="n">nodata</span><span class="o">=</span><span class="n">output_nodata</span><span class="p">)</span>  <span class="c1"># for odc</span>
+        <span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">xr</span><span class="p">,</span> <span class="n">Dataset</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="n">xr</span><span class="p">:</span>
+            <span class="n">xr</span><span class="p">[</span><span class="n">var</span><span class="p">]</span> <span class="o">=</span> <span class="n">scale_da</span><span class="p">(</span><span class="n">xr</span><span class="p">[</span><span class="n">var</span><span class="p">])</span>
+            <span class="c1"># Assuming this needs to be redone?</span>
+            <span class="n">xr</span><span class="p">[</span><span class="n">var</span><span class="p">]</span><span class="o">.</span><span class="n">rio</span><span class="o">.</span><span class="n">write_nodata</span><span class="p">(</span><span class="n">output_nodata</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">assign_attrs</span><span class="p">(</span>
+                <span class="n">nodata</span><span class="o">=</span><span class="n">output_nodata</span>
+            <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">xr</span> <span class="o">=</span> <span class="n">scale_da</span><span class="p">(</span><span class="n">xr</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">xr</span></div>
+
+
+
+<div class="viewcode-block" id="fix_bad_epsgs">
+<a class="viewcode-back" href="../../api/dep_tools.utils.html#dep_tools.utils.fix_bad_epsgs">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">fix_bad_epsgs</span><span class="p">(</span><span class="n">item_collection</span><span class="p">:</span> <span class="n">ItemCollection</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Repair some band EPSG codes in stac items loaded from the MSPC.</span>
+
+<span class="sd">    This function modifies in place.</span>
+<span class="sd">    See https://github.com/microsoft/PlanetaryComputer/discussions/113 for more</span>
+<span class="sd">    information.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        item_collection: The input items.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The input items, with any bad EPSG codes fixed.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">item_collection</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">item</span><span class="o">.</span><span class="n">collection_id</span> <span class="o">==</span> <span class="s2">&quot;landsat-c2-l2&quot;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s2">&quot;proj:epsg&quot;</span> <span class="ow">in</span> <span class="n">item</span><span class="o">.</span><span class="n">properties</span><span class="p">:</span>
+                <span class="n">epsg</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="s2">&quot;proj:epsg&quot;</span><span class="p">])</span>
+                <span class="n">item</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="s2">&quot;proj:epsg&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">epsg</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span><span class="si">}{</span><span class="nb">int</span><span class="p">(</span><span class="n">epsg</span><span class="p">[</span><span class="mi">3</span><span class="p">:])</span><span class="si">:</span><span class="s2">02d</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="s2">&quot;proj:code&quot;</span> <span class="ow">in</span> <span class="n">item</span><span class="o">.</span><span class="n">properties</span><span class="p">:</span>
+                <span class="n">epsg</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">ext</span><span class="o">.</span><span class="n">proj</span><span class="o">.</span><span class="n">epsg</span><span class="p">)</span>
+                <span class="n">item</span><span class="o">.</span><span class="n">ext</span><span class="o">.</span><span class="n">proj</span><span class="o">.</span><span class="n">epsg</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">epsg</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="mi">3</span><span class="p">]</span><span class="si">}{</span><span class="nb">int</span><span class="p">(</span><span class="n">epsg</span><span class="p">[</span><span class="mi">3</span><span class="p">:])</span><span class="si">:</span><span class="s2">02d</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="remove_bad_items">
+<a class="viewcode-back" href="../../api/dep_tools.utils.html#dep_tools.utils.remove_bad_items">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">remove_bad_items</span><span class="p">(</span><span class="n">item_collection</span><span class="p">:</span> <span class="n">ItemCollection</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ItemCollection</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Remove some error-causing STAC Items from an item collection.</span>
+
+<span class="sd">    Remove really bad items which clobber processes even if `fail_on_error` is</span>
+<span class="sd">    set to False for :func:`odc.stac.load` or the equivalent for</span>
+<span class="sd">    :func:`stackstac.stack`.</span>
+<span class="sd">    See https://github.com/microsoft/PlanetaryComputer/discussions/101</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        item_collection: The items.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The items, with any with known bad IDs removed.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">bad_ids</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="s2">&quot;LC08_L2SR_081074_20220514_02_T1&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;LC08_L2SP_101055_20220612_02_T2&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;LC08_L2SR_074072_20221105_02_T1&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;LC09_L2SR_074071_20220708_02_T1&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;LC08_L2SR_078075_20220712_02_T1&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;LC08_L2SR_080076_20220726_02_T1&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;LC08_L2SR_082074_20220724_02_T1&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;LC09_L2SR_083075_20220402_02_T1&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;LC08_L2SR_083073_20220917_02_T1&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;LC08_L2SR_089064_20201007_02_T2&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;LC08_L2SR_074073_20221105_02_T1&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;LC09_L2SR_073073_20231109_02_T2&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;LC08_L2SR_075066_20231030_02_T1&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;S2B_MSIL2A_20230214T001719_R116_T56MMB_20230214T095023&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;LC09_L2SR_100050_20231107_02_T1&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;LC09_L2SR_100051_20231107_02_T1&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;LE07_L2SP_097065_20221029_02_T1&quot;</span><span class="p">,</span>
+    <span class="p">]</span>
+    <span class="k">return</span> <span class="n">ItemCollection</span><span class="p">([</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">item_collection</span> <span class="k">if</span> <span class="n">i</span><span class="o">.</span><span class="n">id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">bad_ids</span><span class="p">])</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Digital Earth Pacific.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

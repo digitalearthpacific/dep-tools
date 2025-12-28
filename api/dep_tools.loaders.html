@@ -1,0 +1,237 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>dep_tools.loaders module &mdash; dep-tools 0.5.4 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=e1a677a5"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="dep_tools.namers module" href="dep_tools.namers.html" />
+    <link rel="prev" title="dep_tools.landsat_utils module" href="dep_tools.landsat_utils.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            dep-tools
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">dep_tools</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="dep_tools.html">dep_tools package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="dep_tools.html#submodules">Submodules</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.aws.html">dep_tools.aws module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.exceptions.html">dep_tools.exceptions module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.grids.html">dep_tools.grids module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.landsat_utils.html">dep_tools.landsat_utils module</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">dep_tools.loaders module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.namers.html">dep_tools.namers module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.parsers.html">dep_tools.parsers module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.processors.html">dep_tools.processors module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.s2_utils.html">dep_tools.s2_utils module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.searchers.html">dep_tools.searchers module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.stac_utils.html">dep_tools.stac_utils module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.task.html">dep_tools.task module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.utils.html">dep_tools.utils module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.writers.html">dep_tools.writers module</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="dep_tools.html#module-dep_tools">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">dep-tools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">dep_tools</a></li>
+          <li class="breadcrumb-item"><a href="dep_tools.html">dep_tools package</a></li>
+      <li class="breadcrumb-item active">dep_tools.loaders module</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/api/dep_tools.loaders.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-dep_tools.loaders">
+<span id="dep-tools-loaders-module"></span><h1>dep_tools.loaders module<a class="headerlink" href="#module-dep_tools.loaders" title="Link to this heading"></a></h1>
+<p>ABC definition and implementation of Loader objects.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="dep_tools.loaders.Loader">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">dep_tools.loaders.</span></span><span class="sig-name descname"><span class="pre">Loader</span></span><a class="reference internal" href="../_modules/dep_tools/loaders.html#Loader"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dep_tools.loaders.Loader" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
+<p>A base class for something that loads data based on input areas.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="dep_tools.loaders.Loader.load">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">areas</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dep_tools/loaders.html#Loader.load"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dep_tools.loaders.Loader.load" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="dep_tools.loaders.StacLoader">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">dep_tools.loaders.</span></span><span class="sig-name descname"><span class="pre">StacLoader</span></span><a class="reference internal" href="../_modules/dep_tools/loaders.html#StacLoader"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dep_tools.loaders.StacLoader" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#dep_tools.loaders.Loader" title="dep_tools.loaders.Loader"><code class="xref py py-class docutils literal notranslate"><span class="pre">Loader</span></code></a></p>
+<p>A loader which loads data based on (STAC) items and areas.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="dep_tools.loaders.StacLoader.load">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">items</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">areas</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dep_tools/loaders.html#StacLoader.load"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dep_tools.loaders.StacLoader.load" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="dep_tools.loaders.OdcLoader">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">dep_tools.loaders.</span></span><span class="sig-name descname"><span class="pre">OdcLoader</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">load_as_dataset</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clip_to_areas</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dep_tools/loaders.html#OdcLoader"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dep_tools.loaders.OdcLoader" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#dep_tools.loaders.StacLoader" title="dep_tools.loaders.StacLoader"><code class="xref py py-class docutils literal notranslate"><span class="pre">StacLoader</span></code></a></p>
+<p>A wrapper around <code class="xref py py-func docutils literal notranslate"><span class="pre">odc.stac.load()</span></code>.</p>
+<p>In addition to allowing conformance to the <a class="reference internal" href="#dep_tools.loaders.Loader" title="dep_tools.loaders.Loader"><code class="xref py py-class docutils literal notranslate"><span class="pre">Loader</span></code></a> form, this
+class offers a number of convenience operations which compliment
+<code class="xref py py-func docutils literal notranslate"><span class="pre">odc.stac.load()</span></code>:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>If the data is loaded as floating point, any nodata values (as defined
+by the <cite>“nodata”</cite> attribute of the loaded data) are set to NaN, and
+the attribute itself is reset to NaN.</p></li>
+<li><p>The nodata value is also set to be accessed via the
+rioxarray accessor (<cite>.rio.nodata</cite>).</p></li>
+</ul>
+</div></blockquote>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>load_as_dataset</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span>) – If False, load as a DataArray with each variable in the
+<cite>band</cite> dimension.</p></li>
+<li><p><strong>clip_to_areas</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span>) – If True, loaded data is clipped to the given areas using
+<code class="xref py py-func docutils literal notranslate"><span class="pre">odc.geo.mask()</span></code>.</p></li>
+<li><p><strong>**kwargs</strong> – Additional arguments to <code class="xref py py-func docutils literal notranslate"><span class="pre">odc.stac.load()</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="dep_tools.loaders.OdcLoader.load">
+<span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">items</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">areas</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dep_tools/loaders.html#OdcLoader.load"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dep_tools.loaders.OdcLoader.load" title="Link to this definition"></a></dt>
+<dd><p>Load STAC Items into an xarray object.</p>
+<p>If <cite>nodata</cite> is passed as a kwarg on initialization, or the stac item
+contains the nodata value, <cite>xr[variable].nodata</cite> will be set on load.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>items</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterable</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Item</span></code>]</span>) – The items to load.</p></li>
+<li><p><strong>areas</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">GeoDataFrame</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">GeoBox</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</span>) – If <cite>clip_to_areas</cite> is <cite>True</cite>, the output is clipped to these areas.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">DataArray</span></code></span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>If <cite>load_to_dataset</cite> is True on initialization, a <code class="xref py py-class docutils literal notranslate"><span class="pre">xarray.Dataset</span></code>
+is returned. Otherwise a <code class="xref py py-class docutils literal notranslate"><span class="pre">xarray:DataArray</span></code> is returned, with
+variables set on the <cite>“band”</cite> dimension.</p>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>ValueError</strong> – If <cite>areas</cite> is a GeoBox and <cite>clip_to_areas</cite> is set to <cite>True</cite>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="dep_tools.loaders.StackStacLoader">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">dep_tools.loaders.</span></span><span class="sig-name descname"><span class="pre">StackStacLoader</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">stack_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{'resolution':</span> <span class="pre">30}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">resamplers_and_assets</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dep_tools/loaders.html#StackStacLoader"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dep_tools.loaders.StackStacLoader" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#dep_tools.loaders.StacLoader" title="dep_tools.loaders.StacLoader"><code class="xref py py-class docutils literal notranslate"><span class="pre">StacLoader</span></code></a></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="dep_tools.loaders.StackStacLoader.load">
+<span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">items</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">areas</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dep_tools/loaders.html#StackStacLoader.load"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dep_tools.loaders.StackStacLoader.load" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">DataArray</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="dep_tools.landsat_utils.html" class="btn btn-neutral float-left" title="dep_tools.landsat_utils module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="dep_tools.namers.html" class="btn btn-neutral float-right" title="dep_tools.namers module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Digital Earth Pacific.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

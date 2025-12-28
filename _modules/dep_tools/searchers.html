@@ -1,0 +1,310 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>dep_tools.searchers &mdash; dep-tools 0.5.4 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=e1a677a5"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            dep-tools
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api/modules.html">dep_tools</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">dep-tools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">dep_tools.searchers</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for dep_tools.searchers</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;This module contains the definition and implementation of :class:`Searcher` objects.&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">geopandas</span><span class="w"> </span><span class="kn">import</span> <span class="n">GeoDataFrame</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">odc.geo.geobox</span><span class="w"> </span><span class="kn">import</span> <span class="n">GeoBox</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pystac</span><span class="w"> </span><span class="kn">import</span> <span class="n">ItemCollection</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pystac_client</span><span class="w"> </span><span class="kn">import</span> <span class="n">Client</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">dep_tools.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">EmptyCollectionError</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dep_tools.landsat_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">items_in_pathrows</span><span class="p">,</span> <span class="n">pathrows_in_area</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dep_tools.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">fix_bad_epsgs</span><span class="p">,</span> <span class="n">remove_bad_items</span><span class="p">,</span> <span class="n">search_across_180</span>
+
+
+<div class="viewcode-block" id="Searcher">
+<a class="viewcode-back" href="../../api/dep_tools.searchers.html#dep_tools.searchers.Searcher">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Searcher</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;An object which searches for something, based on an area.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+<div class="viewcode-block" id="Searcher.search">
+<a class="viewcode-back" href="../../api/dep_tools.searchers.html#dep_tools.searchers.Searcher.search">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">search</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">area</span><span class="p">):</span>
+        <span class="k">pass</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="PystacSearcher">
+<a class="viewcode-back" href="../../api/dep_tools.searchers.html#dep_tools.searchers.PystacSearcher">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">PystacSearcher</span><span class="p">(</span><span class="n">Searcher</span><span class="p">):</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">catalog</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">client</span><span class="p">:</span> <span class="n">Client</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">raise_empty_collection_error</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;A Searcher which searches for stac items using pystac_client.Client.search.</span>
+
+<span class="sd">        Fixes include correctly searching across the antimeridian by splitting the</span>
+<span class="sd">        bounding box of the target area on either side and removal of known &quot;bad&quot;</span>
+<span class="sd">        stac items (using dep_tools.utils.remove_bad_items).</span>
+
+<span class="sd">        This is written to be used with the :class:`Task` framework. If you just</span>
+<span class="sd">        want to search for stac items and handle the antimeridian correctly, use</span>
+<span class="sd">        :func:`dep_tools.utils.search_across_180`.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            catalog: The URL of a stac catalog. if client is specified, this is</span>
+<span class="sd">                ignored.</span>
+<span class="sd">            client: A search client. Either this or catalog must be specified.</span>
+<span class="sd">            raise_empty_collection_error: Whether an EmptyCollectionError exception</span>
+<span class="sd">                should be returned if no stac items are found.</span>
+<span class="sd">            **kwargs: Additional arguments passed to client.search(). For example,</span>
+<span class="sd">                passing `collections=[&quot;sentinel-2-l2a&quot;]` will restrict results to</span>
+<span class="sd">                Sentinel 2 stac items.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">client</span> <span class="ow">and</span> <span class="n">catalog</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                <span class="s2">&quot;Arguments for both &#39;client&#39; and &#39;catalog&#39; passed to PystacSearcher, ignoring catalog&quot;</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">client</span> <span class="ow">or</span> <span class="n">catalog</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Must specify either client or catalog&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_client</span> <span class="o">=</span> <span class="n">client</span> <span class="k">if</span> <span class="n">client</span> <span class="k">else</span> <span class="n">Client</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">catalog</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_raise_errors</span> <span class="o">=</span> <span class="n">raise_empty_collection_error</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_kwargs</span> <span class="o">=</span> <span class="n">kwargs</span>
+
+<div class="viewcode-block" id="PystacSearcher.search">
+<a class="viewcode-back" href="../../api/dep_tools.searchers.html#dep_tools.searchers.PystacSearcher.search">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">search</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">area</span><span class="p">:</span> <span class="n">GeoDataFrame</span> <span class="o">|</span> <span class="n">GeoBox</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ItemCollection</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Search for stac items within the bounds of the corresponding area.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            area: An area in any projection as defined by the crs.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            An ItemCollection.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">item_collection</span> <span class="o">=</span> <span class="n">search_across_180</span><span class="p">(</span>
+            <span class="n">region</span><span class="o">=</span><span class="n">area</span><span class="p">,</span> <span class="n">client</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_kwargs</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client</span><span class="o">.</span><span class="n">id</span> <span class="o">==</span> <span class="s2">&quot;microsoft-pc&quot;</span><span class="p">:</span>
+            <span class="n">fix_bad_epsgs</span><span class="p">(</span><span class="n">item_collection</span><span class="p">)</span>
+        <span class="n">item_collection</span> <span class="o">=</span> <span class="n">remove_bad_items</span><span class="p">(</span><span class="n">item_collection</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">item_collection</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_raise_errors</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">EmptyCollectionError</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="n">item_collection</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="LandsatPystacSearcher">
+<a class="viewcode-back" href="../../api/dep_tools.searchers.html#dep_tools.searchers.LandsatPystacSearcher">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">LandsatPystacSearcher</span><span class="p">(</span><span class="n">PystacSearcher</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">catalog</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">client</span><span class="p">:</span> <span class="n">Client</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">collections</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;landsat-c2-l2&quot;</span><span class="p">],</span>
+        <span class="n">raise_empty_collection_error</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">search_intersecting_pathrows</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">exclude_platforms</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">only_tier_one</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">fall_back_to_tier_two</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;A PystacSearcher with special functionality for landsat data on the</span>
+<span class="sd">        MSPC. Currently it overwrites any `query` kwarg, so if you want a direct</span>
+<span class="sd">        query, just use :class:PystacSearcher.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            catalog: The URL of a stac catalog. if client is specified, this is</span>
+<span class="sd">                ignored.</span>
+<span class="sd">            client: A search client. Either this or catalog must be specified.</span>
+<span class="sd">            raise_empty_collection_error: Whether an EmptyCollectionError exception should</span>
+<span class="sd">                be returned if no stac items are found.</span>
+<span class="sd">            search_intersecting_pathrows: Whether to use landsat pathrows which</span>
+<span class="sd">                intersect the area passed to :func:search rather than the area itself.</span>
+<span class="sd">                This is a workaround for bad geometry in some stac items which</span>
+<span class="sd">                cross the antimeridian.</span>
+<span class="sd">            exclude_platforms: A list of platforms (e.g. [&quot;landsat-7&quot;]) to exclude</span>
+<span class="sd">                from searching.</span>
+<span class="sd">            only_tier_one: Whether to only search for tier one landsat data.</span>
+<span class="sd">            fall_back_to_tier_two: If `only_tier_one` is set to True and no items</span>
+<span class="sd">                are returned from the search, search again with tier two data</span>
+<span class="sd">                included.</span>
+<span class="sd">            **kwargs: Additional arguments passed to client.search(). `collections`</span>
+<span class="sd">                and `query` arguments will be overwritten.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">catalog</span><span class="o">=</span><span class="n">catalog</span><span class="p">,</span>
+            <span class="n">client</span><span class="o">=</span><span class="n">client</span><span class="p">,</span>
+            <span class="n">raise_empty_collection_error</span><span class="o">=</span><span class="n">raise_empty_collection_error</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_kwargs</span><span class="p">[</span><span class="s2">&quot;collections&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">collections</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_search_intersecting_pathrows</span> <span class="o">=</span> <span class="n">search_intersecting_pathrows</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_exclude_platforms</span> <span class="o">=</span> <span class="n">exclude_platforms</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_only_tier_one</span> <span class="o">=</span> <span class="n">only_tier_one</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_fall_back_to_tier_two</span> <span class="o">=</span> <span class="n">fall_back_to_tier_two</span>
+
+        <span class="c1"># For now, just warn that we&#39;re overwriting the query. In future,</span>
+        <span class="c1"># we might look to combine.</span>
+        <span class="k">if</span> <span class="s2">&quot;query&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_kwargs</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                <span class="s2">&quot;Portions of `query` argument may be replaced. To specify the full query directly, use `PystacSearcher`.&quot;</span>
+            <span class="p">)</span>
+            <span class="n">query</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;query&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">query</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_exclude_platforms</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">landsat_platforms</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;landsat-5&quot;</span><span class="p">,</span> <span class="s2">&quot;landsat-7&quot;</span><span class="p">,</span> <span class="s2">&quot;landsat-8&quot;</span><span class="p">,</span> <span class="s2">&quot;landsat-9&quot;</span><span class="p">]</span>
+            <span class="n">query</span><span class="p">[</span><span class="s2">&quot;platform&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s2">&quot;in&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">p</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">landsat_platforms</span> <span class="k">if</span> <span class="n">p</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_exclude_platforms</span><span class="p">]</span>
+            <span class="p">}</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_only_tier_one</span><span class="p">:</span>
+            <span class="n">query</span><span class="p">[</span><span class="s2">&quot;landsat:collection_category&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;eq&quot;</span><span class="p">:</span> <span class="s2">&quot;T1&quot;</span><span class="p">}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_kwargs</span><span class="p">[</span><span class="s2">&quot;query&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">query</span>
+
+<div class="viewcode-block" id="LandsatPystacSearcher.search">
+<a class="viewcode-back" href="../../api/dep_tools.searchers.html#dep_tools.searchers.LandsatPystacSearcher.search">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">search</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">area</span><span class="p">:</span> <span class="n">GeoDataFrame</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Perform the search.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            area: Any area.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            An ItemCollection.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            EmptyCollectionError: If the search finds no items.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">search_area</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">pathrows_in_area</span><span class="p">(</span><span class="n">area</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_search_intersecting_pathrows</span> <span class="k">else</span> <span class="n">area</span>
+        <span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">items</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">search_area</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">EmptyCollectionError</span><span class="p">:</span>
+            <span class="c1"># If we&#39;re only looking for tier one items, try falling back to both T1 and T2</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_only_tier_one</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fall_back_to_tier_two</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_only_tier_one</span> <span class="o">=</span> <span class="kc">False</span>
+                <span class="n">items</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">search_area</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">EmptyCollectionError</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_search_intersecting_pathrows</span><span class="p">:</span>
+            <span class="n">items</span> <span class="o">=</span> <span class="n">items_in_pathrows</span><span class="p">(</span><span class="n">items</span><span class="p">,</span> <span class="n">search_area</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">items</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_raise_errors</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">EmptyCollectionError</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="n">items</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Digital Earth Pacific.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

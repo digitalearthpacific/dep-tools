@@ -1,0 +1,516 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>dep_tools.task &mdash; dep-tools 0.5.4 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=e1a677a5"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            dep-tools
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api/modules.html">dep_tools</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">dep-tools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">dep_tools.task</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for dep_tools.task</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Tasks form the core of the DEP scaling procedure. They orchestrate tasks</span>
+<span class="sd">by loading data, processing it, and writing the output. Tasks can be generic</span>
+<span class="sd">but are sometimes fine-tuned for specific processing.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">Logger</span><span class="p">,</span> <span class="n">getLogger</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">geopandas</span><span class="w"> </span><span class="kn">import</span> <span class="n">GeoDataFrame</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pystac</span><span class="w"> </span><span class="kn">import</span> <span class="n">Item</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.exceptions</span><span class="w"> </span><span class="kn">import</span> <span class="n">EmptyCollectionError</span><span class="p">,</span> <span class="n">NoOutputError</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.loaders</span><span class="w"> </span><span class="kn">import</span> <span class="n">Loader</span><span class="p">,</span> <span class="n">StacLoader</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.processors</span><span class="w"> </span><span class="kn">import</span> <span class="n">Processor</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.namers</span><span class="w"> </span><span class="kn">import</span> <span class="n">S3ItemPath</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.searchers</span><span class="w"> </span><span class="kn">import</span> <span class="n">Searcher</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.stac_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">set_stac_properties</span><span class="p">,</span> <span class="n">StacCreator</span><span class="p">,</span> <span class="n">copy_stac_properties</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.writers</span><span class="w"> </span><span class="kn">import</span> <span class="n">Writer</span><span class="p">,</span> <span class="n">AwsDsCogWriter</span><span class="p">,</span> <span class="n">AwsStacWriter</span>
+
+<span class="n">TaskID</span> <span class="o">=</span> <span class="nb">str</span>
+
+
+<div class="viewcode-block" id="Task">
+<a class="viewcode-back" href="../../api/dep_tools.task.html#dep_tools.task.Task">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Task</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The abstract base for Task objects.</span>
+
+<span class="sd">    Task objects load data, process it, and write output. They are</span>
+<span class="sd">    reusable for the same task operating on new data.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        id: An identifier for a particular task.</span>
+<span class="sd">        loader: A loader loads data, usually based on the id.</span>
+<span class="sd">        processor: A processor processes loaded data.</span>
+<span class="sd">        writer: A writer writes output from the processor.</span>
+<span class="sd">        logger: A logger records processing information.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">task_id</span><span class="p">:</span> <span class="n">TaskID</span><span class="p">,</span>
+        <span class="n">loader</span><span class="p">:</span> <span class="n">Loader</span><span class="p">,</span>
+        <span class="n">processor</span><span class="p">:</span> <span class="n">Processor</span><span class="p">,</span>
+        <span class="n">writer</span><span class="p">:</span> <span class="n">Writer</span><span class="p">,</span>
+        <span class="n">logger</span><span class="p">:</span> <span class="n">Logger</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="n">task_id</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">loader</span> <span class="o">=</span> <span class="n">loader</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">processor</span> <span class="o">=</span> <span class="n">processor</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">writer</span> <span class="o">=</span> <span class="n">writer</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="n">logger</span>
+
+<div class="viewcode-block" id="Task.run">
+<a class="viewcode-back" href="../../api/dep_tools.task.html#dep_tools.task.Task.run">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The run method orchestrates the processing. Usually a typical</span>
+<span class="sd">        workflow would be load -&gt; process -&gt; write.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Typically a task will return artifacts from the processing (like</span>
+<span class="sd">            a file path).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="AreaTask">
+<a class="viewcode-back" href="../../api/dep_tools.task.html#dep_tools.task.AreaTask">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">AreaTask</span><span class="p">(</span><span class="n">Task</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;An AreaTask adds an `area` property to a basic :py:class:`Task`.</span>
+
+<span class="sd">    Most other arguments are as for :py:class:`Task`.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        area: An area for use by the loader and/or processor. For instance,</span>
+<span class="sd">            it can be used to clip data.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="nb">id</span><span class="p">:</span> <span class="n">TaskID</span><span class="p">,</span>
+        <span class="n">area</span><span class="p">:</span> <span class="n">GeoDataFrame</span><span class="p">,</span>
+        <span class="n">loader</span><span class="p">:</span> <span class="n">Loader</span><span class="p">,</span>
+        <span class="n">processor</span><span class="p">:</span> <span class="n">Processor</span><span class="p">,</span>
+        <span class="n">writer</span><span class="p">:</span> <span class="n">Writer</span><span class="p">,</span>
+        <span class="n">logger</span><span class="p">:</span> <span class="n">Logger</span> <span class="o">=</span> <span class="n">getLogger</span><span class="p">(),</span>
+    <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="nb">id</span><span class="p">,</span> <span class="n">loader</span><span class="p">,</span> <span class="n">processor</span><span class="p">,</span> <span class="n">writer</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">area</span> <span class="o">=</span> <span class="n">area</span>
+
+<div class="viewcode-block" id="AreaTask.run">
+<a class="viewcode-back" href="../../api/dep_tools.task.html#dep_tools.task.AreaTask.run">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Run the task.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The output of the writer, typically a list of paths as strings.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">input_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">loader</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">area</span><span class="p">)</span>
+
+        <span class="n">processor_kwargs</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="nb">dict</span><span class="p">(</span><span class="n">area</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">area</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">processor</span><span class="o">.</span><span class="n">send_area_to_processor</span> <span class="k">else</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="p">)</span>
+        <span class="n">output_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">processor</span><span class="o">.</span><span class="n">process</span><span class="p">(</span><span class="n">input_data</span><span class="p">,</span> <span class="o">**</span><span class="n">processor_kwargs</span><span class="p">)</span>
+        <span class="n">paths</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">writer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">output_data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">paths</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="StacTask">
+<a class="viewcode-back" href="../../api/dep_tools.task.html#dep_tools.task.StacTask">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">StacTask</span><span class="p">(</span><span class="n">AreaTask</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A StacTask extends :py:class:`AreaTask` by adding a searcher and optional</span>
+<span class="sd">    post-processor, STAC creator, and STAC writer.</span>
+
+<span class="sd">    Most arguments (id, area, loader, processor, writer, logger) are as for</span>
+<span class="sd">    :py:class:`AreaTask`.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        searcher: The searcher searches for data, typically on the basis of</span>
+<span class="sd">            the id and/or the area.</span>
+<span class="sd">        post_processor: A :py:class:`Processor` that can prep data for writing,</span>
+<span class="sd">            for example scaling or data type conversions.</span>
+<span class="sd">        stac_creator: Creates a STAC Item from the data.</span>
+<span class="sd">        stac_writer: Writes the STAC Item to storage.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="nb">id</span><span class="p">:</span> <span class="n">TaskID</span><span class="p">,</span>
+        <span class="n">area</span><span class="p">:</span> <span class="n">GeoDataFrame</span><span class="p">,</span>
+        <span class="n">searcher</span><span class="p">:</span> <span class="n">Searcher</span><span class="p">,</span>
+        <span class="n">loader</span><span class="p">:</span> <span class="n">StacLoader</span><span class="p">,</span>
+        <span class="n">processor</span><span class="p">:</span> <span class="n">Processor</span><span class="p">,</span>
+        <span class="n">writer</span><span class="p">:</span> <span class="n">Writer</span><span class="p">,</span>
+        <span class="n">post_processor</span><span class="p">:</span> <span class="n">Processor</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">stac_creator</span><span class="p">:</span> <span class="n">StacCreator</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">stac_writer</span><span class="p">:</span> <span class="n">Writer</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">logger</span><span class="p">:</span> <span class="n">Logger</span> <span class="o">=</span> <span class="n">getLogger</span><span class="p">(),</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot; &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="nb">id</span><span class="p">,</span> <span class="n">area</span><span class="p">,</span> <span class="n">loader</span><span class="p">,</span> <span class="n">processor</span><span class="p">,</span> <span class="n">writer</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">id</span> <span class="o">=</span> <span class="nb">id</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">searcher</span> <span class="o">=</span> <span class="n">searcher</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">post_processor</span> <span class="o">=</span> <span class="n">post_processor</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stac_creator</span> <span class="o">=</span> <span class="n">stac_creator</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stac_writer</span> <span class="o">=</span> <span class="n">stac_writer</span>
+
+<div class="viewcode-block" id="StacTask.run">
+<a class="viewcode-back" href="../../api/dep_tools.task.html#dep_tools.task.StacTask.run">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">items</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">searcher</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">area</span><span class="p">)</span>
+        <span class="n">input_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">loader</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">items</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">area</span><span class="p">)</span>
+
+        <span class="n">processor_kwargs</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="nb">dict</span><span class="p">(</span><span class="n">area</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">area</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">processor</span><span class="o">.</span><span class="n">send_area_to_processor</span> <span class="k">else</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="p">)</span>
+
+        <span class="n">output_data</span> <span class="o">=</span> <span class="n">set_stac_properties</span><span class="p">(</span>
+            <span class="n">input_data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">processor</span><span class="o">.</span><span class="n">process</span><span class="p">(</span><span class="n">input_data</span><span class="p">,</span> <span class="o">**</span><span class="n">processor_kwargs</span><span class="p">)</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">post_processor</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">output_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">post_processor</span><span class="o">.</span><span class="n">process</span><span class="p">(</span><span class="n">output_data</span><span class="p">)</span>
+
+        <span class="n">paths</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">writer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">output_data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">stac_creator</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">stac_writer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">stac_item</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stac_creator</span><span class="o">.</span><span class="n">process</span><span class="p">(</span><span class="n">output_data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">stac_writer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">stac_item</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">paths</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="AwsStacTask">
+<a class="viewcode-back" href="../../api/dep_tools.task.html#dep_tools.task.AwsStacTask">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">AwsStacTask</span><span class="p">(</span><span class="n">StacTask</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A convenience class with values of `writer`, `stac_creator`, and</span>
+<span class="sd">    `stac_writer` set to sensible defaults for writing to S3.</span>
+
+<span class="sd">    By default, an :py:class:`AwsDsCogWriter` is used as the primary writer,</span>
+<span class="sd">    an :py:class:`AwsStacWriter` is used to write STAC Items, and the base</span>
+<span class="sd">    :py:class:`StacCreator` is used to create the STAC object.</span>
+
+<span class="sd">    All other arguments are as for :py:class:`StacTask`.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        **kwargs: Additional arguments passed to :py:class:`StacTask`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">itempath</span><span class="p">:</span> <span class="n">S3ItemPath</span><span class="p">,</span>
+        <span class="nb">id</span><span class="p">:</span> <span class="n">TaskID</span><span class="p">,</span>
+        <span class="n">area</span><span class="p">,</span>
+        <span class="n">searcher</span><span class="p">:</span> <span class="n">Searcher</span><span class="p">,</span>
+        <span class="n">loader</span><span class="p">:</span> <span class="n">StacLoader</span><span class="p">,</span>
+        <span class="n">processor</span><span class="p">:</span> <span class="n">Processor</span><span class="p">,</span>
+        <span class="n">post_processor</span><span class="p">:</span> <span class="n">Processor</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">logger</span><span class="p">:</span> <span class="n">Logger</span> <span class="o">=</span> <span class="n">getLogger</span><span class="p">(),</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="n">writer</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;writer&quot;</span><span class="p">,</span> <span class="n">AwsDsCogWriter</span><span class="p">(</span><span class="n">itempath</span><span class="p">))</span>
+        <span class="n">stac_creator</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;stac_creator&quot;</span><span class="p">,</span> <span class="n">StacCreator</span><span class="p">(</span><span class="n">itempath</span><span class="p">))</span>
+        <span class="n">stac_writer</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;stac_writer&quot;</span><span class="p">,</span> <span class="n">AwsStacWriter</span><span class="p">(</span><span class="n">itempath</span><span class="p">))</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="nb">id</span><span class="o">=</span><span class="nb">id</span><span class="p">,</span>
+            <span class="n">area</span><span class="o">=</span><span class="n">area</span><span class="p">,</span>
+            <span class="n">searcher</span><span class="o">=</span><span class="n">searcher</span><span class="p">,</span>
+            <span class="n">loader</span><span class="o">=</span><span class="n">loader</span><span class="p">,</span>
+            <span class="n">processor</span><span class="o">=</span><span class="n">processor</span><span class="p">,</span>
+            <span class="n">post_processor</span><span class="o">=</span><span class="n">post_processor</span><span class="p">,</span>
+            <span class="n">writer</span><span class="o">=</span><span class="n">writer</span><span class="p">,</span>
+            <span class="n">stac_creator</span><span class="o">=</span><span class="n">stac_creator</span><span class="p">,</span>
+            <span class="n">stac_writer</span><span class="o">=</span><span class="n">stac_writer</span><span class="p">,</span>
+            <span class="n">logger</span><span class="o">=</span><span class="n">logger</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="ItemStacTask">
+<a class="viewcode-back" href="../../api/dep_tools.task.html#dep_tools.task.ItemStacTask">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ItemStacTask</span><span class="p">(</span><span class="n">Task</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A task for a single STAC item.</span>
+
+<span class="sd">    Most arguments are as for :py:class:`StacTask`, except `area` is dropped.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        item: A :py:class:`pystac.Item` representing the input data.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="nb">id</span><span class="p">:</span> <span class="n">TaskID</span><span class="p">,</span>
+        <span class="n">item</span><span class="p">:</span> <span class="n">Item</span><span class="p">,</span>
+        <span class="n">loader</span><span class="p">:</span> <span class="n">StacLoader</span><span class="p">,</span>
+        <span class="n">processor</span><span class="p">:</span> <span class="n">Processor</span><span class="p">,</span>
+        <span class="n">writer</span><span class="p">:</span> <span class="n">Writer</span><span class="p">,</span>
+        <span class="n">post_processor</span><span class="p">:</span> <span class="n">Processor</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">stac_creator</span><span class="p">:</span> <span class="n">StacCreator</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">stac_writer</span><span class="p">:</span> <span class="n">Writer</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">logger</span><span class="p">:</span> <span class="n">Logger</span> <span class="o">=</span> <span class="n">getLogger</span><span class="p">(),</span>
+    <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">task_id</span><span class="o">=</span><span class="nb">id</span><span class="p">,</span> <span class="n">loader</span><span class="o">=</span><span class="n">loader</span><span class="p">,</span> <span class="n">processor</span><span class="o">=</span><span class="n">processor</span><span class="p">,</span> <span class="n">writer</span><span class="o">=</span><span class="n">writer</span><span class="p">,</span> <span class="n">logger</span><span class="o">=</span><span class="n">logger</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">post_processor</span> <span class="o">=</span> <span class="n">post_processor</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stac_creator</span> <span class="o">=</span> <span class="n">stac_creator</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stac_writer</span> <span class="o">=</span> <span class="n">stac_writer</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">item</span> <span class="o">=</span> <span class="n">item</span>
+
+<div class="viewcode-block" id="ItemStacTask.run">
+<a class="viewcode-back" href="../../api/dep_tools.task.html#dep_tools.task.ItemStacTask.run">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">input_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">loader</span><span class="o">.</span><span class="n">load</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">item</span><span class="p">])</span>
+
+        <span class="n">output_data</span> <span class="o">=</span> <span class="n">copy_stac_properties</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">item</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">processor</span><span class="o">.</span><span class="n">process</span><span class="p">(</span><span class="n">input_data</span><span class="p">)</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">post_processor</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">output_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">post_processor</span><span class="o">.</span><span class="n">process</span><span class="p">(</span><span class="n">output_data</span><span class="p">)</span>
+
+        <span class="n">paths</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">writer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">output_data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">stac_creator</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">stac_writer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">stac_item</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">stac_creator</span><span class="o">.</span><span class="n">process</span><span class="p">(</span><span class="n">output_data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">stac_writer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">stac_item</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">paths</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="ErrorCategoryAreaTask">
+<a class="viewcode-back" href="../../api/dep_tools.task.html#dep_tools.task.ErrorCategoryAreaTask">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">ErrorCategoryAreaTask</span><span class="p">(</span><span class="n">AreaTask</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;An AreaTask with extra logging.</span>
+
+<span class="sd">    Errors logged include:</span>
+<span class="sd">        - :py:exc:`EmptyCollectionError` from loader: logged as &quot;no items for areas&quot;</span>
+<span class="sd">        - Other :py:exc:`Exception` from loader: logged as &quot;load error&quot;</span>
+<span class="sd">        - :py:exc:`Exception` from processor: logged as &quot;processor error&quot;</span>
+<span class="sd">        - Empty processor output: logged as &quot;no output from processor&quot;</span>
+<span class="sd">        - Writer error: logged as &quot;error&quot; (could be from writer or something</span>
+<span class="sd">          beforehand if using dask)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="ErrorCategoryAreaTask.run">
+<a class="viewcode-back" href="../../api/dep_tools.task.html#dep_tools.task.ErrorCategoryAreaTask.run">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">input_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">loader</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">area</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">EmptyCollectionError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="s2">&quot;no items for areas&quot;</span><span class="p">])</span>
+            <span class="k">raise</span> <span class="n">e</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="s2">&quot;load error&quot;</span><span class="p">,</span> <span class="n">e</span><span class="p">])</span>
+            <span class="k">raise</span> <span class="n">e</span>
+
+        <span class="n">processor_kwargs</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="nb">dict</span><span class="p">(</span><span class="n">area</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">area</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">processor</span><span class="o">.</span><span class="n">send_area_to_processor</span> <span class="k">else</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">output_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">processor</span><span class="o">.</span><span class="n">process</span><span class="p">(</span><span class="n">input_data</span><span class="p">,</span> <span class="o">**</span><span class="n">processor_kwargs</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="s2">&quot;processor error&quot;</span><span class="p">,</span> <span class="n">e</span><span class="p">])</span>
+            <span class="k">raise</span> <span class="n">e</span>
+
+        <span class="k">if</span> <span class="n">output_data</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="s2">&quot;no output from processor&quot;</span><span class="p">])</span>
+            <span class="k">raise</span> <span class="n">NoOutputError</span><span class="p">()</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">paths</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">writer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">output_data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="s2">&quot;error&quot;</span><span class="p">,</span> <span class="n">e</span><span class="p">])</span>
+            <span class="k">raise</span> <span class="n">e</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="s2">&quot;complete&quot;</span><span class="p">,</span> <span class="n">paths</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="n">paths</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="MultiAreaTask">
+<a class="viewcode-back" href="../../api/dep_tools.task.html#dep_tools.task.MultiAreaTask">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">MultiAreaTask</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A &quot;Task&quot; object that iterates over multiple IDs and runs a task for each.</span>
+
+<span class="sd">    This class is useful when running multiple short tasks where the time</span>
+<span class="sd">    to build the run environment (for instance, if running on a pod) adds</span>
+<span class="sd">    considerably to overall processing time.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        ids: A list of IDs.</span>
+<span class="sd">        areas: A :py:class:`geopandas.GeoDataFrame` with index corresponding to the IDs.</span>
+<span class="sd">        task_class: The :py:class:`AreaTask` subclass to use for each task.</span>
+<span class="sd">        fail_on_error: If True, will exit on error. Otherwise, will log the full</span>
+<span class="sd">            exception and continue.</span>
+<span class="sd">        logger: A logger.</span>
+<span class="sd">        **kwargs: Additional arguments to the `task_class` constructor.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">ids</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">TaskID</span><span class="p">],</span>
+        <span class="n">areas</span><span class="p">:</span> <span class="n">GeoDataFrame</span><span class="p">,</span>
+        <span class="n">logger</span><span class="p">,</span>
+        <span class="n">task_class</span><span class="p">:</span> <span class="nb">type</span><span class="p">[</span><span class="n">AreaTask</span><span class="p">],</span>
+        <span class="n">fail_on_error</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ids</span> <span class="o">=</span> <span class="n">ids</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">areas</span> <span class="o">=</span> <span class="n">areas</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">task_class</span> <span class="o">=</span> <span class="n">task_class</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fail_on_error</span> <span class="o">=</span> <span class="n">fail_on_error</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="n">logger</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_kwargs</span> <span class="o">=</span> <span class="n">kwargs</span>
+
+<div class="viewcode-block" id="MultiAreaTask.run">
+<a class="viewcode-back" href="../../api/dep_tools.task.html#dep_tools.task.MultiAreaTask.run">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">for</span> <span class="nb">id</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ids</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">paths</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">task_class</span><span class="p">(</span><span class="nb">id</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">areas</span><span class="o">.</span><span class="n">loc</span><span class="p">[[</span><span class="nb">id</span><span class="p">]],</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_kwargs</span><span class="p">)</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">([</span><span class="nb">id</span><span class="p">,</span> <span class="s2">&quot;complete&quot;</span><span class="p">,</span> <span class="n">paths</span><span class="p">])</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">fail_on_error</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">e</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">([</span><span class="nb">id</span><span class="p">,</span> <span class="s2">&quot;error&quot;</span><span class="p">,</span> <span class="p">[],</span> <span class="n">e</span><span class="p">])</span>
+                <span class="k">continue</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="SimpleLoggingAreaTask">
+<a class="viewcode-back" href="../../api/dep_tools.task.html#dep_tools.task.SimpleLoggingAreaTask">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">SimpleLoggingAreaTask</span><span class="p">(</span><span class="n">AreaTask</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;An AreaTask with basic logging.</span>
+
+<span class="sd">    All arguments are as for :py:class:`AreaTask`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="SimpleLoggingAreaTask.run">
+<a class="viewcode-back" href="../../api/dep_tools.task.html#dep_tools.task.SimpleLoggingAreaTask.run">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Preparing to load data&quot;</span><span class="p">)</span>
+        <span class="n">input_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">loader</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">area</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Found </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">input_data</span><span class="o">.</span><span class="n">time</span><span class="p">)</span><span class="si">}</span><span class="s2"> timesteps to load&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Preparing to process data&quot;</span><span class="p">)</span>
+        <span class="n">processor_kwargs</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">processor</span><span class="o">.</span><span class="n">send_area_to_processor</span><span class="p">:</span>
+            <span class="n">processor_kwargs</span><span class="p">[</span><span class="s2">&quot;area&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">area</span>
+        <span class="n">output_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">processor</span><span class="o">.</span><span class="n">process</span><span class="p">(</span><span class="n">input_data</span><span class="p">,</span> <span class="o">**</span><span class="n">processor_kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Processed data will have a result of shape: </span><span class="si">{</span><span class="p">[</span><span class="n">output_data</span><span class="o">.</span><span class="n">dims</span><span class="p">[</span><span class="n">d</span><span class="p">]</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">d</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;y&#39;</span><span class="p">]]</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Processing and writing data...&quot;</span><span class="p">)</span>
+        <span class="n">paths</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">writer</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">output_data</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Succesfully wrote data to </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">paths</span><span class="p">)</span><span class="si">}</span><span class="s2"> paths&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">paths</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Digital Earth Pacific.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

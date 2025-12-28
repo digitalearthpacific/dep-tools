@@ -1,0 +1,401 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>dep_tools.namers module &mdash; dep-tools 0.5.4 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=e1a677a5"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="dep_tools.parsers module" href="dep_tools.parsers.html" />
+    <link rel="prev" title="dep_tools.loaders module" href="dep_tools.loaders.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            dep-tools
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">dep_tools</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="dep_tools.html">dep_tools package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="dep_tools.html#submodules">Submodules</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.aws.html">dep_tools.aws module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.exceptions.html">dep_tools.exceptions module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.grids.html">dep_tools.grids module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.landsat_utils.html">dep_tools.landsat_utils module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.loaders.html">dep_tools.loaders module</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">dep_tools.namers module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.parsers.html">dep_tools.parsers module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.processors.html">dep_tools.processors module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.s2_utils.html">dep_tools.s2_utils module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.searchers.html">dep_tools.searchers module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.stac_utils.html">dep_tools.stac_utils module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.task.html">dep_tools.task module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.utils.html">dep_tools.utils module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.writers.html">dep_tools.writers module</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="dep_tools.html#module-dep_tools">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">dep-tools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">dep_tools</a></li>
+          <li class="breadcrumb-item"><a href="dep_tools.html">dep_tools package</a></li>
+      <li class="breadcrumb-item active">dep_tools.namers module</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/api/dep_tools.namers.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-dep_tools.namers">
+<span id="dep-tools-namers-module"></span><h1>dep_tools.namers module<a class="headerlink" href="#module-dep_tools.namers" title="Link to this heading"></a></h1>
+<p>Base class and implementation of <code class="xref py py-class docutils literal notranslate"><span class="pre">Namer</span></code> objects, which are used to
+define paths for output data and accompanying files, such as STAC Items.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="dep_tools.namers.ItemPath">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">dep_tools.namers.</span></span><span class="sig-name descname"><span class="pre">ItemPath</span></span><a class="reference internal" href="../_modules/dep_tools/namers.html#ItemPath"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dep_tools.namers.ItemPath" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
+<p>An ItemPath returns a path.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="dep_tools.namers.ItemPath.path">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">path</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dep_tools/namers.html#ItemPath.path"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dep_tools.namers.ItemPath.path" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="dep_tools.namers.GenericItemPath">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">dep_tools.namers.</span></span><span class="sig-name descname"><span class="pre">GenericItemPath</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dataset_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">version</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prefix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'dep'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zero_pad_numbers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">full_path_prefix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dep_tools/namers.html#GenericItemPath"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dep_tools.namers.GenericItemPath" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#dep_tools.namers.ItemPath" title="dep_tools.namers.ItemPath"><code class="xref py py-class docutils literal notranslate"><span class="pre">ItemPath</span></code></a></p>
+<p>A GenericItemPath represents a path on a network or local drive.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sensor</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – The satellite sensor, typically “ls” for Landsat or “s2”
+for Sentinel-2.</p></li>
+<li><p><strong>dataset_id</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – The identifier for this product, such as “geomad”.</p></li>
+<li><p><strong>version</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – A version identified.</p></li>
+<li><p><strong>time</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – A time, such as “2012”.</p></li>
+<li><p><strong>prefix</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – The prefix for the product, typically representing the
+data producer, such as “dep” for Digital Earth Pacific.</p></li>
+<li><p><strong>zero_pad_numbers</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span>) – Whether to pad numbers in the item id (see below)
+to three digits.</p></li>
+<li><p><strong>full_path_prefix</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Path</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</span>) – Something to put at the beginning of the full path
+representation of the path, such as “/home/”.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="dep_tools.namers.GenericItemPath.basename">
+<span class="sig-name descname"><span class="pre">basename</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">item_id</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dep_tools/namers.html#GenericItemPath.basename"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dep_tools.namers.GenericItemPath.basename" title="Link to this definition"></a></dt>
+<dd><p>The stem of the file name, without any parent folders.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>item_id</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>] | <code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>] | <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – The item id. If a list, items are converted to string, optionally
+zero-padded (according to the class parameter <cite>zero_pad_numbers</cite>),
+and joined using an underscore. Otherwise, the value is used directly.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A string.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="dep_tools.namers.GenericItemPath.path">
+<span class="sig-name descname"><span class="pre">path</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">item_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">asset_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ext</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'.tif'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">absolute</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dep_tools/namers.html#GenericItemPath.path"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dep_tools.namers.GenericItemPath.path" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>item_id</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>] | <code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>] | <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – The item id.</p></li>
+<li><p><strong>asset_name</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</span>) – If the thing we are naming has multiple assets / bands, this
+is the name of the asset.</p></li>
+<li><p><strong>ext</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – The extension for the path.</p></li>
+<li><p><strong>absolute</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span>) – Whether to return the absolute path.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The path as a string.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="dep_tools.namers.GenericItemPath.stac_path">
+<span class="sig-name descname"><span class="pre">stac_path</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">item_id</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dep_tools/namers.html#GenericItemPath.stac_path"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dep_tools.namers.GenericItemPath.stac_path" title="Link to this definition"></a></dt>
+<dd><p>The path to the STAC item.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>item_id</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>] | <code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>] | <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – The item id.</p></li>
+<li><p><strong>**kwargs</strong> – Additional arguments to <a class="reference internal" href="#dep_tools.namers.GenericItemPath.path" title="dep_tools.namers.GenericItemPath.path"><code class="xref py py-func docutils literal notranslate"><span class="pre">GenericItemPath.path()</span></code></a>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The path as a string.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="dep_tools.namers.GenericItemPath.log_path">
+<span class="sig-name descname"><span class="pre">log_path</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dep_tools/namers.html#GenericItemPath.log_path"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dep_tools.namers.GenericItemPath.log_path" title="Link to this definition"></a></dt>
+<dd><p>The path to the log file.</p>
+<p>The path represents a csv file and is not used in all processing.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span></p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The path as a string.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="dep_tools.namers.DepItemPath">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">dep_tools.namers.</span></span><span class="sig-name descname"><span class="pre">DepItemPath</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dataset_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">version</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prefix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'dep'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zero_pad_numbers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">full_path_prefix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dep_tools/namers.html#DepItemPath"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dep_tools.namers.DepItemPath" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#dep_tools.namers.GenericItemPath" title="dep_tools.namers.GenericItemPath"><code class="xref py py-class docutils literal notranslate"><span class="pre">GenericItemPath</span></code></a></p>
+<p>A DepItemPath is just a renamed GenericItemPath, for backwards compatibility.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sensor</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – The satellite sensor, typically “ls” for Landsat or “s2”
+for Sentinel-2.</p></li>
+<li><p><strong>dataset_id</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – The identifier for this product, such as “geomad”.</p></li>
+<li><p><strong>version</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – A version identified.</p></li>
+<li><p><strong>time</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – A time, such as “2012”.</p></li>
+<li><p><strong>prefix</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – The prefix for the product, typically representing the
+data producer, such as “dep” for Digital Earth Pacific.</p></li>
+<li><p><strong>zero_pad_numbers</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span>) – Whether to pad numbers in the item id (see below)
+to three digits.</p></li>
+<li><p><strong>full_path_prefix</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Path</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</span>) – Something to put at the beginning of the full path
+representation of the path, such as “/home/”.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="dep_tools.namers.S3ItemPath">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">dep_tools.namers.</span></span><span class="sig-name descname"><span class="pre">S3ItemPath</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bucket</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dataset_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">version</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prefix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'dep'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zero_pad_numbers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">full_path_prefix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">make_hrefs_https</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dep_tools/namers.html#S3ItemPath"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dep_tools.namers.S3ItemPath" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#dep_tools.namers.GenericItemPath" title="dep_tools.namers.GenericItemPath"><code class="xref py py-class docutils literal notranslate"><span class="pre">GenericItemPath</span></code></a></p>
+<p>An ItemPath for something on Amazon S3 storage.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="dep_tools.namers.S3ItemPath.bucket">
+<span class="sig-name descname"><span class="pre">bucket</span></span><a class="headerlink" href="#dep_tools.namers.S3ItemPath.bucket" title="Link to this definition"></a></dt>
+<dd><p>The name of the bucket.</p>
+</dd></dl>
+
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sensor</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – The satellite sensor, typically “ls” for Landsat or “s2”
+for Sentinel-2.</p></li>
+<li><p><strong>dataset_id</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – The identifier for this product, such as “geomad”.</p></li>
+<li><p><strong>version</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – A version identified.</p></li>
+<li><p><strong>time</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – A time, such as “2012”.</p></li>
+<li><p><strong>prefix</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – The prefix for the product, typically representing the
+data producer, such as “dep” for Digital Earth Pacific.</p></li>
+<li><p><strong>zero_pad_numbers</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span>) – Whether to pad numbers in the item id (see below)
+to three digits.</p></li>
+<li><p><strong>full_path_prefix</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</span>) – Something to put at the beginning of the full path
+representation of the path, such as “/home/”.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="dep_tools.namers.DailyItemPath">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">dep_tools.namers.</span></span><span class="sig-name descname"><span class="pre">DailyItemPath</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">time</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dep_tools/namers.html#DailyItemPath"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dep_tools.namers.DailyItemPath" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#dep_tools.namers.S3ItemPath" title="dep_tools.namers.S3ItemPath"><code class="xref py py-class docutils literal notranslate"><span class="pre">S3ItemPath</span></code></a></p>
+<p>An S3ItemPath which produces approprate paths for “daily” items where the time
+is a datetime parseable by datetime.datetime.fromisoformat.
+Folders will have format YYYY/mm/dd, and stems will have dates in the
+format YYYY-mm-dd.
+Example: a time value of <cite>“2025-06-13 15:56:54.012509”</cite>
+would produce
+dep_ls_wofl/99/77/2025/06/13/dep_ls_wofl_99_77_2025-06-13.tif</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sensor</strong> – The satellite sensor, typically “ls” for Landsat or “s2”
+for Sentinel-2.</p></li>
+<li><p><strong>dataset_id</strong> – The identifier for this product, such as “geomad”.</p></li>
+<li><p><strong>version</strong> – A version identified.</p></li>
+<li><p><strong>time</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">datetime</span></code></span>) – A time, such as “2012”.</p></li>
+<li><p><strong>prefix</strong> – The prefix for the product, typically representing the
+data producer, such as “dep” for Digital Earth Pacific.</p></li>
+<li><p><strong>zero_pad_numbers</strong> – Whether to pad numbers in the item id (see below)
+to three digits.</p></li>
+<li><p><strong>full_path_prefix</strong> – Something to put at the beginning of the full path
+representation of the path, such as “/home/”.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="dep_tools.namers.DailyItemPath.basename">
+<span class="sig-name descname"><span class="pre">basename</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">item_id</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dep_tools/namers.html#DailyItemPath.basename"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dep_tools.namers.DailyItemPath.basename" title="Link to this definition"></a></dt>
+<dd><p>The stem of the file name, without any parent folders.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>item_id</strong> – The item id. If a list, items are converted to string, optionally
+zero-padded (according to the class parameter <cite>zero_pad_numbers</cite>),
+and joined using an underscore. Otherwise, the value is used directly.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>A string.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="dep_tools.namers.LocalPath">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">dep_tools.namers.</span></span><span class="sig-name descname"><span class="pre">LocalPath</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">local_folder</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prefix</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'dep'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dep_tools/namers.html#LocalPath"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dep_tools.namers.LocalPath" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#dep_tools.namers.DepItemPath" title="dep_tools.namers.DepItemPath"><code class="xref py py-class docutils literal notranslate"><span class="pre">DepItemPath</span></code></a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sensor</strong> – The satellite sensor, typically “ls” for Landsat or “s2”
+for Sentinel-2.</p></li>
+<li><p><strong>dataset_id</strong> – The identifier for this product, such as “geomad”.</p></li>
+<li><p><strong>version</strong> – A version identified.</p></li>
+<li><p><strong>time</strong> – A time, such as “2012”.</p></li>
+<li><p><strong>prefix</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – The prefix for the product, typically representing the
+data producer, such as “dep” for Digital Earth Pacific.</p></li>
+<li><p><strong>zero_pad_numbers</strong> – Whether to pad numbers in the item id (see below)
+to three digits.</p></li>
+<li><p><strong>full_path_prefix</strong> – Something to put at the beginning of the full path
+representation of the path, such as “/home/”.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="dep_tools.namers.LocalPath.path">
+<span class="sig-name descname"><span class="pre">path</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">item_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">asset_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ext</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'.tif'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dep_tools/namers.html#LocalPath.path"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dep_tools.namers.LocalPath.path" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>item_id</strong> – The item id.</p></li>
+<li><p><strong>asset_name</strong> – If the thing we are naming has multiple assets / bands, this
+is the name of the asset.</p></li>
+<li><p><strong>ext</strong> – The extension for the path.</p></li>
+<li><p><strong>absolute</strong> – Whether to return the absolute path.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The path as a string.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="dep_tools.loaders.html" class="btn btn-neutral float-left" title="dep_tools.loaders module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="dep_tools.parsers.html" class="btn btn-neutral float-right" title="dep_tools.parsers module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Digital Earth Pacific.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

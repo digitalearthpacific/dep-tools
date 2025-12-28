@@ -1,0 +1,172 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>dep_tools.parsers &mdash; dep-tools 0.5.4 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=e1a677a5"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            dep-tools
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api/modules.html">dep_tools</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">dep-tools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">dep_tools.parsers</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for dep_tools.parsers</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;This module contains various parsers for converting data.</span>
+
+<span class="sd">These are primarily useful as convenience functions when using the typer module,</span>
+<span class="sd">particularly in combination with argo workflows, which only allows certain</span>
+<span class="sd">parameter types.</span>
+
+<span class="sd">Example usage might be something like::</span>
+
+<span class="sd">    from typing import Annotated</span>
+<span class="sd">    import typer</span>
+
+<span class="sd">    def main(flag: Annotated[str, typer.Option(parser=bool_parser)] = &quot;True&quot;):</span>
+<span class="sd">        print(flag.__class__)</span>
+
+<span class="sd">    if __name__ == &quot;__main__&quot;:</span>
+<span class="sd">        typer.run(main())</span>
+
+<span class="sd">Calling this code like::</span>
+
+<span class="sd">    $ python file.py --flag True</span>
+
+<span class="sd">or::</span>
+
+<span class="sd">    $ python file.py</span>
+
+<span class="sd">will produce::</span>
+
+<span class="sd">    &lt;class &#39;bool&#39;&gt;</span>
+
+<span class="sd">That is, the input string argument has automatically been converted to a bool.</span>
+
+<span class="sd">the parameter must have a name and a value.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+
+<div class="viewcode-block" id="datetime_parser">
+<a class="viewcode-back" href="../../api/dep_tools.parsers.html#dep_tools.parsers.datetime_parser">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">datetime_parser</span><span class="p">(</span><span class="n">datetime</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Parse a string representing a year or multiple years.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        datetime: A string of the format `&#39;&lt;year&gt;&#39;` or `&#39;&lt;year x&gt;_&lt;year y&gt;&#39;`.</span>
+<span class="sd">            If the latter, the years must be in order.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        If `datetime` is a single year, it is returned as a single item list.</span>
+<span class="sd">        Otherwise a generator producing integer values in the range</span>
+<span class="sd">        `[&lt;year x&gt;, &lt;year y&gt; + 1]` is returned.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">years</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">years</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="n">years</span> <span class="o">=</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">year</span><span class="p">)</span> <span class="k">for</span> <span class="n">year</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">years</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="nb">int</span><span class="p">(</span><span class="n">years</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)]</span>
+    <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">years</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">datetime</span><span class="si">}</span><span class="s2"> is not a valid value for --datetime&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">years</span></div>
+
+
+
+<div class="viewcode-block" id="bool_parser">
+<a class="viewcode-back" href="../../api/dep_tools.parsers.html#dep_tools.parsers.bool_parser">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">bool_parser</span><span class="p">(</span><span class="n">raw</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Parse a string representing a true or false condition.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        raw: Either &quot;False&quot; or something else.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        False if `raw` is `&quot;False&quot;&#39;` and true otherwise.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="kc">False</span> <span class="k">if</span> <span class="n">raw</span> <span class="o">==</span> <span class="s2">&quot;False&quot;</span> <span class="k">else</span> <span class="kc">True</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Digital Earth Pacific.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

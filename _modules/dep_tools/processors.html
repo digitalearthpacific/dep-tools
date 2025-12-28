@@ -1,0 +1,328 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>dep_tools.processors &mdash; dep-tools 0.5.4 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=e1a677a5"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            dep-tools
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api/modules.html">dep_tools</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">dep-tools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">dep_tools.processors</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for dep_tools.processors</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Definition of base class and implementations of :class:`Processor` objects.</span>
+
+<span class="sd">:class:`Processor` objects process input data to produce output data. As such,</span>
+<span class="sd">they are the most likely to be written for custom processing.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">xarray</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataArray</span><span class="p">,</span> <span class="n">Dataset</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.landsat_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">mask_clouds</span> <span class="k">as</span> <span class="n">mask_clouds_landsat</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.s2_utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">mask_clouds</span> <span class="k">as</span> <span class="n">mask_clouds_s2</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">scale_and_offset</span><span class="p">,</span> <span class="n">scale_to_int16</span>
+
+
+<div class="viewcode-block" id="Processor">
+<a class="viewcode-back" href="../../api/dep_tools.processors.html#dep_tools.processors.Processor">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Processor</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A Processor converts input data to output data.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        send_area_to_processor: Whether to send the input area</span>
+<span class="sd">            (typically used by a loader to load appropriate data)</span>
+<span class="sd">            to the processor.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">send_area_to_processor</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">send_area_to_processor</span> <span class="o">=</span> <span class="n">send_area_to_processor</span>
+
+<div class="viewcode-block" id="Processor.process">
+<a class="viewcode-back" href="../../api/dep_tools.processors.html#dep_tools.processors.Processor.process">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">process</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_data</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Process the data.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            input_data (Any): Any data.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="LandsatProcessor">
+<a class="viewcode-back" href="../../api/dep_tools.processors.html#dep_tools.processors.LandsatProcessor">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">LandsatProcessor</span><span class="p">(</span><span class="n">Processor</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">send_area_to_processor</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">scale_and_offset</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">mask_clouds</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">mask_clouds_kwargs</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(),</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;A :class:`Processor` for use with Landsat data.</span>
+
+<span class="sd">        Typically this Processor will be subclassed when working with</span>
+<span class="sd">        Landsat data</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            scale_and_offset:</span>
+<span class="sd">                Whether to scale and offset the input data.</span>
+<span class="sd">                Landsat data is typically stored in 16-bit integers, this applies</span>
+<span class="sd">                the standard scale and offset values to each band for surface</span>
+<span class="sd">                reflectance data and (as a side effect) converts the data type</span>
+<span class="sd">                to floating point.</span>
+<span class="sd">            mask_clouds:</span>
+<span class="sd">                Whether to mask_clouds,</span>
+<span class="sd">                using :func:`dep_tools.landsat_utils.mask_clouds_landsat`.</span>
+<span class="sd">            mask_clouds_kwargs:</span>
+<span class="sd">                Additional arguments to</span>
+<span class="sd">                :func:`dep_tools.landsat_utils.mask_clouds_landsat`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">send_area_to_processor</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scale_and_offset</span> <span class="o">=</span> <span class="n">scale_and_offset</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mask_clouds</span> <span class="o">=</span> <span class="n">mask_clouds</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mask_kwargs</span> <span class="o">=</span> <span class="n">mask_clouds_kwargs</span>
+
+<div class="viewcode-block" id="LandsatProcessor.process">
+<a class="viewcode-back" href="../../api/dep_tools.processors.html#dep_tools.processors.LandsatProcessor.process">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">process</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">xr</span><span class="p">:</span> <span class="n">DataArray</span> <span class="o">|</span> <span class="n">Dataset</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataArray</span> <span class="o">|</span> <span class="n">Dataset</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Process the data.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            xr: Any input data, but to benefit from the functionality of this</span>
+<span class="sd">                class, input should be Landsat surface reflectance data,</span>
+<span class="sd">                typically with the `&quot;QA_PIXEL&quot;` band as well.</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            The input data, optionally with clouds masked and/or scale and</span>
+<span class="sd">            offset applied.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_clouds</span><span class="p">:</span>
+            <span class="n">xr</span> <span class="o">=</span> <span class="n">mask_clouds_landsat</span><span class="p">(</span><span class="n">xr</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">mask_kwargs</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale_and_offset</span><span class="p">:</span>
+            <span class="c1"># These values only work for SR bands of landsat. Ideally we could</span>
+            <span class="c1"># read from metadata. _Really_ ideally we could just pass &quot;scale&quot;</span>
+            <span class="c1"># to rioxarray/stack/odc.stac.load but apparently that doesn&#39;t work.</span>
+            <span class="n">scale</span> <span class="o">=</span> <span class="mf">0.0000275</span>
+            <span class="n">offset</span> <span class="o">=</span> <span class="o">-</span><span class="mf">0.2</span>
+
+            <span class="n">xr</span> <span class="o">=</span> <span class="n">scale_and_offset</span><span class="p">(</span><span class="n">xr</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="p">[</span><span class="n">scale</span><span class="p">],</span> <span class="n">offset</span><span class="o">=</span><span class="n">offset</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">xr</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="S2Processor">
+<a class="viewcode-back" href="../../api/dep_tools.processors.html#dep_tools.processors.S2Processor">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">S2Processor</span><span class="p">(</span><span class="n">Processor</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">send_area_to_processor</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">scale_and_offset</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">mask_clouds</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">mask_clouds_kwargs</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(),</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;A :class:`Processor` for use with Sentinel-2 data.</span>
+
+<span class="sd">        Typically this Processor will be subclassed when working with</span>
+<span class="sd">        Sentinel-2 data.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            scale_and_offset:</span>
+<span class="sd">                Whether to scale and offset the input data.</span>
+<span class="sd">                Landsat data is typically stored in 16-bit integers, this applies</span>
+<span class="sd">                the standard scale and offset values to each band for surface</span>
+<span class="sd">                reflectance data and (as a side effect) converts the data type</span>
+<span class="sd">                to floating point.</span>
+<span class="sd">            mask_clouds:</span>
+<span class="sd">                Whether to mask_clouds,</span>
+<span class="sd">                using :func:`dep_tools.s2_utils.mask_clouds`.</span>
+<span class="sd">            mask_clouds_kwargs:</span>
+<span class="sd">                Additional arguments to</span>
+<span class="sd">                :func:`dep_tools.s2_utils.mask_clouds`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">send_area_to_processor</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scale_and_offset</span> <span class="o">=</span> <span class="n">scale_and_offset</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mask_clouds</span> <span class="o">=</span> <span class="n">mask_clouds</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mask_clouds_kwargs</span> <span class="o">=</span> <span class="n">mask_clouds_kwargs</span>
+
+<div class="viewcode-block" id="S2Processor.process">
+<a class="viewcode-back" href="../../api/dep_tools.processors.html#dep_tools.processors.S2Processor.process">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">process</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">xr</span><span class="p">:</span> <span class="n">DataArray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataArray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Process the data.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            xr: Any input data, but to benefit from the functionality of this</span>
+<span class="sd">                class, input should be Sentinel-2 data, typically including the</span>
+<span class="sd">                `&quot;SCL&quot;` band.</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            The input data, optionally with clouds masked and/or scale and</span>
+<span class="sd">            offset applied.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">mask_clouds</span><span class="p">:</span>
+            <span class="n">xr</span> <span class="o">=</span> <span class="n">mask_clouds_s2</span><span class="p">(</span><span class="n">xr</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">mask_clouds_kwargs</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale_and_offset</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">harmonize_to_old</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span>
+                <span class="s2">&quot;Warning: scale and offset is dangerous when used without harmonize_to_old&quot;</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale_and_offset</span><span class="p">:</span>
+            <span class="n">scale</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="mi">10000</span>
+            <span class="n">offset</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="n">xr</span> <span class="o">=</span> <span class="n">scale_and_offset</span><span class="p">(</span><span class="n">xr</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="p">[</span><span class="n">scale</span><span class="p">],</span> <span class="n">offset</span><span class="o">=</span><span class="n">offset</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">xr</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="XrPostProcessor">
+<a class="viewcode-back" href="../../api/dep_tools.processors.html#dep_tools.processors.XrPostProcessor">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">XrPostProcessor</span><span class="p">(</span><span class="n">Processor</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">convert_to_int16</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">output_value_multiplier</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10000</span><span class="p">,</span>
+        <span class="n">scale_int16s</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">output_nodata</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="o">-</span><span class="mi">32767</span><span class="p">,</span>
+        <span class="n">extra_attrs</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="p">{},</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;A Processor with typical things to do to output data.</span>
+
+<span class="sd">        Some :class:`Task` objects allow for use of a Processor to prep</span>
+<span class="sd">        data for writing after the actual processing. This is mostly a wrapper</span>
+<span class="sd">        around :func:`scale_to_int16`.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            convert_to_int16: Whether to convert output data to 16-bit (signed)</span>
+<span class="sd">                integer.</span>
+<span class="sd">            output_value_multiplier: A multiplier to apply to the input data.</span>
+<span class="sd">            scale_int16s: Whether data which is already 16-bit signed integer should</span>
+<span class="sd">                be scaled using `output_value_multiplier`.</span>
+<span class="sd">            output_nodata: The `nodata` value to be declared in the output.</span>
+<span class="sd">            extra_attrs: Extra attributes to add to the output data.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_convert_to_int16</span> <span class="o">=</span> <span class="n">convert_to_int16</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_output_value_multiplier</span> <span class="o">=</span> <span class="n">output_value_multiplier</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_scale_int16s</span> <span class="o">=</span> <span class="n">scale_int16s</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_output_nodata</span> <span class="o">=</span> <span class="n">output_nodata</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_extra_attrs</span> <span class="o">=</span> <span class="n">extra_attrs</span>
+
+<div class="viewcode-block" id="XrPostProcessor.process">
+<a class="viewcode-back" href="../../api/dep_tools.processors.html#dep_tools.processors.XrPostProcessor.process">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">process</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">xr</span><span class="p">:</span> <span class="n">DataArray</span> <span class="o">|</span> <span class="n">Dataset</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Process the data.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            xr: Any input data.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            The input data, with scaling, type-conversion and other adjustments</span>
+<span class="sd">            applied.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">xr</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_extra_attrs</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_convert_to_int16</span><span class="p">:</span>
+            <span class="n">xr</span> <span class="o">=</span> <span class="n">scale_to_int16</span><span class="p">(</span>
+                <span class="n">xr</span><span class="p">,</span>
+                <span class="n">output_multiplier</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_output_value_multiplier</span><span class="p">,</span>
+                <span class="n">output_nodata</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_output_nodata</span><span class="p">,</span>
+                <span class="n">scale_int16s</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_scale_int16s</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">xr</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Digital Earth Pacific.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

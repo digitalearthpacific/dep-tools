@@ -1,0 +1,425 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>dep_tools.stac_utils &mdash; dep-tools 0.5.4 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=e1a677a5"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            dep-tools
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api/modules.html">dep_tools</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">dep-tools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">dep_tools.stac_utils</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for dep_tools.stac_utils</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;This module contains classes and functions to aid in STAC Item creation.&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataFrame</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pystac</span><span class="w"> </span><span class="kn">import</span> <span class="n">Asset</span><span class="p">,</span> <span class="n">Item</span><span class="p">,</span> <span class="n">MediaType</span><span class="p">,</span> <span class="n">read_dict</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pystac_client</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">rasterio</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">rio_stac.stac</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_stac_item</span><span class="p">,</span> <span class="n">get_raster_info</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">xarray</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataArray</span><span class="p">,</span> <span class="n">Dataset</span>
+
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.aws</span><span class="w"> </span><span class="kn">import</span> <span class="n">object_exists</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.namers</span><span class="w"> </span><span class="kn">import</span> <span class="n">GenericItemPath</span><span class="p">,</span> <span class="n">S3ItemPath</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.processors</span><span class="w"> </span><span class="kn">import</span> <span class="n">Processor</span>
+
+
+<div class="viewcode-block" id="StacCreator">
+<a class="viewcode-back" href="../../api/dep_tools.stac_utils.html#dep_tools.stac_utils.StacCreator">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">StacCreator</span><span class="p">(</span><span class="n">Processor</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">itempath</span><span class="p">:</span> <span class="n">GenericItemPath</span><span class="p">,</span>
+        <span class="n">collection_url_root</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;https://stac.staging.digitalearthpacific.io/collections&quot;</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;A :class:`Processor` which creates STAC Items.</span>
+
+<span class="sd">        This is a wrapper around :func:`get_stac_item`.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            itempath: A :class:`GenericItemPath` used to identify the output.</span>
+<span class="sd">            collection_url_root: The collections endpoint of the target STAC</span>
+<span class="sd">                catalog.</span>
+<span class="sd">            **kwargs: Additional arguments to :func:`get_stac_item`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_itempath</span> <span class="o">=</span> <span class="n">itempath</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_collection_url_root</span> <span class="o">=</span> <span class="n">collection_url_root</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_kwargs</span> <span class="o">=</span> <span class="n">kwargs</span>
+
+<div class="viewcode-block" id="StacCreator.process">
+<a class="viewcode-back" href="../../api/dep_tools.stac_utils.html#dep_tools.stac_utils.StacCreator.process">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">process</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">data</span><span class="p">:</span> <span class="n">DataArray</span> <span class="o">|</span> <span class="n">Dataset</span><span class="p">,</span>
+        <span class="n">item_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Item</span> <span class="o">|</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">get_stac_item</span><span class="p">(</span>
+            <span class="n">itempath</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_itempath</span><span class="p">,</span>
+            <span class="n">item_id</span><span class="o">=</span><span class="n">item_id</span><span class="p">,</span>
+            <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span>
+            <span class="n">collection_url_root</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_collection_url_root</span><span class="p">,</span>
+            <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_kwargs</span><span class="p">,</span>
+        <span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="get_stac_item">
+<a class="viewcode-back" href="../../api/dep_tools.stac_utils.html#dep_tools.stac_utils.get_stac_item">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_stac_item</span><span class="p">(</span>
+    <span class="n">itempath</span><span class="p">:</span> <span class="n">GenericItemPath</span><span class="p">,</span>
+    <span class="n">item_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">data</span><span class="p">:</span> <span class="n">DataArray</span> <span class="o">|</span> <span class="n">Dataset</span><span class="p">,</span>
+    <span class="n">collection_url_root</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;https://stac.staging.digitalearthpacific.io/collections&quot;</span><span class="p">,</span>
+    <span class="n">set_geometry_from_input</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Item</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a STAC Item.</span>
+
+<span class="sd">    This is a wrapper around :func:`rio_stac.create_stac_item` which adds the folllowing</span>
+<span class="sd">    functionality:</span>
+
+<span class="sd">    - It copies information at the &quot;stac_properties&quot; attribute of `data` to the</span>
+<span class="sd">      properties of the output.</span>
+<span class="sd">    - If the kwargs include &quot;with_raster=True&quot; and `data` is an</span>
+<span class="sd">      :class:`xarray.Dataset`, raster information is created for each variable.</span>
+<span class="sd">    - The self href of the output is set, using `itempath.stac_path`.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        itempath: The :class:`ItemPath` for the raster output.</span>
+<span class="sd">        item_id: The identifier passed to `itempath.path`.</span>
+<span class="sd">        data: The data for which this item is to be created. Anything at the</span>
+<span class="sd">            `stac_properties` attribute will be copied to the properties of</span>
+<span class="sd">            the output.</span>
+<span class="sd">        collection_url_root: The URL to the collections endpoint where this STAC Item</span>
+<span class="sd">            belongs.</span>
+<span class="sd">        set_geometry_from_input: Whether the geometry property should be copied from</span>
+<span class="sd">            the `stac_properties` attribute of `data`. If this property is missing,</span>
+<span class="sd">            a warning is emitted and nothing is set.</span>
+<span class="sd">        **kwargs: Additional arguments to :func:`rio_stac.create_stac_item`.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A STAC Item.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">properties</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="s2">&quot;stac_properties&quot;</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">attrs</span><span class="p">:</span>
+        <span class="c1"># Copying properties or `create_stac_item` modifies them.</span>
+        <span class="n">data_properties</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;stac_properties&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">properties</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">data_properties</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;&#39;&quot;</span><span class="p">,</span> <span class="s1">&#39;&quot;&#39;</span><span class="p">))</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;stac_properties&quot;</span><span class="p">],</span> <span class="nb">str</span><span class="p">)</span>
+            <span class="k">else</span> <span class="n">data_properties</span>
+        <span class="p">)</span>
+
+    <span class="n">assets</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">variable</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+        <span class="n">raster_info</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">full_path</span> <span class="o">=</span> <span class="n">itempath</span><span class="o">.</span><span class="n">path</span><span class="p">(</span><span class="n">item_id</span><span class="p">,</span> <span class="n">variable</span><span class="p">,</span> <span class="n">absolute</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;with_raster&quot;</span><span class="p">):</span>
+            <span class="k">with</span> <span class="n">rasterio</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">full_path</span><span class="p">)</span> <span class="k">as</span> <span class="n">src_dst</span><span class="p">:</span>
+                <span class="n">raster_info</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;raster:bands&quot;</span><span class="p">:</span> <span class="n">get_raster_info</span><span class="p">(</span><span class="n">src_dst</span><span class="p">,</span> <span class="n">max_size</span><span class="o">=</span><span class="mi">1024</span><span class="p">)}</span>
+
+        <span class="n">assets</span><span class="p">[</span><span class="n">variable</span><span class="p">]</span> <span class="o">=</span> <span class="n">Asset</span><span class="p">(</span>
+            <span class="n">media_type</span><span class="o">=</span><span class="n">MediaType</span><span class="o">.</span><span class="n">COG</span><span class="p">,</span>
+            <span class="n">href</span><span class="o">=</span><span class="n">full_path</span><span class="p">,</span>
+            <span class="n">roles</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;data&quot;</span><span class="p">],</span>
+            <span class="n">extra_fields</span><span class="o">=</span><span class="p">{</span><span class="o">**</span><span class="n">raster_info</span><span class="p">},</span>
+        <span class="p">)</span>
+    <span class="n">stac_id</span> <span class="o">=</span> <span class="n">itempath</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">item_id</span><span class="p">)</span>
+    <span class="n">collection</span> <span class="o">=</span> <span class="n">itempath</span><span class="o">.</span><span class="n">item_prefix</span>
+    <span class="n">collection_url</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">collection_url_root</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">collection</span><span class="si">}</span><span class="s2">&quot;</span>
+
+    <span class="n">input_datetime</span> <span class="o">=</span> <span class="n">properties</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;datetime&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">input_datetime</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">format_string</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2">T%H:%M:%S.</span><span class="si">%f</span><span class="s2">Z&quot;</span> <span class="k">if</span> <span class="s2">&quot;.&quot;</span> <span class="ow">in</span> <span class="n">input_datetime</span> <span class="k">else</span> <span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2">T%H:%M:%SZ&quot;</span>
+        <span class="p">)</span>
+        <span class="n">input_datetime</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">input_datetime</span><span class="p">,</span> <span class="n">format_string</span><span class="p">)</span>
+
+    <span class="n">an_href</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">assets</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span><span class="o">.</span><span class="n">href</span>
+    <span class="n">item</span> <span class="o">=</span> <span class="n">create_stac_item</span><span class="p">(</span>
+        <span class="n">an_href</span><span class="p">,</span>
+        <span class="nb">id</span><span class="o">=</span><span class="n">stac_id</span><span class="p">,</span>
+        <span class="n">input_datetime</span><span class="o">=</span><span class="n">input_datetime</span><span class="p">,</span>
+        <span class="n">assets</span><span class="o">=</span><span class="n">assets</span><span class="p">,</span>
+        <span class="n">with_proj</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">properties</span><span class="o">=</span><span class="n">properties</span><span class="p">,</span>
+        <span class="n">collection_url</span><span class="o">=</span><span class="n">collection_url</span><span class="p">,</span>
+        <span class="n">collection</span><span class="o">=</span><span class="n">collection</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">set_geometry_from_input</span><span class="p">:</span>
+        <span class="k">if</span> <span class="s2">&quot;stac_geometry&quot;</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">attrs</span><span class="p">:</span>
+            <span class="n">item</span><span class="o">.</span><span class="n">geometry</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;stac_geometry&quot;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                <span class="s2">&quot;set_geometry_from_input=True, but no geometry found in &#39;stac_properties&#39; attribute of input data, skipping.&quot;</span>
+            <span class="p">)</span>
+
+    <span class="n">item</span><span class="o">.</span><span class="n">set_self_href</span><span class="p">(</span><span class="n">itempath</span><span class="o">.</span><span class="n">stac_path</span><span class="p">(</span><span class="n">item_id</span><span class="p">,</span> <span class="n">absolute</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">item</span></div>
+
+
+
+<div class="viewcode-block" id="write_stac_local">
+<a class="viewcode-back" href="../../api/dep_tools.stac_utils.html#dep_tools.stac_utils.write_stac_local">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">write_stac_local</span><span class="p">(</span><span class="n">item</span><span class="p">:</span> <span class="n">Item</span><span class="p">,</span> <span class="n">stac_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Writes a STAC Item to a local file.</span>
+
+<span class="sd">    The item is converted to json with appropriate indentation.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        item: A STAC Item.</span>
+<span class="sd">        stac_path: The output path.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">stac_path</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(),</span> <span class="n">f</span><span class="p">,</span> <span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="existing_stac_items">
+<a class="viewcode-back" href="../../api/dep_tools.stac_utils.html#dep_tools.stac_utils.existing_stac_items">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">existing_stac_items</span><span class="p">(</span><span class="n">possible_ids</span><span class="p">:</span> <span class="nb">list</span><span class="p">,</span> <span class="n">itempath</span><span class="p">:</span> <span class="n">S3ItemPath</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the list of input IDs which have an existing STAC Item.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        possible_ids: Identifiers, each passed as the first argument</span>
+<span class="sd">            to `itempath.stac_path`.</span>
+<span class="sd">        itempath: The S3ItemPath which identifies the STAC Items to compare.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A list of IDs, filtered to those for which a STAC Item already exists.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">[</span>
+        <span class="nb">id</span>
+        <span class="k">for</span> <span class="nb">id</span> <span class="ow">in</span> <span class="n">possible_ids</span>
+        <span class="k">if</span> <span class="n">object_exists</span><span class="p">(</span><span class="n">itempath</span><span class="o">.</span><span class="n">bucket</span><span class="p">,</span> <span class="n">itempath</span><span class="o">.</span><span class="n">stac_path</span><span class="p">(</span><span class="nb">id</span><span class="p">))</span>
+    <span class="p">]</span></div>
+
+
+
+<div class="viewcode-block" id="remove_items_with_existing_stac">
+<a class="viewcode-back" href="../../api/dep_tools.stac_utils.html#dep_tools.stac_utils.remove_items_with_existing_stac">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">remove_items_with_existing_stac</span><span class="p">(</span><span class="n">grid</span><span class="p">:</span> <span class="n">DataFrame</span><span class="p">,</span> <span class="n">itempath</span><span class="p">:</span> <span class="n">S3ItemPath</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Filter a dataframe to only include items which don&#39;t have an existing stac output.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        grid: A DataFram, whose index corresponds to ids for the given itempath.</span>
+<span class="sd">        itempath: The :class:`S3ItemPath` used to identify Items.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The input :class:`DataFrame`, only including rows which don&#39;t already</span>
+<span class="sd">        have a STAC Item (as identified by the dataframe index).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">grid</span><span class="p">[</span><span class="o">~</span><span class="n">grid</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">existing_stac_items</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">grid</span><span class="o">.</span><span class="n">index</span><span class="p">),</span> <span class="n">itempath</span><span class="p">))]</span></div>
+
+
+
+<div class="viewcode-block" id="set_stac_properties">
+<a class="viewcode-back" href="../../api/dep_tools.stac_utils.html#dep_tools.stac_utils.set_stac_properties">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">set_stac_properties</span><span class="p">(</span>
+    <span class="n">input_xr</span><span class="p">:</span> <span class="n">DataArray</span> <span class="o">|</span> <span class="n">Dataset</span><span class="p">,</span> <span class="n">output_xr</span><span class="p">:</span> <span class="n">DataArray</span> <span class="o">|</span> <span class="n">Dataset</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dataset</span> <span class="o">|</span> <span class="n">DataArray</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Set the `&quot;stac_properties&quot;` attribute of an Xarray object based on another.</span>
+
+<span class="sd">    Sets an attribute called `&quot;stac_properties&quot;` in the output which is a</span>
+<span class="sd">    dictionary containing the following properties for use in stac writing:</span>
+<span class="sd">    `&quot;start_datetime&quot;`, `&quot;end_datetime&quot;`, `&quot;datetime&quot;`, and `&quot;created&quot;`. These are</span>
+<span class="sd">    set from the input_xr.time coordinate. Typically, `input_xr` would be</span>
+<span class="sd">    an array of EO data (e.g. Landsat) containing data over a range of</span>
+<span class="sd">    dates (such as a year).</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        input_xr: The object whose `time` coordinate is used.</span>
+<span class="sd">        output_xr: The object whose properties are set.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        `output_xr` with the `&quot;stac_properties&quot;` attribute set as described.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">start_datetime</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">datetime_as_string</span><span class="p">(</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">datetime64</span><span class="p">(</span><span class="n">input_xr</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">min</span><span class="p">()</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="s2">&quot;Y&quot;</span><span class="p">),</span> <span class="n">unit</span><span class="o">=</span><span class="s2">&quot;ms&quot;</span><span class="p">,</span> <span class="n">timezone</span><span class="o">=</span><span class="s2">&quot;UTC&quot;</span>
+    <span class="p">)</span>
+
+    <span class="n">end_datetime</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">datetime_as_string</span><span class="p">(</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">datetime64</span><span class="p">(</span><span class="n">input_xr</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="s2">&quot;Y&quot;</span><span class="p">)</span>
+        <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">timedelta64</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;Y&quot;</span><span class="p">)</span>
+        <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">timedelta64</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;s&quot;</span><span class="p">),</span>
+        <span class="n">timezone</span><span class="o">=</span><span class="s2">&quot;UTC&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">output_xr</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;stac_properties&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+        <span class="n">start_datetime</span><span class="o">=</span><span class="n">start_datetime</span><span class="p">,</span>
+        <span class="n">datetime</span><span class="o">=</span><span class="n">start_datetime</span><span class="p">,</span>
+        <span class="n">end_datetime</span><span class="o">=</span><span class="n">end_datetime</span><span class="p">,</span>
+        <span class="n">created</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">datetime_as_string</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">datetime64</span><span class="p">(</span><span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()),</span> <span class="n">timezone</span><span class="o">=</span><span class="s2">&quot;UTC&quot;</span><span class="p">),</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">output_xr</span></div>
+
+
+
+<div class="viewcode-block" id="copy_stac_properties">
+<a class="viewcode-back" href="../../api/dep_tools.stac_utils.html#dep_tools.stac_utils.copy_stac_properties">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">copy_stac_properties</span><span class="p">(</span><span class="n">item</span><span class="p">:</span> <span class="n">Item</span><span class="p">,</span> <span class="n">ds</span><span class="p">:</span> <span class="n">Dataset</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dataset</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Copy properties from an :class:`pystac.Item` to the attrs of an :class:`xarray.Dataset`.</span>
+
+<span class="sd">    Copy `item`&#39;s properties to `ds[&quot;stac_properties&quot;]`, merging/updating any existing</span>
+<span class="sd">    values. Sets `ds.attrs[&quot;stac_properties&quot;][&quot;start_datetime&quot;]` and</span>
+<span class="sd">    `ds.attrs[&quot;stac_properties&quot;][&quot;end_datetime&quot;]` to `item.properties[&quot;datetime&quot;]`.</span>
+<span class="sd">    Finally, `item.geometry` is copied to the `ds.attrs[&quot;stac_geometry&quot;]`.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        item: A STAC Item.</span>
+<span class="sd">        ds: An xarray Dataset.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The input dataset with additional attributes as described above.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;stac_properties&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">item</span><span class="o">.</span><span class="n">properties</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="k">if</span> <span class="s2">&quot;stac_properties&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">ds</span><span class="o">.</span><span class="n">attrs</span>
+        <span class="k">else</span> <span class="p">{</span>
+            <span class="o">**</span><span class="n">ds</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;stac_properties&quot;</span><span class="p">],</span>
+            <span class="o">**</span><span class="n">item</span><span class="o">.</span><span class="n">properties</span><span class="p">,</span>
+        <span class="p">}</span>
+    <span class="p">)</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;stac_properties&quot;</span><span class="p">][</span><span class="s2">&quot;start_datetime&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;stac_properties&quot;</span><span class="p">][</span>
+        <span class="s2">&quot;datetime&quot;</span>
+    <span class="p">]</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;stac_properties&quot;</span><span class="p">][</span><span class="s2">&quot;end_datetime&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;stac_properties&quot;</span><span class="p">][</span>
+        <span class="s2">&quot;datetime&quot;</span>
+    <span class="p">]</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;stac_geometry&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">geometry</span>
+    <span class="k">return</span> <span class="n">ds</span></div>
+
+
+
+<div class="viewcode-block" id="use_alternate_s3_href">
+<a class="viewcode-back" href="../../api/dep_tools.stac_utils.html#dep_tools.stac_utils.use_alternate_s3_href">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">use_alternate_s3_href</span><span class="p">(</span><span class="n">modifiable</span><span class="p">:</span> <span class="n">pystac_client</span><span class="o">.</span><span class="n">Modifiable</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Fixes the urls in the official USGS Landsat Stac Server</span>
+<span class="sd">    (https://landsatlook.usgs.gov/stac-server) so the alternate (s3)</span>
+<span class="sd">    urls are used. Can be used like::</span>
+
+<span class="sd">        client = pystac_client.Client.open(</span>
+<span class="sd">            &quot;https://landsatlook.usgs.gov/stac-server&quot;,</span>
+<span class="sd">            modifier=use_alternate_s3_href,</span>
+<span class="sd">        )</span>
+
+<span class="sd">    Modifies in place, according to best practices from</span>
+<span class="sd">    https://pystac-client.readthedocs.io/en/stable/usage.html#automatically-modifying-results.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">modifiable</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">modifiable</span><span class="p">[</span><span class="s2">&quot;type&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;FeatureCollection&quot;</span><span class="p">:</span>
+            <span class="n">new_features</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">item_dict</span> <span class="ow">in</span> <span class="n">modifiable</span><span class="p">[</span><span class="s2">&quot;features&quot;</span><span class="p">]:</span>
+                <span class="n">use_alternate_s3_href</span><span class="p">(</span><span class="n">item_dict</span><span class="p">)</span>
+                <span class="n">new_features</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">item_dict</span><span class="p">)</span>
+            <span class="n">modifiable</span><span class="p">[</span><span class="s2">&quot;features&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_features</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">stac_object</span> <span class="o">=</span> <span class="n">read_dict</span><span class="p">(</span><span class="n">modifiable</span><span class="p">)</span>
+            <span class="n">use_alternate_s3_href</span><span class="p">(</span><span class="n">stac_object</span><span class="p">)</span>
+            <span class="n">modifiable</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">stac_object</span><span class="o">.</span><span class="n">to_dict</span><span class="p">())</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">asset</span> <span class="ow">in</span> <span class="n">modifiable</span><span class="o">.</span><span class="n">assets</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">asset_dict</span> <span class="o">=</span> <span class="n">asset</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>
+            <span class="k">if</span> <span class="s2">&quot;alternate&quot;</span> <span class="ow">in</span> <span class="n">asset_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="n">asset</span><span class="o">.</span><span class="n">href</span> <span class="o">=</span> <span class="n">asset</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()[</span><span class="s2">&quot;alternate&quot;</span><span class="p">][</span><span class="s2">&quot;s3&quot;</span><span class="p">][</span><span class="s2">&quot;href&quot;</span><span class="p">]</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Digital Earth Pacific.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

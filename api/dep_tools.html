@@ -1,0 +1,349 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>dep_tools package &mdash; dep-tools 0.5.4 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=e1a677a5"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="dep_tools.aws module" href="dep_tools.aws.html" />
+    <link rel="prev" title="dep_tools" href="modules.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            dep-tools
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">dep_tools</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">dep_tools package</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#submodules">Submodules</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.aws.html">dep_tools.aws module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.exceptions.html">dep_tools.exceptions module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.grids.html">dep_tools.grids module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.landsat_utils.html">dep_tools.landsat_utils module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.loaders.html">dep_tools.loaders module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.namers.html">dep_tools.namers module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.parsers.html">dep_tools.parsers module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.processors.html">dep_tools.processors module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.s2_utils.html">dep_tools.s2_utils module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.searchers.html">dep_tools.searchers module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.stac_utils.html">dep_tools.stac_utils module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.task.html">dep_tools.task module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.utils.html">dep_tools.utils module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.writers.html">dep_tools.writers module</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#module-dep_tools">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">dep-tools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">dep_tools</a></li>
+      <li class="breadcrumb-item active">dep_tools package</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/api/dep_tools.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="dep-tools-package">
+<h1>dep_tools package<a class="headerlink" href="#dep-tools-package" title="Link to this heading"></a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Link to this heading"></a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="dep_tools.aws.html">dep_tools.aws module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.aws.html#dep_tools.aws.object_exists"><code class="docutils literal notranslate"><span class="pre">object_exists()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.aws.html#dep_tools.aws.s3_dump"><code class="docutils literal notranslate"><span class="pre">s3_dump()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.aws.html#dep_tools.aws.write_to_s3"><code class="docutils literal notranslate"><span class="pre">write_to_s3()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.aws.html#dep_tools.aws.write_stac_s3"><code class="docutils literal notranslate"><span class="pre">write_stac_s3()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.aws.html#dep_tools.aws.get_s3_bucket_region"><code class="docutils literal notranslate"><span class="pre">get_s3_bucket_region()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="dep_tools.exceptions.html">dep_tools.exceptions module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.exceptions.html#dep_tools.exceptions.EmptyCollectionError"><code class="docutils literal notranslate"><span class="pre">EmptyCollectionError</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.exceptions.html#dep_tools.exceptions.NoOutputError"><code class="docutils literal notranslate"><span class="pre">NoOutputError</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="dep_tools.grids.html">dep_tools.grids module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.grids.html#dep_tools.grids.PACIFIC_EPSG"><code class="docutils literal notranslate"><span class="pre">PACIFIC_EPSG</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.grids.html#dep_tools.grids.GADM_FILE"><code class="docutils literal notranslate"><span class="pre">GADM_FILE</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.grids.html#dep_tools.grids.COUNTRIES_AND_CODES"><code class="docutils literal notranslate"><span class="pre">COUNTRIES_AND_CODES</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.grids.html#dep_tools.grids.gadm"><code class="docutils literal notranslate"><span class="pre">gadm()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.grids.html#dep_tools.grids.gadm_union"><code class="docutils literal notranslate"><span class="pre">gadm_union()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.grids.html#dep_tools.grids.get_tiles"><code class="docutils literal notranslate"><span class="pre">get_tiles()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.grids.html#dep_tools.grids.grid"><code class="docutils literal notranslate"><span class="pre">grid()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.grids.html#dep_tools.grids.PACIFIC_GRID_30"><code class="docutils literal notranslate"><span class="pre">PACIFIC_GRID_30</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.grids.html#dep_tools.grids.PACIFIC_GRID_10"><code class="docutils literal notranslate"><span class="pre">PACIFIC_GRID_10</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="dep_tools.landsat_utils.html">dep_tools.landsat_utils module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.landsat_utils.html#dep_tools.landsat_utils.cloud_mask"><code class="docutils literal notranslate"><span class="pre">cloud_mask()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.landsat_utils.html#dep_tools.landsat_utils.mask_clouds"><code class="docutils literal notranslate"><span class="pre">mask_clouds()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.landsat_utils.html#dep_tools.landsat_utils.landsat_grid"><code class="docutils literal notranslate"><span class="pre">landsat_grid()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.landsat_utils.html#dep_tools.landsat_utils.read_pathrows_file"><code class="docutils literal notranslate"><span class="pre">read_pathrows_file()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.landsat_utils.html#dep_tools.landsat_utils.pathrows_in_area"><code class="docutils literal notranslate"><span class="pre">pathrows_in_area()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.landsat_utils.html#dep_tools.landsat_utils.items_in_pathrows"><code class="docutils literal notranslate"><span class="pre">items_in_pathrows()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.landsat_utils.html#dep_tools.landsat_utils.pathrow_with_greatest_area"><code class="docutils literal notranslate"><span class="pre">pathrow_with_greatest_area()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="dep_tools.loaders.html">dep_tools.loaders module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.loaders.html#dep_tools.loaders.Loader"><code class="docutils literal notranslate"><span class="pre">Loader</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="dep_tools.loaders.html#dep_tools.loaders.Loader.load"><code class="docutils literal notranslate"><span class="pre">Loader.load()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.loaders.html#dep_tools.loaders.StacLoader"><code class="docutils literal notranslate"><span class="pre">StacLoader</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="dep_tools.loaders.html#dep_tools.loaders.StacLoader.load"><code class="docutils literal notranslate"><span class="pre">StacLoader.load()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.loaders.html#dep_tools.loaders.OdcLoader"><code class="docutils literal notranslate"><span class="pre">OdcLoader</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="dep_tools.loaders.html#dep_tools.loaders.OdcLoader.load"><code class="docutils literal notranslate"><span class="pre">OdcLoader.load()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.loaders.html#dep_tools.loaders.StackStacLoader"><code class="docutils literal notranslate"><span class="pre">StackStacLoader</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="dep_tools.loaders.html#dep_tools.loaders.StackStacLoader.load"><code class="docutils literal notranslate"><span class="pre">StackStacLoader.load()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="dep_tools.namers.html">dep_tools.namers module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.namers.html#dep_tools.namers.ItemPath"><code class="docutils literal notranslate"><span class="pre">ItemPath</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="dep_tools.namers.html#dep_tools.namers.ItemPath.path"><code class="docutils literal notranslate"><span class="pre">ItemPath.path()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.namers.html#dep_tools.namers.GenericItemPath"><code class="docutils literal notranslate"><span class="pre">GenericItemPath</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="dep_tools.namers.html#dep_tools.namers.GenericItemPath.basename"><code class="docutils literal notranslate"><span class="pre">GenericItemPath.basename()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="dep_tools.namers.html#dep_tools.namers.GenericItemPath.path"><code class="docutils literal notranslate"><span class="pre">GenericItemPath.path()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="dep_tools.namers.html#dep_tools.namers.GenericItemPath.stac_path"><code class="docutils literal notranslate"><span class="pre">GenericItemPath.stac_path()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="dep_tools.namers.html#dep_tools.namers.GenericItemPath.log_path"><code class="docutils literal notranslate"><span class="pre">GenericItemPath.log_path()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.namers.html#dep_tools.namers.DepItemPath"><code class="docutils literal notranslate"><span class="pre">DepItemPath</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.namers.html#dep_tools.namers.S3ItemPath"><code class="docutils literal notranslate"><span class="pre">S3ItemPath</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="dep_tools.namers.html#dep_tools.namers.S3ItemPath.bucket"><code class="docutils literal notranslate"><span class="pre">S3ItemPath.bucket</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.namers.html#dep_tools.namers.DailyItemPath"><code class="docutils literal notranslate"><span class="pre">DailyItemPath</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="dep_tools.namers.html#dep_tools.namers.DailyItemPath.basename"><code class="docutils literal notranslate"><span class="pre">DailyItemPath.basename()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.namers.html#dep_tools.namers.LocalPath"><code class="docutils literal notranslate"><span class="pre">LocalPath</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="dep_tools.namers.html#dep_tools.namers.LocalPath.path"><code class="docutils literal notranslate"><span class="pre">LocalPath.path()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="dep_tools.parsers.html">dep_tools.parsers module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.parsers.html#dep_tools.parsers.datetime_parser"><code class="docutils literal notranslate"><span class="pre">datetime_parser()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.parsers.html#dep_tools.parsers.bool_parser"><code class="docutils literal notranslate"><span class="pre">bool_parser()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="dep_tools.processors.html">dep_tools.processors module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.processors.html#dep_tools.processors.Processor"><code class="docutils literal notranslate"><span class="pre">Processor</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="dep_tools.processors.html#dep_tools.processors.Processor.process"><code class="docutils literal notranslate"><span class="pre">Processor.process()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.processors.html#dep_tools.processors.LandsatProcessor"><code class="docutils literal notranslate"><span class="pre">LandsatProcessor</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="dep_tools.processors.html#dep_tools.processors.LandsatProcessor.process"><code class="docutils literal notranslate"><span class="pre">LandsatProcessor.process()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.processors.html#dep_tools.processors.S2Processor"><code class="docutils literal notranslate"><span class="pre">S2Processor</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="dep_tools.processors.html#dep_tools.processors.S2Processor.process"><code class="docutils literal notranslate"><span class="pre">S2Processor.process()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.processors.html#dep_tools.processors.XrPostProcessor"><code class="docutils literal notranslate"><span class="pre">XrPostProcessor</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="dep_tools.processors.html#dep_tools.processors.XrPostProcessor.process"><code class="docutils literal notranslate"><span class="pre">XrPostProcessor.process()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="dep_tools.s2_utils.html">dep_tools.s2_utils module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.s2_utils.html#dep_tools.s2_utils.mask_clouds"><code class="docutils literal notranslate"><span class="pre">mask_clouds()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.s2_utils.html#dep_tools.s2_utils.harmonize_to_old"><code class="docutils literal notranslate"><span class="pre">harmonize_to_old()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="dep_tools.searchers.html">dep_tools.searchers module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.searchers.html#dep_tools.searchers.Searcher"><code class="docutils literal notranslate"><span class="pre">Searcher</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="dep_tools.searchers.html#dep_tools.searchers.Searcher.search"><code class="docutils literal notranslate"><span class="pre">Searcher.search()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.searchers.html#dep_tools.searchers.PystacSearcher"><code class="docutils literal notranslate"><span class="pre">PystacSearcher</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="dep_tools.searchers.html#dep_tools.searchers.PystacSearcher.search"><code class="docutils literal notranslate"><span class="pre">PystacSearcher.search()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.searchers.html#dep_tools.searchers.LandsatPystacSearcher"><code class="docutils literal notranslate"><span class="pre">LandsatPystacSearcher</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="dep_tools.searchers.html#dep_tools.searchers.LandsatPystacSearcher.search"><code class="docutils literal notranslate"><span class="pre">LandsatPystacSearcher.search()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="dep_tools.stac_utils.html">dep_tools.stac_utils module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.stac_utils.html#dep_tools.stac_utils.StacCreator"><code class="docutils literal notranslate"><span class="pre">StacCreator</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="dep_tools.stac_utils.html#dep_tools.stac_utils.StacCreator.process"><code class="docutils literal notranslate"><span class="pre">StacCreator.process()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.stac_utils.html#dep_tools.stac_utils.get_stac_item"><code class="docutils literal notranslate"><span class="pre">get_stac_item()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.stac_utils.html#dep_tools.stac_utils.write_stac_local"><code class="docutils literal notranslate"><span class="pre">write_stac_local()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.stac_utils.html#dep_tools.stac_utils.existing_stac_items"><code class="docutils literal notranslate"><span class="pre">existing_stac_items()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.stac_utils.html#dep_tools.stac_utils.remove_items_with_existing_stac"><code class="docutils literal notranslate"><span class="pre">remove_items_with_existing_stac()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.stac_utils.html#dep_tools.stac_utils.set_stac_properties"><code class="docutils literal notranslate"><span class="pre">set_stac_properties()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.stac_utils.html#dep_tools.stac_utils.copy_stac_properties"><code class="docutils literal notranslate"><span class="pre">copy_stac_properties()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.stac_utils.html#dep_tools.stac_utils.use_alternate_s3_href"><code class="docutils literal notranslate"><span class="pre">use_alternate_s3_href()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="dep_tools.task.html">dep_tools.task module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.task.html#dep_tools.task.Task"><code class="docutils literal notranslate"><span class="pre">Task</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="dep_tools.task.html#dep_tools.task.Task.run"><code class="docutils literal notranslate"><span class="pre">Task.run()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.task.html#dep_tools.task.AreaTask"><code class="docutils literal notranslate"><span class="pre">AreaTask</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="dep_tools.task.html#dep_tools.task.AreaTask.run"><code class="docutils literal notranslate"><span class="pre">AreaTask.run()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.task.html#dep_tools.task.StacTask"><code class="docutils literal notranslate"><span class="pre">StacTask</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="dep_tools.task.html#dep_tools.task.StacTask.run"><code class="docutils literal notranslate"><span class="pre">StacTask.run()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.task.html#dep_tools.task.AwsStacTask"><code class="docutils literal notranslate"><span class="pre">AwsStacTask</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.task.html#dep_tools.task.ItemStacTask"><code class="docutils literal notranslate"><span class="pre">ItemStacTask</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="dep_tools.task.html#dep_tools.task.ItemStacTask.run"><code class="docutils literal notranslate"><span class="pre">ItemStacTask.run()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.task.html#dep_tools.task.ErrorCategoryAreaTask"><code class="docutils literal notranslate"><span class="pre">ErrorCategoryAreaTask</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="dep_tools.task.html#dep_tools.task.ErrorCategoryAreaTask.run"><code class="docutils literal notranslate"><span class="pre">ErrorCategoryAreaTask.run()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.task.html#dep_tools.task.MultiAreaTask"><code class="docutils literal notranslate"><span class="pre">MultiAreaTask</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="dep_tools.task.html#dep_tools.task.MultiAreaTask.run"><code class="docutils literal notranslate"><span class="pre">MultiAreaTask.run()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.task.html#dep_tools.task.SimpleLoggingAreaTask"><code class="docutils literal notranslate"><span class="pre">SimpleLoggingAreaTask</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="dep_tools.task.html#dep_tools.task.SimpleLoggingAreaTask.run"><code class="docutils literal notranslate"><span class="pre">SimpleLoggingAreaTask.run()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="dep_tools.utils.html">dep_tools.utils module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.utils.html#dep_tools.utils.join_path_or_url"><code class="docutils literal notranslate"><span class="pre">join_path_or_url()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.utils.html#dep_tools.utils.mask_to_gadm"><code class="docutils literal notranslate"><span class="pre">mask_to_gadm()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.utils.html#dep_tools.utils.get_logger"><code class="docutils literal notranslate"><span class="pre">get_logger()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.utils.html#dep_tools.utils.shift_negative_longitudes"><code class="docutils literal notranslate"><span class="pre">shift_negative_longitudes()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.utils.html#dep_tools.utils.bbox_across_180"><code class="docutils literal notranslate"><span class="pre">bbox_across_180()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.utils.html#dep_tools.utils.fix_winding"><code class="docutils literal notranslate"><span class="pre">fix_winding()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.utils.html#dep_tools.utils.search_across_180"><code class="docutils literal notranslate"><span class="pre">search_across_180()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.utils.html#dep_tools.utils.copy_attrs"><code class="docutils literal notranslate"><span class="pre">copy_attrs()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.utils.html#dep_tools.utils.scale_and_offset"><code class="docutils literal notranslate"><span class="pre">scale_and_offset()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.utils.html#dep_tools.utils.write_to_local_storage"><code class="docutils literal notranslate"><span class="pre">write_to_local_storage()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.utils.html#dep_tools.utils.scale_to_int16"><code class="docutils literal notranslate"><span class="pre">scale_to_int16()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.utils.html#dep_tools.utils.fix_bad_epsgs"><code class="docutils literal notranslate"><span class="pre">fix_bad_epsgs()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.utils.html#dep_tools.utils.remove_bad_items"><code class="docutils literal notranslate"><span class="pre">remove_bad_items()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="dep_tools.writers.html">dep_tools.writers module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.writers.html#dep_tools.writers.Writer"><code class="docutils literal notranslate"><span class="pre">Writer</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="dep_tools.writers.html#dep_tools.writers.Writer.write"><code class="docutils literal notranslate"><span class="pre">Writer.write()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.writers.html#dep_tools.writers.DsCogWriter"><code class="docutils literal notranslate"><span class="pre">DsCogWriter</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="dep_tools.writers.html#dep_tools.writers.DsCogWriter.write"><code class="docutils literal notranslate"><span class="pre">DsCogWriter.write()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.writers.html#dep_tools.writers.AwsDsCogWriter"><code class="docutils literal notranslate"><span class="pre">AwsDsCogWriter</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.writers.html#dep_tools.writers.LocalDsCogWriter"><code class="docutils literal notranslate"><span class="pre">LocalDsCogWriter</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.writers.html#dep_tools.writers.StacWriter"><code class="docutils literal notranslate"><span class="pre">StacWriter</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="dep_tools.writers.html#dep_tools.writers.StacWriter.write"><code class="docutils literal notranslate"><span class="pre">StacWriter.write()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.writers.html#dep_tools.writers.AwsStacWriter"><code class="docutils literal notranslate"><span class="pre">AwsStacWriter</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="dep_tools.writers.html#dep_tools.writers.LocalStacWriter"><code class="docutils literal notranslate"><span class="pre">LocalStacWriter</span></code></a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+<section id="module-dep_tools">
+<span id="module-contents"></span><h2>Module contents<a class="headerlink" href="#module-dep_tools" title="Link to this heading"></a></h2>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="modules.html" class="btn btn-neutral float-left" title="dep_tools" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="dep_tools.aws.html" class="btn btn-neutral float-right" title="dep_tools.aws module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Digital Earth Pacific.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

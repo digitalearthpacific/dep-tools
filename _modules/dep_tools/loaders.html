@@ -1,0 +1,309 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>dep_tools.loaders &mdash; dep-tools 0.5.4 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=e1a677a5"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            dep-tools
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api/modules.html">dep_tools</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">dep-tools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">dep_tools.loaders</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for dep_tools.loaders</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;ABC definition and implementation of Loader objects.&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Iterable</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">warnings</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">geopandas</span><span class="w"> </span><span class="kn">import</span> <span class="n">GeoDataFrame</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">odc.geo.geobox</span><span class="w"> </span><span class="kn">import</span> <span class="n">GeoBox</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">odc.geo.geom</span><span class="w"> </span><span class="kn">import</span> <span class="n">Geometry</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">odc.stac</span><span class="w"> </span><span class="kn">import</span> <span class="n">load</span> <span class="k">as</span> <span class="n">stac_load</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pystac</span><span class="w"> </span><span class="kn">import</span> <span class="n">Item</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">rasterio.errors</span><span class="w"> </span><span class="kn">import</span> <span class="n">RasterioError</span><span class="p">,</span> <span class="n">RasterioIOError</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">rioxarray</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">stackstac</span><span class="w"> </span><span class="kn">import</span> <span class="n">stack</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">xarray</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataArray</span><span class="p">,</span> <span class="n">Dataset</span><span class="p">,</span> <span class="n">concat</span>
+
+
+<div class="viewcode-block" id="Loader">
+<a class="viewcode-back" href="../../api/dep_tools.loaders.html#dep_tools.loaders.Loader">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Loader</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A base class for something that loads data based on input areas.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+<div class="viewcode-block" id="Loader.load">
+<a class="viewcode-back" href="../../api/dep_tools.loaders.html#dep_tools.loaders.Loader.load">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">areas</span><span class="p">):</span>
+        <span class="k">pass</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="StacLoader">
+<a class="viewcode-back" href="../../api/dep_tools.loaders.html#dep_tools.loaders.StacLoader">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">StacLoader</span><span class="p">(</span><span class="n">Loader</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A loader which loads data based on (STAC) items and areas.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="StacLoader.load">
+<a class="viewcode-back" href="../../api/dep_tools.loaders.html#dep_tools.loaders.StacLoader.load">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">load</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">items</span><span class="p">,</span> <span class="n">areas</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+        <span class="k">pass</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="OdcLoader">
+<a class="viewcode-back" href="../../api/dep_tools.loaders.html#dep_tools.loaders.OdcLoader">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">OdcLoader</span><span class="p">(</span><span class="n">StacLoader</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A wrapper around :func:`odc.stac.load`.</span>
+
+<span class="sd">    In addition to allowing conformance to the :class:`Loader` form, this</span>
+<span class="sd">    class offers a number of convenience operations which compliment</span>
+<span class="sd">    :func:`odc.stac.load`:</span>
+
+<span class="sd">        - If the data is loaded as floating point, any nodata values (as defined</span>
+<span class="sd">          by the `&quot;nodata&quot;` attribute of the loaded data) are set to NaN, and</span>
+<span class="sd">          the attribute itself is reset to NaN.</span>
+<span class="sd">        - The nodata value is also set to be accessed via the</span>
+<span class="sd">          rioxarray accessor (`.rio.nodata`).</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        load_as_dataset: If False, load as a DataArray with each variable in the</span>
+<span class="sd">            `band` dimension.</span>
+<span class="sd">        clip_to_areas: If True, loaded data is clipped to the given areas using</span>
+<span class="sd">            :func:`odc.geo.mask`.</span>
+<span class="sd">        **kwargs: Additional arguments to :func:`odc.stac.load`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">load_as_dataset</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="n">clip_to_areas</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_kwargs</span> <span class="o">=</span> <span class="n">kwargs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_clip_to_area</span> <span class="o">=</span> <span class="n">clip_to_areas</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_load_as_dataset</span> <span class="o">=</span> <span class="n">load_as_dataset</span>
+
+<div class="viewcode-block" id="OdcLoader.load">
+<a class="viewcode-back" href="../../api/dep_tools.loaders.html#dep_tools.loaders.OdcLoader.load">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">load</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">items</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Item</span><span class="p">],</span> <span class="n">areas</span><span class="p">:</span> <span class="n">GeoDataFrame</span> <span class="o">|</span> <span class="n">GeoBox</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dataset</span> <span class="o">|</span> <span class="n">DataArray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Load STAC Items into an xarray object.</span>
+
+<span class="sd">        If `nodata` is passed as a kwarg on initialization, or the stac item</span>
+<span class="sd">        contains the nodata value, `xr[variable].nodata` will be set on load.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            items: The items to load.</span>
+<span class="sd">            areas: If `clip_to_areas` is `True`, the output is clipped to these areas.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            If `load_to_dataset` is True on initialization, a :class:`xarray.Dataset`</span>
+<span class="sd">            is returned. Otherwise a :class:`xarray:DataArray` is returned, with</span>
+<span class="sd">            variables set on the `&quot;band&quot;` dimension.</span>
+
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: If `areas` is a GeoBox and `clip_to_areas` is set to `True`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">areas</span><span class="p">,</span> <span class="n">GeoDataFrame</span><span class="p">):</span>
+            <span class="n">load_geometry</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">geopolygons</span><span class="o">=</span><span class="n">areas</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">areas</span><span class="p">,</span> <span class="n">GeoBox</span><span class="p">):</span>
+            <span class="n">load_geometry</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">geobox</span><span class="o">=</span><span class="n">areas</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">load_geometry</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+
+        <span class="n">ds</span> <span class="o">=</span> <span class="n">stac_load</span><span class="p">(</span>
+            <span class="n">items</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">load_geometry</span><span class="p">,</span>
+            <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_kwargs</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">ds</span><span class="p">:</span>
+            <span class="c1"># Since nan is more-or-less universally accepted as a nodata value,</span>
+            <span class="c1"># if the dtype of a band is some sort of floating point, then recode</span>
+            <span class="c1"># existing values that are equal to the value set on load to nan</span>
+            <span class="k">if</span> <span class="n">ds</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">kind</span> <span class="o">==</span> <span class="s2">&quot;f&quot;</span><span class="p">:</span>
+                <span class="c1"># Should I make this an option?</span>
+                <span class="k">if</span> <span class="s2">&quot;nodata&quot;</span> <span class="ow">in</span> <span class="n">ds</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                    <span class="n">ds</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">ds</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">ds</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">!=</span> <span class="n">ds</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">nodata</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="s2">&quot;nan&quot;</span><span class="p">))</span>
+                <span class="n">ds</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s2">&quot;nodata&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s2">&quot;nan&quot;</span><span class="p">)</span>
+            <span class="c1"># To be helpful, set the nodata for rioxarray accessor</span>
+            <span class="n">ds</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">rio</span><span class="o">.</span><span class="n">write_nodata</span><span class="p">(</span><span class="n">ds</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">attrs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;nodata&quot;</span><span class="p">),</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_clip_to_area</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">areas</span><span class="p">,</span> <span class="n">GeoBox</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;Clip not supported for GeoBox (nor should it be needed)&quot;</span>
+                <span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">areas</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;clip_to_area is True but areas is None, ignoring&quot;</span><span class="p">)</span>
+
+            <span class="n">geom</span> <span class="o">=</span> <span class="n">Geometry</span><span class="p">(</span><span class="n">areas</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">unary_union</span><span class="p">,</span> <span class="n">crs</span><span class="o">=</span><span class="n">areas</span><span class="o">.</span><span class="n">crs</span><span class="p">)</span>
+            <span class="n">ds</span> <span class="o">=</span> <span class="n">ds</span><span class="o">.</span><span class="n">odc</span><span class="o">.</span><span class="n">mask</span><span class="p">(</span><span class="n">geom</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_load_as_dataset</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span>
+                <span class="n">ds</span><span class="o">.</span><span class="n">to_array</span><span class="p">(</span><span class="s2">&quot;band&quot;</span><span class="p">)</span>
+                <span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">band</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+                <span class="o">.</span><span class="n">rio</span><span class="o">.</span><span class="n">write_crs</span><span class="p">(</span><span class="n">ds</span><span class="p">[</span><span class="nb">list</span><span class="p">(</span><span class="n">ds</span><span class="o">.</span><span class="n">data_vars</span><span class="p">)[</span><span class="mi">0</span><span class="p">]]</span><span class="o">.</span><span class="n">odc</span><span class="o">.</span><span class="n">crs</span><span class="p">)</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">ds</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="StackStacLoader">
+<a class="viewcode-back" href="../../api/dep_tools.loaders.html#dep_tools.loaders.StackStacLoader">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">StackStacLoader</span><span class="p">(</span><span class="n">StacLoader</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">stack_kwargs</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">resolution</span><span class="o">=</span><span class="mi">30</span><span class="p">),</span> <span class="n">resamplers_and_assets</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stack_kwargs</span> <span class="o">=</span> <span class="n">stack_kwargs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">resamplers_and_assets</span> <span class="o">=</span> <span class="n">resamplers_and_assets</span>
+
+<div class="viewcode-block" id="StackStacLoader.load">
+<a class="viewcode-back" href="../../api/dep_tools.loaders.html#dep_tools.loaders.StackStacLoader.load">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">load</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">items</span><span class="p">,</span>
+        <span class="n">areas</span><span class="p">:</span> <span class="n">GeoDataFrame</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataArray</span><span class="p">:</span>
+        <span class="n">areas_proj</span> <span class="o">=</span> <span class="n">areas</span><span class="o">.</span><span class="n">to_crs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_current_epsg</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">resamplers_and_assets</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">s</span> <span class="o">=</span> <span class="n">concat</span><span class="p">(</span>
+                <span class="p">[</span>
+                    <span class="n">stack</span><span class="p">(</span>
+                        <span class="n">items</span><span class="p">,</span>
+                        <span class="n">chunksize</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dask_chunksize</span><span class="p">,</span>
+                        <span class="n">epsg</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_current_epsg</span><span class="p">,</span>
+                        <span class="n">errors_as_nodata</span><span class="o">=</span><span class="p">(</span><span class="n">RasterioError</span><span class="p">(</span><span class="s2">&quot;.*&quot;</span><span class="p">),),</span>
+                        <span class="n">assets</span><span class="o">=</span><span class="n">resampler_and_assets</span><span class="p">[</span><span class="s2">&quot;assets&quot;</span><span class="p">],</span>
+                        <span class="n">resampling</span><span class="o">=</span><span class="n">resampler_and_assets</span><span class="p">[</span><span class="s2">&quot;resampler&quot;</span><span class="p">],</span>
+                        <span class="n">bounds</span><span class="o">=</span><span class="n">areas_proj</span><span class="o">.</span><span class="n">total_bounds</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span>
+                        <span class="n">band_coords</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>  <span class="c1"># needed or some coords are often missing</span>
+                        <span class="c1"># from qa pixel and we get an error. Make sure it doesn&#39;t</span>
+                        <span class="c1"># mess anything up else where (e.g. rio.crs)</span>
+                        <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">stack_kwargs</span><span class="p">,</span>
+                    <span class="p">)</span>
+                    <span class="k">for</span> <span class="n">resampler_and_assets</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">resamplers_and_assets</span>
+                <span class="p">],</span>
+                <span class="n">dim</span><span class="o">=</span><span class="s2">&quot;band&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">s</span> <span class="o">=</span> <span class="n">stack</span><span class="p">(</span>
+                <span class="n">items</span><span class="p">,</span>
+                <span class="n">chunksize</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dask_chunksize</span><span class="p">,</span>
+                <span class="n">epsg</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_current_epsg</span><span class="p">,</span>
+                <span class="n">errors_as_nodata</span><span class="o">=</span><span class="p">(</span><span class="n">RasterioIOError</span><span class="p">(</span><span class="s2">&quot;.*&quot;</span><span class="p">),),</span>
+                <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">stack_kwargs</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">s</span><span class="o">.</span><span class="n">rio</span><span class="o">.</span><span class="n">write_crs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_current_epsg</span><span class="p">)</span><span class="o">.</span><span class="n">rio</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span>
+            <span class="n">areas_proj</span><span class="o">.</span><span class="n">geometry</span><span class="p">,</span>
+            <span class="n">all_touched</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">from_disk</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Digital Earth Pacific.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,312 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>dep_tools.landsat_utils &mdash; dep-tools 0.5.4 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=e1a677a5"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            dep-tools
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api/modules.html">dep_tools</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">dep-tools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">dep_tools.landsat_utils</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for dep_tools.landsat_utils</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Tuple</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">geopandas</span><span class="w"> </span><span class="kn">import</span> <span class="n">read_file</span><span class="p">,</span> <span class="n">GeoDataFrame</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">odc.algo</span><span class="w"> </span><span class="kn">import</span> <span class="n">erase_bad</span><span class="p">,</span> <span class="n">mask_cleanup</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pystac</span><span class="w"> </span><span class="kn">import</span> <span class="n">ItemCollection</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">shapely.geometry</span><span class="w"> </span><span class="kn">import</span> <span class="n">box</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">xarray</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataArray</span><span class="p">,</span> <span class="n">Dataset</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">dep_tools.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">bbox_across_180</span><span class="p">,</span> <span class="n">fix_winding</span>
+
+
+<div class="viewcode-block" id="cloud_mask">
+<a class="viewcode-back" href="../../api/dep_tools.landsat_utils.html#dep_tools.landsat_utils.cloud_mask">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">cloud_mask</span><span class="p">(</span>
+    <span class="n">xr</span><span class="p">:</span> <span class="n">DataArray</span> <span class="o">|</span> <span class="n">Dataset</span><span class="p">,</span> <span class="n">filters</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataArray</span> <span class="o">|</span> <span class="n">Dataset</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get the cloud mask for landsat data.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        xr: An xarray object containing Landsat data, including the `qa_pixel` band.</span>
+<span class="sd">        filters: List of filters to apply to the cloud mask. Each filter is a tuple of</span>
+<span class="sd">            `(&lt;filter name&gt;, &lt;filter size&gt;)`. Valid filter names are `&#39;opening&#39;` and</span>
+<span class="sd">            `&#39;dilation&#39;`. If `None`, no filters will be applied.</span>
+<span class="sd">            For example: `[(&quot;closing&quot;, 10),(&quot;opening&quot;, 2),(&quot;dilation&quot;, 2)]`.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The cloud mask defined by the `&#39;qa_pixel&#39;` band, with optional filters applied.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">CLOUD</span> <span class="o">=</span> <span class="mi">3</span>
+    <span class="n">CLOUD_SHADOW</span> <span class="o">=</span> <span class="mi">4</span>
+
+    <span class="n">bitmask</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="p">[</span><span class="n">CLOUD</span><span class="p">,</span> <span class="n">CLOUD_SHADOW</span><span class="p">]:</span>
+        <span class="n">bitmask</span> <span class="o">|=</span> <span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="n">field</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">cloud_mask</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">band</span><span class="o">=</span><span class="s2">&quot;qa_pixel&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">&quot;uint16&quot;</span><span class="p">)</span> <span class="o">&amp;</span> <span class="n">bitmask</span> <span class="o">!=</span> <span class="mi">0</span>
+    <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+        <span class="n">cloud_mask</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">qa_pixel</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s2">&quot;uint16&quot;</span><span class="p">)</span> <span class="o">&amp;</span> <span class="n">bitmask</span> <span class="o">!=</span> <span class="mi">0</span>
+
+    <span class="k">if</span> <span class="n">filters</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">cloud_mask</span> <span class="o">=</span> <span class="n">mask_cleanup</span><span class="p">(</span><span class="n">cloud_mask</span><span class="p">,</span> <span class="n">filters</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">cloud_mask</span></div>
+
+
+
+<div class="viewcode-block" id="mask_clouds">
+<a class="viewcode-back" href="../../api/dep_tools.landsat_utils.html#dep_tools.landsat_utils.mask_clouds">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">mask_clouds</span><span class="p">(</span>
+    <span class="n">xr</span><span class="p">:</span> <span class="n">DataArray</span> <span class="o">|</span> <span class="n">Dataset</span><span class="p">,</span>
+    <span class="n">filters</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">keep_ints</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DataArray</span> <span class="o">|</span> <span class="n">Dataset</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Mask clouds in Landsat data.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        xr: DataArray containing Landsat data including the `qa_pixel` band.</span>
+<span class="sd">        filters: List of filters to apply to the cloud mask. Each filter is a tuple of</span>
+<span class="sd">            `(&lt;filter name&gt;, &lt;filter size&gt;)`. Valid filter names are &#39;opening&#39; and</span>
+<span class="sd">            &#39;dilation&#39;. If None, no filters will be applied.</span>
+<span class="sd">            For example: `[(&quot;closing&quot;, 10),(&quot;opening&quot;, 2),(&quot;dilation&quot;, 2)]`.</span>
+<span class="sd">        keep_ints: If True, return the masked data as integers. Otherwise, return</span>
+<span class="sd">            the masked data as floats.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The input, with masks applied.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">mask</span> <span class="o">=</span> <span class="n">cloud_mask</span><span class="p">(</span><span class="n">xr</span><span class="p">,</span> <span class="n">filters</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">keep_ints</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">erase_bad</span><span class="p">(</span><span class="n">xr</span><span class="p">,</span> <span class="n">mask</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">xr</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="o">~</span><span class="n">mask</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="landsat_grid">
+<a class="viewcode-back" href="../../api/dep_tools.landsat_utils.html#dep_tools.landsat_utils.landsat_grid">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">landsat_grid</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">GeoDataFrame</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The official Landsat grid filtered to Pacific Island Countries and</span>
+<span class="sd">    Territories as defined by GADM.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A GeoDataFrame, indexed by `&#39;PATH&#39;` &amp; `&#39;ROW&#39;`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">ls_grid_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span> <span class="o">/</span> <span class="s2">&quot;landsat_grid.gpkg&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">ls_grid_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+        <span class="n">dep_pathrows</span> <span class="o">=</span> <span class="n">read_pathrows_file</span><span class="p">()</span>
+        <span class="n">ls_grid</span> <span class="o">=</span> <span class="n">_pathrows</span><span class="p">()</span><span class="o">.</span><span class="n">set_index</span><span class="p">([</span><span class="s2">&quot;PATH&quot;</span><span class="p">,</span> <span class="s2">&quot;ROW&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">dep_pathrows</span><span class="p">]</span>
+        <span class="n">ls_grid</span><span class="o">.</span><span class="n">to_file</span><span class="p">(</span><span class="n">ls_grid_path</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">GeoDataFrame</span><span class="p">(</span><span class="n">read_file</span><span class="p">(</span><span class="n">ls_grid_path</span><span class="p">)</span><span class="o">.</span><span class="n">set_index</span><span class="p">([</span><span class="s2">&quot;PATH&quot;</span><span class="p">,</span> <span class="s2">&quot;ROW&quot;</span><span class="p">]))</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_pathrows</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">GeoDataFrame</span><span class="p">:</span>
+    <span class="n">pathrows</span> <span class="o">=</span> <span class="n">GeoDataFrame</span><span class="p">(</span>
+        <span class="n">read_file</span><span class="p">(</span>
+            <span class="s2">&quot;https://d9-wret.s3.us-west-2.amazonaws.com/assets/palladium/production/s3fs-public/atoms/files/WRS2_descending_0.zip&quot;</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">pathrows</span><span class="p">[</span><span class="s2">&quot;geometry&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pathrows</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">fix_winding</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">pathrows</span>
+
+
+<div class="viewcode-block" id="read_pathrows_file">
+<a class="viewcode-back" href="../../api/dep_tools.landsat_utils.html#dep_tools.landsat_utils.read_pathrows_file">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">read_pathrows_file</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Read list of pathrows containing land within the Digital Earth Pacific aoi</span>
+<span class="sd">    from a file and return them as a list of tuples.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A list of tuples of the form `(&lt;path&gt;, &lt;row&gt;)`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">cwd</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">abspath</span><span class="p">(</span><span class="vm">__file__</span><span class="p">))</span>
+    <span class="n">pathrows_file</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">cwd</span><span class="p">,</span> <span class="s2">&quot;pathrows.txt&quot;</span><span class="p">)</span>
+
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">pathrows_file</span><span class="p">,</span> <span class="s2">&quot;r&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">lines</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">readlines</span><span class="p">()</span>
+    <span class="k">return</span> <span class="p">[</span><span class="nb">tuple</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)))</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">lines</span> <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()]</span></div>
+
+
+
+<div class="viewcode-block" id="pathrows_in_area">
+<a class="viewcode-back" href="../../api/dep_tools.landsat_utils.html#dep_tools.landsat_utils.pathrows_in_area">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">pathrows_in_area</span><span class="p">(</span>
+    <span class="n">area</span><span class="p">:</span> <span class="n">GeoDataFrame</span><span class="p">,</span> <span class="n">pathrows</span><span class="p">:</span> <span class="n">GeoDataFrame</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GeoDataFrame</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get a list of Landsat pathrows in a given area or areas.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        area: A :py:class:`geopandas.GeoDataFrame` with polygons.</span>
+<span class="sd">        pathrows: The pathrows. If unset, the Landsat pathrows are downloaded and</span>
+<span class="sd">            used.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A :py:class:`geopandas.GeoDataFrame` of pathrows that intersect the given area.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">pathrows</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">pathrows</span> <span class="o">=</span> <span class="n">_pathrows</span><span class="p">()</span>
+
+    <span class="n">bbox</span> <span class="o">=</span> <span class="n">bbox_across_180</span><span class="p">(</span><span class="n">area</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">bbox</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">pathrows</span><span class="p">[</span>
+            <span class="n">pathrows</span><span class="o">.</span><span class="n">intersects</span><span class="p">(</span><span class="n">box</span><span class="p">(</span><span class="o">*</span><span class="n">bbox</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span> <span class="o">|</span> <span class="n">pathrows</span><span class="o">.</span><span class="n">intersects</span><span class="p">(</span><span class="n">box</span><span class="p">(</span><span class="o">*</span><span class="n">bbox</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+        <span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">pathrows</span><span class="p">[</span><span class="n">pathrows</span><span class="o">.</span><span class="n">intersects</span><span class="p">(</span><span class="n">box</span><span class="p">(</span><span class="o">*</span><span class="n">bbox</span><span class="p">))]</span></div>
+
+
+
+<div class="viewcode-block" id="items_in_pathrows">
+<a class="viewcode-back" href="../../api/dep_tools.landsat_utils.html#dep_tools.landsat_utils.items_in_pathrows">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">items_in_pathrows</span><span class="p">(</span>
+    <span class="n">items</span><span class="p">:</span> <span class="n">ItemCollection</span><span class="p">,</span> <span class="n">some_pathrows</span><span class="p">:</span> <span class="n">GeoDataFrame</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ItemCollection</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Filter STAC items to a set of Landsat pathrows.</span>
+
+<span class="sd">    This function is likely due for deprecation.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        items: A :py:class:`pystac.ItemCollection`. The Landsat pathrow of each</span>
+<span class="sd">            item is identified by the properties `&#39;landsat:wrs_path&#39;` and</span>
+<span class="sd">            `&#39;landsat:wrs_row&#39;`.</span>
+<span class="sd">        some_pathrows:</span>
+<span class="sd">            The Landsat pathrows of interest. The columns `&#39;PATH&#39;` and `&#39;ROW&#39;`, containing</span>
+<span class="sd">            integer or string values are used to identify the pathrows.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The filtered pathrows.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">ItemCollection</span><span class="p">(</span>
+        <span class="n">some_pathrows</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span>
+            <span class="k">lambda</span> <span class="n">row</span><span class="p">:</span> <span class="p">[</span>
+                <span class="n">i</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">items</span>
+                <span class="k">if</span> <span class="n">i</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="s2">&quot;landsat:wrs_path&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="nb">str</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s2">&quot;PATH&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+                <span class="ow">and</span> <span class="n">i</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="s2">&quot;landsat:wrs_row&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="nb">str</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s2">&quot;ROW&quot;</span><span class="p">])</span><span class="o">.</span><span class="n">zfill</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+            <span class="p">],</span>
+            <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="pathrow_with_greatest_area">
+<a class="viewcode-back" href="../../api/dep_tools.landsat_utils.html#dep_tools.landsat_utils.pathrow_with_greatest_area">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">pathrow_with_greatest_area</span><span class="p">(</span><span class="n">shapes</span><span class="p">:</span> <span class="n">GeoDataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the Landsat pathrow with the largest intersection of the given shapes.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        shapes: A :py:class:`geopandas.GeoDataFrame` with polygons or</span>
+<span class="sd">            multipolygons.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A tuple of the form `(&lt;path&gt;, &lt;row&gt;)`, indicating the Landsat pathrow</span>
+<span class="sd">        with the greatest overlap.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">pathrows</span> <span class="o">=</span> <span class="n">_pathrows</span><span class="p">()</span>
+    <span class="n">intersection</span> <span class="o">=</span> <span class="n">shapes</span><span class="o">.</span><span class="n">to_crs</span><span class="p">(</span><span class="n">pathrows</span><span class="o">.</span><span class="n">crs</span><span class="p">)</span><span class="o">.</span><span class="n">overlay</span><span class="p">(</span><span class="n">pathrows</span><span class="p">,</span> <span class="n">how</span><span class="o">=</span><span class="s2">&quot;intersection&quot;</span><span class="p">)</span>
+    <span class="n">row_with_greatest_area</span> <span class="o">=</span> <span class="n">intersection</span><span class="o">.</span><span class="n">iloc</span><span class="p">[[</span><span class="n">intersection</span><span class="o">.</span><span class="n">geometry</span><span class="o">.</span><span class="n">area</span><span class="o">.</span><span class="n">idxmax</span><span class="p">()]]</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">row_with_greatest_area</span><span class="o">.</span><span class="n">PATH</span><span class="o">.</span><span class="n">item</span><span class="p">(),</span> <span class="n">row_with_greatest_area</span><span class="o">.</span><span class="n">ROW</span><span class="o">.</span><span class="n">item</span><span class="p">())</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Digital Earth Pacific.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

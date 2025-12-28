@@ -1,0 +1,251 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>dep_tools.aws module &mdash; dep-tools 0.5.4 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=e1a677a5"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="dep_tools.exceptions module" href="dep_tools.exceptions.html" />
+    <link rel="prev" title="dep_tools package" href="dep_tools.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            dep-tools
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">dep_tools</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="dep_tools.html">dep_tools package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="dep_tools.html#submodules">Submodules</a><ul class="current">
+<li class="toctree-l4 current"><a class="current reference internal" href="#">dep_tools.aws module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.exceptions.html">dep_tools.exceptions module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.grids.html">dep_tools.grids module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.landsat_utils.html">dep_tools.landsat_utils module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.loaders.html">dep_tools.loaders module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.namers.html">dep_tools.namers module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.parsers.html">dep_tools.parsers module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.processors.html">dep_tools.processors module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.s2_utils.html">dep_tools.s2_utils module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.searchers.html">dep_tools.searchers module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.stac_utils.html">dep_tools.stac_utils module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.task.html">dep_tools.task module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.utils.html">dep_tools.utils module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.writers.html">dep_tools.writers module</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="dep_tools.html#module-dep_tools">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">dep-tools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">dep_tools</a></li>
+          <li class="breadcrumb-item"><a href="dep_tools.html">dep_tools package</a></li>
+      <li class="breadcrumb-item active">dep_tools.aws module</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/api/dep_tools.aws.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-dep_tools.aws">
+<span id="dep-tools-aws-module"></span><h1>dep_tools.aws module<a class="headerlink" href="#module-dep_tools.aws" title="Link to this heading"></a></h1>
+<p>Utility / helper functions for using Amazon S3 Storage.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="dep_tools.aws.object_exists">
+<span class="sig-prename descclassname"><span class="pre">dep_tools.aws.</span></span><span class="sig-name descname"><span class="pre">object_exists</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bucket</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">client</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dep_tools/aws.html#object_exists"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dep_tools.aws.object_exists" title="Link to this definition"></a></dt>
+<dd><p>Check if a given object exists in a bucket.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>bucket</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – The name of the bucket.</p></li>
+<li><p><strong>key</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – The object key.</p></li>
+<li><p><strong>client</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">BaseClient</span></code>]</span>) – An optional client. If none is specified the default client is used.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>True if the object is in the bucket, otherwise False.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="dep_tools.aws.s3_dump">
+<span class="sig-prename descclassname"><span class="pre">dep_tools.aws.</span></span><span class="sig-name descname"><span class="pre">s3_dump</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bucket</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">client</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dep_tools/aws.html#s3_dump"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dep_tools.aws.s3_dump" title="Link to this definition"></a></dt>
+<dd><p>Write data to an s3 bucket.</p>
+<p>This is a wrapper around <code class="xref py py-func docutils literal notranslate"><span class="pre">boto3.client.put_object()</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">bytes</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">IO</span></code>]</span>) – The data to write.</p></li>
+<li><p><strong>bucket</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – The name of the bucket.</p></li>
+<li><p><strong>key</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – The key in the bucket where the data should go.</p></li>
+<li><p><strong>client</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseClient</span></code></span>) – A client.</p></li>
+<li><p><strong>**kwargs</strong> – Additional arguments to <code class="xref py py-func docutils literal notranslate"><span class="pre">boto3.client.put_object()</span></code></p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>True if the operation was successful, otherwise False.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="dep_tools.aws.write_to_s3">
+<span class="sig-prename descclassname"><span class="pre">dep_tools.aws.</span></span><span class="sig-name descname"><span class="pre">write_to_s3</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">d</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bucket</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overwrite</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_odc_writer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">client</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">s3_dump_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{}</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dep_tools/aws.html#write_to_s3"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dep_tools.aws.write_to_s3" title="Link to this definition"></a></dt>
+<dd><p>Writes a given object to s3.</p>
+<p>This is a specialized version of <a class="reference internal" href="#dep_tools.aws.s3_dump" title="dep_tools.aws.s3_dump"><code class="xref py py-func docutils literal notranslate"><span class="pre">s3_dump()</span></code></a>. If the object is a GeoDataFrame,
+<code class="xref py py-func docutils literal notranslate"><span class="pre">geopandas.to_file()</span></code> is used. If an xarray DataArray or Dataset,
+<code class="xref py py-func docutils literal notranslate"><span class="pre">odc.geo.xr.to_cog()</span></code> is used if <cite>use_odc_writer</cite> is <cite>True</cite>, otherwise
+<code class="xref py py-func docutils literal notranslate"><span class="pre">rioxarray.to.raster()</span></code> is used. If a <code class="xref py py-class docutils literal notranslate"><span class="pre">pystac.Item</span></code>, <cite>d</cite> is first
+dumped to json.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>d</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DataArray</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">GeoDataFrame</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Item</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</span>) – The data or object to write.</p></li>
+<li><p><strong>path</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Path</span></code>]</span>) – The path (key) to write the object.</p></li>
+<li><p><strong>bucket</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – The bucket where the object should go.</p></li>
+<li><p><strong>overwrite</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span>) – Whether existing objects with the same key should be overwritten.</p></li>
+<li><p><strong>use_odc_writer</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span>) – Whether <code class="xref py py-func docutils literal notranslate"><span class="pre">odc.geo.xr.to_cog()</span></code> should be used to write
+the object. If <cite>False</cite> <code class="xref py py-func docutils literal notranslate"><span class="pre">rioxarray.to_raster()</span></code> is used. Only
+matters for xarray objects (DataArrays or Datasets).</p></li>
+<li><p><strong>client</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">BaseClient</span></code>]</span>) – The s3 client. If not set the default client is used.</p></li>
+<li><p><strong>(</strong><strong>)</strong> (<em>s3_dump_kwargs</em>) – Additional arguments to <a class="reference internal" href="#dep_tools.aws.s3_dump" title="dep_tools.aws.s3_dump"><code class="xref py py-func docutils literal notranslate"><span class="pre">s3_dump()</span></code></a>.</p></li>
+<li><p><strong>**kwargs</strong> – Additional arguments to the writing function, if the object is
+a <code class="xref py py-class docutils literal notranslate"><span class="pre">geopandas.GeoDataFrame</span></code> or <code class="xref py py-class docutils literal notranslate"><span class="pre">xarray.DataArray</span></code> /
+<code class="xref py py-class docutils literal notranslate"><span class="pre">xarray.Dataset</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>ValueError</strong> – If <cite>d</cite> is not of the allowed types.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="dep_tools.aws.write_stac_s3">
+<span class="sig-prename descclassname"><span class="pre">dep_tools.aws.</span></span><span class="sig-name descname"><span class="pre">write_stac_s3</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">item</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stac_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bucket</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dep_tools/aws.html#write_stac_s3"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dep_tools.aws.write_stac_s3" title="Link to this definition"></a></dt>
+<dd><p>Writes a STAC item to s3.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>item</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Item</span></code></span>) – A STAC item.</p></li>
+<li><p><strong>stac_path</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – The path where the item should go.</p></li>
+<li><p><strong>bucket</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – The bucket where the item should go.</p></li>
+<li><p><strong>**kwargs</strong> – Additional arguments to <a class="reference internal" href="#dep_tools.aws.write_to_s3" title="dep_tools.aws.write_to_s3"><code class="xref py py-func docutils literal notranslate"><span class="pre">write_to_s3()</span></code></a>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The stac_path.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="dep_tools.aws.get_s3_bucket_region">
+<span class="sig-prename descclassname"><span class="pre">dep_tools.aws.</span></span><span class="sig-name descname"><span class="pre">get_s3_bucket_region</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bucket_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">client</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dep_tools/aws.html#get_s3_bucket_region"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dep_tools.aws.get_s3_bucket_region" title="Link to this definition"></a></dt>
+<dd><p>Return the AWS region for a given bucket.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>bucket_name</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – The name of the bucket</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The name of the region.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="dep_tools.html" class="btn btn-neutral float-left" title="dep_tools package" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="dep_tools.exceptions.html" class="btn btn-neutral float-right" title="dep_tools.exceptions module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Digital Earth Pacific.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

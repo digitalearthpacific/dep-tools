@@ -1,0 +1,343 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>dep_tools.writers &mdash; dep-tools 0.5.4 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=e1a677a5"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            dep-tools
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api/modules.html">dep_tools</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">dep-tools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">dep_tools.writers</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for dep_tools.writers</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;This module contains the definition and various implementations of</span>
+<span class="sd">:class:`Writer` objects, which are used to write files locally or to the</span>
+<span class="sd">cloud.&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">abc</span><span class="w"> </span><span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">concurrent.futures</span><span class="w"> </span><span class="kn">import</span> <span class="n">ThreadPoolExecutor</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">functools</span><span class="w"> </span><span class="kn">import</span> <span class="n">partial</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Hashable</span><span class="p">,</span> <span class="n">List</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">pystac</span><span class="w"> </span><span class="kn">import</span> <span class="n">Item</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">xarray</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dataset</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.aws</span><span class="w"> </span><span class="kn">import</span> <span class="n">write_to_s3</span><span class="p">,</span> <span class="n">write_stac_s3</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.namers</span><span class="w"> </span><span class="kn">import</span> <span class="n">GenericItemPath</span><span class="p">,</span> <span class="n">ItemPath</span><span class="p">,</span> <span class="n">S3ItemPath</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">write_to_local_storage</span>
+
+
+<div class="viewcode-block" id="Writer">
+<a class="viewcode-back" href="../../api/dep_tools.writers.html#dep_tools.writers.Writer">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">Writer</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;The base abstract class for writing.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="Writer.write">
+<a class="viewcode-back" href="../../api/dep_tools.writers.html#dep_tools.writers.Writer.write">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+        <span class="k">pass</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="DsCogWriter">
+<a class="viewcode-back" href="../../api/dep_tools.writers.html#dep_tools.writers.DsCogWriter">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">DsCogWriter</span><span class="p">(</span><span class="n">Writer</span><span class="p">):</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">itempath</span><span class="p">:</span> <span class="n">ItemPath</span><span class="p">,</span>
+        <span class="n">write_multithreaded</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">load_before_write</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">write_function</span><span class="p">:</span> <span class="n">Callable</span> <span class="o">=</span> <span class="n">write_to_s3</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;A :class:`Writer` object which writes an :class:`xarray.Dataset`</span>
+<span class="sd">        to a cloud-optimized GeoTIFF (COG) file or files. A COG is written</span>
+<span class="sd">        for each Dataset variable.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            itempath: The :class:`ItemPath` used to define the output path.</span>
+<span class="sd">            write_multithreaded: Whether to use multiple threads (one for</span>
+<span class="sd">                each Dataset variable) when writing.</span>
+<span class="sd">            load_before_write: Whether to load the Dataset before writing. This</span>
+<span class="sd">                can be useful to prevent re-reading source data from</span>
+<span class="sd">                when multiple variables depend on the same source.</span>
+<span class="sd">                data.</span>
+<span class="sd">            write_function: The function actually used to write the data. It</span>
+<span class="sd">                should take an :class:`xarray.DataArray` as the first parameter</span>
+<span class="sd">                and the output path (as a string or :class:`Path`) as a named</span>
+<span class="sd">                parameter.</span>
+<span class="sd">            **kwargs: Additional arguments to :func:`write_function`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_itempath</span> <span class="o">=</span> <span class="n">itempath</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_write_multithreaded</span> <span class="o">=</span> <span class="n">write_multithreaded</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_load_before_write</span> <span class="o">=</span> <span class="n">load_before_write</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_write_function</span> <span class="o">=</span> <span class="n">write_function</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_kwargs</span> <span class="o">=</span> <span class="n">kwargs</span>
+
+<div class="viewcode-block" id="DsCogWriter.write">
+<a class="viewcode-back" href="../../api/dep_tools.writers.html#dep_tools.writers.DsCogWriter.write">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">xr</span><span class="p">:</span> <span class="n">Dataset</span><span class="p">,</span> <span class="n">item_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">List</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Write a :class:`xarray.Dataset`.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            xr: The Dataset.</span>
+<span class="sd">            item_id: An item id. It is passed to the :class:`ItemPath` provided</span>
+<span class="sd">                on initialization to determine the output file path.</span>
+
+<span class="sd">        Returns: The output path(s) as a string or list of strings.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_load_before_write</span><span class="p">:</span>
+            <span class="n">xr</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+
+        <span class="n">paths</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">def</span><span class="w"> </span><span class="nf">get_write_partial</span><span class="p">(</span><span class="n">variable</span><span class="p">:</span> <span class="n">Hashable</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">:</span>
+            <span class="n">output_da</span> <span class="o">=</span> <span class="n">xr</span><span class="p">[</span><span class="n">variable</span><span class="p">]</span><span class="o">.</span><span class="n">squeeze</span><span class="p">()</span>
+            <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_itempath</span><span class="o">.</span><span class="n">path</span><span class="p">(</span><span class="n">item_id</span><span class="p">,</span> <span class="n">variable</span><span class="p">)</span>
+            <span class="n">paths</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+
+            <span class="k">return</span> <span class="n">partial</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_write_function</span><span class="p">,</span>
+                <span class="n">output_da</span><span class="p">,</span>
+                <span class="n">path</span><span class="o">=</span><span class="n">path</span><span class="p">,</span>
+                <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_kwargs</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_write_multithreaded</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">ThreadPoolExecutor</span><span class="p">()</span> <span class="k">as</span> <span class="n">executor</span><span class="p">:</span>
+                <span class="n">futures</span> <span class="o">=</span> <span class="p">[</span>
+                    <span class="n">executor</span><span class="o">.</span><span class="n">submit</span><span class="p">(</span><span class="n">get_write_partial</span><span class="p">(</span><span class="n">variable</span><span class="p">))</span> <span class="k">for</span> <span class="n">variable</span> <span class="ow">in</span> <span class="n">xr</span>
+                <span class="p">]</span>
+                <span class="k">for</span> <span class="n">future</span> <span class="ow">in</span> <span class="n">futures</span><span class="p">:</span>
+                    <span class="n">future</span><span class="o">.</span><span class="n">result</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">variable</span> <span class="ow">in</span> <span class="n">xr</span><span class="p">:</span>
+                <span class="n">get_write_partial</span><span class="p">(</span><span class="n">variable</span><span class="p">)()</span>
+        <span class="k">return</span> <span class="n">paths</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="AwsDsCogWriter">
+<a class="viewcode-back" href="../../api/dep_tools.writers.html#dep_tools.writers.AwsDsCogWriter">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">AwsDsCogWriter</span><span class="p">(</span><span class="n">DsCogWriter</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">itempath</span><span class="p">:</span> <span class="n">S3ItemPath</span><span class="p">,</span>
+        <span class="n">write_multithreaded</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">load_before_write</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">write_function</span><span class="p">:</span> <span class="n">Callable</span> <span class="o">=</span> <span class="n">write_to_s3</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;A :class:`DsCogWriter` which writes to S3 storage. The only difference</span>
+<span class="sd">        is that the ItemPath is an :class:`S3ItemPath`; `itempath.bucket` is passed</span>
+<span class="sd">        as the `bucket` keyword argument to `write_function`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">itempath</span><span class="o">=</span><span class="n">itempath</span><span class="p">,</span>
+            <span class="n">write_multithreaded</span><span class="o">=</span><span class="n">write_multithreaded</span><span class="p">,</span>
+            <span class="n">load_before_write</span><span class="o">=</span><span class="n">load_before_write</span><span class="p">,</span>
+            <span class="n">write_function</span><span class="o">=</span><span class="n">write_function</span><span class="p">,</span>
+            <span class="n">bucket</span><span class="o">=</span><span class="n">itempath</span><span class="o">.</span><span class="n">bucket</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="LocalDsCogWriter">
+<a class="viewcode-back" href="../../api/dep_tools.writers.html#dep_tools.writers.LocalDsCogWriter">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">LocalDsCogWriter</span><span class="p">(</span><span class="n">DsCogWriter</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;A :class:`DsCogWriter` which writes to local storage using</span>
+<span class="sd">    :func:`dep_tools.utils.write_to_local_storage`.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">write_function</span><span class="o">=</span><span class="n">write_to_local_storage</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="StacWriter">
+<a class="viewcode-back" href="../../api/dep_tools.writers.html#dep_tools.writers.StacWriter">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">StacWriter</span><span class="p">(</span><span class="n">Writer</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">itempath</span><span class="p">:</span> <span class="n">GenericItemPath</span><span class="p">,</span>
+        <span class="n">write_stac_function</span><span class="p">:</span> <span class="n">Callable</span> <span class="o">=</span> <span class="n">write_stac_s3</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;A :class:`Write` which writes spatio-temporal asset catalog (STAC)</span>
+<span class="sd">        Items.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            itempath: The :class:`ItemPath` used to define the output path.</span>
+<span class="sd">            write_stac_function: The function used to write a STAC item. It should</span>
+<span class="sd">                take the Item as its first argument and the output path as its</span>
+<span class="sd">                second.</span>
+<span class="sd">            **kwargs: Additional arguments to :func:`write_stac_function`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_itempath</span> <span class="o">=</span> <span class="n">itempath</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_write_stac_function</span> <span class="o">=</span> <span class="n">write_stac_function</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_kwargs</span> <span class="o">=</span> <span class="n">kwargs</span>
+
+<div class="viewcode-block" id="StacWriter.write">
+<a class="viewcode-back" href="../../api/dep_tools.writers.html#dep_tools.writers.StacWriter.write">[docs]</a>
+    <span class="k">def</span><span class="w"> </span><span class="nf">write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">:</span> <span class="n">Item</span><span class="p">,</span> <span class="n">item_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Write a STAC Item to an output file.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            item: The STAC Item.</span>
+<span class="sd">            item_id: The item id, passed to :func:`ItemPath.stac_path` to</span>
+<span class="sd">                define the output path.</span>
+
+<span class="sd">        Returns: The self reference of the item (`item.self_href`).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">stac_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_itempath</span><span class="o">.</span><span class="n">stac_path</span><span class="p">(</span><span class="n">item_id</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_write_stac_function</span><span class="p">(</span><span class="n">item</span><span class="p">,</span> <span class="n">stac_path</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_kwargs</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">item</span><span class="o">.</span><span class="n">self_href</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="AwsStacWriter">
+<a class="viewcode-back" href="../../api/dep_tools.writers.html#dep_tools.writers.AwsStacWriter">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">AwsStacWriter</span><span class="p">(</span><span class="n">StacWriter</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">itempath</span><span class="p">:</span> <span class="n">S3ItemPath</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;A :class:`StacWriter` to write to Amazon S3 Storage.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            itempath: The itempath used to define the output path. `itempath.bucket`</span>
+<span class="sd">                is passed as the `bucket` keyword argument to</span>
+<span class="sd">                :func:`dep_tools.aws.write_to_s3`.</span>
+<span class="sd">            **kwargs: Additional arguments to :func:`StacWriter.__init__`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">itempath</span><span class="o">=</span><span class="n">itempath</span><span class="p">,</span>
+            <span class="n">write_stac_function</span><span class="o">=</span><span class="n">write_to_s3</span><span class="p">,</span>
+            <span class="n">bucket</span><span class="o">=</span><span class="n">itempath</span><span class="o">.</span><span class="n">bucket</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="LocalStacWriter">
+<a class="viewcode-back" href="../../api/dep_tools.writers.html#dep_tools.writers.LocalStacWriter">[docs]</a>
+<span class="k">class</span><span class="w"> </span><span class="nc">LocalStacWriter</span><span class="p">(</span><span class="n">StacWriter</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">itempath</span><span class="p">:</span> <span class="n">GenericItemPath</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;A :class:`StacWriter` to write to a local file.</span>
+
+<span class="sd">        This class uses :func:`dep_tools.utils.write_to_local_storage` to</span>
+<span class="sd">        write the data. It is typically used for testing only.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            itempath: The itempath used to define the output path.</span>
+<span class="sd">            **kwargs: Additional arguments to :func:`StacWriter.__init__`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">itempath</span><span class="o">=</span><span class="n">itempath</span><span class="p">,</span>
+            <span class="n">write_stac_function</span><span class="o">=</span><span class="n">write_to_local_storage</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Digital Earth Pacific.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

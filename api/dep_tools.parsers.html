@@ -1,0 +1,200 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>dep_tools.parsers module &mdash; dep-tools 0.5.4 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=e1a677a5"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="dep_tools.processors module" href="dep_tools.processors.html" />
+    <link rel="prev" title="dep_tools.namers module" href="dep_tools.namers.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            dep-tools
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">dep_tools</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="dep_tools.html">dep_tools package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="dep_tools.html#submodules">Submodules</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.aws.html">dep_tools.aws module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.exceptions.html">dep_tools.exceptions module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.grids.html">dep_tools.grids module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.landsat_utils.html">dep_tools.landsat_utils module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.loaders.html">dep_tools.loaders module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.namers.html">dep_tools.namers module</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">dep_tools.parsers module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.processors.html">dep_tools.processors module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.s2_utils.html">dep_tools.s2_utils module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.searchers.html">dep_tools.searchers module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.stac_utils.html">dep_tools.stac_utils module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.task.html">dep_tools.task module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.utils.html">dep_tools.utils module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.writers.html">dep_tools.writers module</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="dep_tools.html#module-dep_tools">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">dep-tools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">dep_tools</a></li>
+          <li class="breadcrumb-item"><a href="dep_tools.html">dep_tools package</a></li>
+      <li class="breadcrumb-item active">dep_tools.parsers module</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/api/dep_tools.parsers.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-dep_tools.parsers">
+<span id="dep-tools-parsers-module"></span><h1>dep_tools.parsers module<a class="headerlink" href="#module-dep_tools.parsers" title="Link to this heading"></a></h1>
+<p>This module contains various parsers for converting data.</p>
+<p>These are primarily useful as convenience functions when using the typer module,
+particularly in combination with argo workflows, which only allows certain
+parameter types.</p>
+<p>Example usage might be something like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Annotated</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">typer</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">(</span><span class="n">flag</span><span class="p">:</span> <span class="n">Annotated</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">typer</span><span class="o">.</span><span class="n">Option</span><span class="p">(</span><span class="n">parser</span><span class="o">=</span><span class="n">bool_parser</span><span class="p">)]</span> <span class="o">=</span> <span class="s2">&quot;True&quot;</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">flag</span><span class="o">.</span><span class="vm">__class__</span><span class="p">)</span>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">typer</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">main</span><span class="p">())</span>
+</pre></div>
+</div>
+<p>Calling this code like:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ python file.py --flag True
+</pre></div>
+</div>
+<p>or:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ python file.py
+</pre></div>
+</div>
+<p>will produce:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>&lt;class &#39;bool&#39;&gt;
+</pre></div>
+</div>
+<p>That is, the input string argument has automatically been converted to a bool.</p>
+<p>the parameter must have a name and a value.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="dep_tools.parsers.datetime_parser">
+<span class="sig-prename descclassname"><span class="pre">dep_tools.parsers.</span></span><span class="sig-name descname"><span class="pre">datetime_parser</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">datetime</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dep_tools/parsers.html#datetime_parser"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dep_tools.parsers.datetime_parser" title="Link to this definition"></a></dt>
+<dd><p>Parse a string representing a year or multiple years.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>datetime</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – A string of the format <cite>‘&lt;year&gt;’</cite> or <cite>‘&lt;year x&gt;_&lt;year y&gt;’</cite>.
+If the latter, the years must be in order.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>If <cite>datetime</cite> is a single year, it is returned as a single item list.
+Otherwise a generator producing integer values in the range
+<cite>[&lt;year x&gt;, &lt;year y&gt; + 1]</cite> is returned.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="dep_tools.parsers.bool_parser">
+<span class="sig-prename descclassname"><span class="pre">dep_tools.parsers.</span></span><span class="sig-name descname"><span class="pre">bool_parser</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">raw</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dep_tools/parsers.html#bool_parser"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dep_tools.parsers.bool_parser" title="Link to this definition"></a></dt>
+<dd><p>Parse a string representing a true or false condition.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>raw</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – Either “False” or something else.</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span></p>
+</dd>
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>False if <cite>raw</cite> is <cite>“False”’</cite> and true otherwise.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="dep_tools.namers.html" class="btn btn-neutral float-left" title="dep_tools.namers module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="dep_tools.processors.html" class="btn btn-neutral float-right" title="dep_tools.processors module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Digital Earth Pacific.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

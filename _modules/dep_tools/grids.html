@@ -1,0 +1,341 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>dep_tools.grids &mdash; dep-tools 0.5.4 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=e1a677a5"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            dep-tools
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api/modules.html">dep_tools</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">dep-tools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">dep_tools.grids</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for dep_tools.grids</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Grid definitions for use in creating products.&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Literal</span><span class="p">,</span> <span class="n">Iterator</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">antimeridian</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">geopandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">gpd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">geopandas</span><span class="w"> </span><span class="kn">import</span> <span class="n">GeoDataFrame</span><span class="p">,</span> <span class="n">GeoSeries</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">odc.geo</span><span class="w"> </span><span class="kn">import</span> <span class="n">XY</span><span class="p">,</span> <span class="n">BoundingBox</span><span class="p">,</span> <span class="n">Geometry</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">odc.geo.gridspec</span><span class="w"> </span><span class="kn">import</span> <span class="n">GridSpec</span><span class="p">,</span> <span class="n">GeoBox</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">shapely.geometry</span><span class="w"> </span><span class="kn">import</span> <span class="n">shape</span>
+
+<span class="c1"># This EPSG code is what we&#39;re using for now</span>
+<span class="c1"># but it&#39;s not ideal, as its not an equal area projection...</span>
+<span class="n">PACIFIC_EPSG</span> <span class="o">=</span> <span class="s2">&quot;EPSG:3832&quot;</span>
+<span class="sd">&quot;&quot;&quot;str: The EPSG code used for products&quot;&quot;&quot;</span>
+
+<span class="n">GADM_FILE</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span> <span class="o">/</span> <span class="s2">&quot;gadm_pacific.gpkg&quot;</span>
+<span class="sd">&quot;&quot;&quot;Path: The path to a geopackage containing GADM data over the Digital Earth Pacific countries and territories.&quot;&quot;&quot;</span>
+
+<span class="n">GADM_UNION_FILE</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span> <span class="o">/</span> <span class="s2">&quot;gadm_pacific_union.gpkg&quot;</span>
+<span class="n">COUNTRIES_AND_CODES</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;American Samoa&quot;</span><span class="p">:</span> <span class="s2">&quot;ASM&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Cook Islands&quot;</span><span class="p">:</span> <span class="s2">&quot;COK&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Fiji&quot;</span><span class="p">:</span> <span class="s2">&quot;FJI&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;French Polynesia&quot;</span><span class="p">:</span> <span class="s2">&quot;PYF&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Guam&quot;</span><span class="p">:</span> <span class="s2">&quot;GUM&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Kiribati&quot;</span><span class="p">:</span> <span class="s2">&quot;KIR&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Marshall Islands&quot;</span><span class="p">:</span> <span class="s2">&quot;MHL&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Micronesia&quot;</span><span class="p">:</span> <span class="s2">&quot;FSM&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Nauru&quot;</span><span class="p">:</span> <span class="s2">&quot;NRU&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;New Caledonia&quot;</span><span class="p">:</span> <span class="s2">&quot;NCL&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Niue&quot;</span><span class="p">:</span> <span class="s2">&quot;NIU&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Northern Mariana Islands&quot;</span><span class="p">:</span> <span class="s2">&quot;MNP&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Palau&quot;</span><span class="p">:</span> <span class="s2">&quot;PLW&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Papua New Guinea&quot;</span><span class="p">:</span> <span class="s2">&quot;PNG&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Pitcairn Islands&quot;</span><span class="p">:</span> <span class="s2">&quot;PCN&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Solomon Islands&quot;</span><span class="p">:</span> <span class="s2">&quot;SLB&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Samoa&quot;</span><span class="p">:</span> <span class="s2">&quot;WSM&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Tokelau&quot;</span><span class="p">:</span> <span class="s2">&quot;TKL&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Tonga&quot;</span><span class="p">:</span> <span class="s2">&quot;TON&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Tuvalu&quot;</span><span class="p">:</span> <span class="s2">&quot;TUV&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Vanuatu&quot;</span><span class="p">:</span> <span class="s2">&quot;VUT&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Wallis and Futuna&quot;</span><span class="p">:</span> <span class="s2">&quot;WLF&quot;</span><span class="p">,</span>
+<span class="p">}</span>
+<span class="sd">&quot;&quot;&quot;dict[str, str]: The names and 3-letter country codes of Digital Earth Pacific countries and territories.&quot;&quot;&quot;</span>
+
+
+<div class="viewcode-block" id="gadm">
+<a class="viewcode-back" href="../../api/dep_tools.grids.html#dep_tools.grids.gadm">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">gadm</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">GeoDataFrame</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;GADM data for Digital Earth Pacific Island Countries and Territories.</span>
+
+<span class="sd">    Creates and stores the file at :py:const:`GADM_FILE` if it does not exist. Otherwise,</span>
+<span class="sd">    it is simply read and returned.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A GeoDataFrame</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">GADM_FILE</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">GADM_UNION_FILE</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+        <span class="n">all_polys</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span>
+            <span class="p">[</span>
+                <span class="n">gpd</span><span class="o">.</span><span class="n">read_file</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;https://geodata.ucdavis.edu/gadm/gadm4.1/gpkg/gadm41_</span><span class="si">{</span><span class="n">code</span><span class="si">}</span><span class="s2">.gpkg&quot;</span><span class="p">,</span>
+                    <span class="n">layer</span><span class="o">=</span><span class="s2">&quot;ADM_ADM_0&quot;</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="k">for</span> <span class="n">code</span> <span class="ow">in</span> <span class="n">COUNTRIES_AND_CODES</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+            <span class="p">]</span>
+        <span class="p">)</span>
+
+        <span class="n">all_polys</span><span class="o">.</span><span class="n">to_file</span><span class="p">(</span><span class="n">GADM_FILE</span><span class="p">)</span>
+        <span class="n">all_polys</span><span class="o">.</span><span class="n">dissolve</span><span class="p">()[[</span><span class="s2">&quot;geometry&quot;</span><span class="p">]]</span><span class="o">.</span><span class="n">to_file</span><span class="p">(</span><span class="n">GADM_UNION_FILE</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">gpd</span><span class="o">.</span><span class="n">read_file</span><span class="p">(</span><span class="n">GADM_FILE</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="gadm_union">
+<a class="viewcode-back" href="../../api/dep_tools.grids.html#dep_tools.grids.gadm_union">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">gadm_union</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">GeoDataFrame</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;GADM polygons as a single shape.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        A GeoDataFrame.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">GADM_UNION_FILE</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+        <span class="n">gadm</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="n">gpd</span><span class="o">.</span><span class="n">read_file</span><span class="p">(</span><span class="n">GADM_UNION_FILE</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="get_tiles">
+<a class="viewcode-back" href="../../api/dep_tools.grids.html#dep_tools.grids.get_tiles">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_tiles</span><span class="p">(</span>
+    <span class="n">resolution</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">30</span><span class="p">,</span>
+    <span class="n">country_codes</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">buffer_distance</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="n">GeoBox</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns a list of tile IDs for the Pacific region, optionally filtered</span>
+<span class="sd">    by country code.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        resolution: The output resolution of the tiles</span>
+<span class="sd">        country_codes: A list of 3-letter codes of the desired countries or</span>
+<span class="sd">            territories. If unset, all PICTs are returned.</span>
+<span class="sd">        buffer_distance: As for :py:func:`grid`.</span>
+
+<span class="sd">    Returns:</span>
+
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: If country codes are not in :py:const:`COUNTRIES_AND_CODES`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="n">country_codes</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">geometries</span> <span class="o">=</span> <span class="n">gadm_union</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="n">code</span> <span class="ow">in</span> <span class="n">COUNTRIES_AND_CODES</span><span class="o">.</span><span class="n">values</span><span class="p">()</span> <span class="k">for</span> <span class="n">code</span> <span class="ow">in</span> <span class="n">country_codes</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Invalid country code. Must be one of </span><span class="si">{</span><span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">COUNTRIES_AND_CODES</span><span class="o">.</span><span class="n">values</span><span class="p">())</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+        <span class="n">geometries</span> <span class="o">=</span> <span class="n">gadm</span><span class="p">()</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="k">lambda</span> <span class="n">df</span><span class="p">:</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;GID_0&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">country_codes</span><span class="p">)]</span>
+
+    <span class="k">return</span> <span class="n">grid</span><span class="p">(</span>
+        <span class="n">resolution</span><span class="o">=</span><span class="n">resolution</span><span class="p">,</span>
+        <span class="n">return_type</span><span class="o">=</span><span class="s2">&quot;GridSpec&quot;</span><span class="p">,</span>
+        <span class="n">intersect_with</span><span class="o">=</span><span class="n">geometries</span><span class="p">,</span>
+        <span class="n">buffer_distance</span><span class="o">=</span><span class="n">buffer_distance</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="grid">
+<a class="viewcode-back" href="../../api/dep_tools.grids.html#dep_tools.grids.grid">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">grid</span><span class="p">(</span>
+    <span class="n">resolution</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">30</span><span class="p">,</span>
+    <span class="n">simplify_tolerance</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span>
+    <span class="n">crs</span><span class="o">=</span><span class="n">PACIFIC_EPSG</span><span class="p">,</span>
+    <span class="n">return_type</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;GridSpec&quot;</span><span class="p">,</span> <span class="s2">&quot;GeoSeries&quot;</span><span class="p">,</span> <span class="s2">&quot;GeoDataFrame&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;GridSpec&quot;</span><span class="p">,</span>
+    <span class="n">intersect_with</span><span class="p">:</span> <span class="n">GeoDataFrame</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">buffer_distance</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="nb">float</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GridSpec</span> <span class="o">|</span> <span class="n">GeoSeries</span> <span class="o">|</span> <span class="n">GeoDataFrame</span> <span class="o">|</span> <span class="n">Iterator</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="n">GeoBox</span><span class="p">]]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Returns a GridSpec or GeoSeries representing the Pacific grid, optionally</span>
+<span class="sd">    intersected with an area of interest.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        resolution: The resolution, in meters, of the output. As tiles are</span>
+<span class="sd">            defined to be 96,000 meters on each side, it should divide 96,000</span>
+<span class="sd">            evenly.</span>
+<span class="sd">        crs: The desired crs of the output.</span>
+<span class="sd">        return_type: The return type. If intersect_with (see below) is not None,</span>
+<span class="sd">            this is ignored.</span>
+<span class="sd">        intersect_with: The output is intersected with the supplied GeoDataFrame</span>
+<span class="sd">            before returning, returning only tiles which overlap with those</span>
+<span class="sd">            features. If `return_type` is `GridSpec`, an iterator of tuples each</span>
+<span class="sd">            containing the tile id (in column, row order) and its GeoBox.</span>
+<span class="sd">            Otherwise, a GeoDataFrame containing only the portions of each tile</span>
+<span class="sd">            that intersect the given GeoDataFrame is returned.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">intersect_with</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">return_type</span> <span class="o">!=</span> <span class="s2">&quot;GridSpec&quot;</span><span class="p">:</span>
+            <span class="n">full_grid</span> <span class="o">=</span> <span class="n">_geoseries</span><span class="p">(</span><span class="n">resolution</span><span class="p">,</span> <span class="n">crs</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">_intersect_grid</span><span class="p">(</span><span class="n">full_grid</span><span class="p">,</span> <span class="n">intersect_with</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">gridspec</span> <span class="o">=</span> <span class="n">_gridspec</span><span class="p">(</span><span class="n">resolution</span><span class="p">,</span> <span class="n">crs</span><span class="p">)</span>
+            <span class="n">simplified</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">intersect_with</span><span class="o">.</span><span class="n">to_crs</span><span class="p">(</span><span class="n">PACIFIC_EPSG</span><span class="p">)</span>
+                <span class="o">.</span><span class="n">simplify</span><span class="p">(</span><span class="n">simplify_tolerance</span><span class="p">)</span>
+                <span class="o">.</span><span class="n">to_frame</span><span class="p">()</span>
+                <span class="o">.</span><span class="n">to_geo_dict</span><span class="p">()</span>
+            <span class="p">)</span>
+            <span class="n">geometry</span> <span class="o">=</span> <span class="n">Geometry</span><span class="p">(</span>
+                <span class="n">simplified</span><span class="p">,</span>
+                <span class="n">crs</span><span class="o">=</span><span class="n">PACIFIC_EPSG</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="n">buffer_distance</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">geometry</span> <span class="o">=</span> <span class="n">geometry</span><span class="o">.</span><span class="n">buffer</span><span class="p">(</span><span class="n">buffer_distance</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">geometry</span> <span class="o">=</span> <span class="n">geometry</span><span class="o">.</span><span class="n">buffer</span><span class="p">(</span><span class="mf">0.0</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">gridspec</span><span class="o">.</span><span class="n">tiles_from_geopolygon</span><span class="p">(</span><span class="n">geopolygon</span><span class="o">=</span><span class="n">geometry</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">&quot;GridSpec&quot;</span><span class="p">:</span> <span class="n">_gridspec</span><span class="p">,</span>
+        <span class="s2">&quot;GeoSeries&quot;</span><span class="p">:</span> <span class="n">_geoseries</span><span class="p">,</span>
+        <span class="s2">&quot;GeoDataFrame&quot;</span><span class="p">:</span> <span class="n">_geodataframe</span><span class="p">,</span>
+    <span class="p">}[</span><span class="n">return_type</span><span class="p">](</span><span class="n">resolution</span><span class="p">,</span> <span class="n">crs</span><span class="p">)</span></div>
+
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_intersect_grid</span><span class="p">(</span><span class="n">grid</span><span class="p">:</span> <span class="n">GeoSeries</span><span class="p">,</span> <span class="n">areas_of_interest</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GeoDataFrame</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">gpd</span><span class="o">.</span><span class="n">sjoin</span><span class="p">(</span>
+        <span class="n">gpd</span><span class="o">.</span><span class="n">GeoDataFrame</span><span class="p">(</span><span class="n">geometry</span><span class="o">=</span><span class="n">grid</span><span class="p">),</span> <span class="n">areas_of_interest</span><span class="o">.</span><span class="n">to_crs</span><span class="p">(</span><span class="n">grid</span><span class="o">.</span><span class="n">crs</span><span class="p">)</span>
+    <span class="p">)</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;index_right&quot;</span><span class="p">])</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_gridspec</span><span class="p">(</span><span class="n">resolution</span><span class="p">,</span> <span class="n">crs</span><span class="o">=</span><span class="n">PACIFIC_EPSG</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GridSpec</span><span class="p">:</span>
+    <span class="n">gridspec_origin</span> <span class="o">=</span> <span class="n">XY</span><span class="p">(</span><span class="o">-</span><span class="mf">3000000.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">4000000.0</span><span class="p">)</span>
+
+    <span class="n">side_in_meters</span> <span class="o">=</span> <span class="mi">96_000</span>
+    <span class="n">shape</span> <span class="o">=</span> <span class="p">(</span><span class="n">side_in_meters</span> <span class="o">/</span> <span class="n">resolution</span><span class="p">,</span> <span class="n">side_in_meters</span> <span class="o">/</span> <span class="n">resolution</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">GridSpec</span><span class="p">(</span>
+        <span class="n">crs</span><span class="o">=</span><span class="n">crs</span><span class="p">,</span>
+        <span class="n">tile_shape</span><span class="o">=</span><span class="n">shape</span><span class="p">,</span>
+        <span class="n">resolution</span><span class="o">=</span><span class="n">resolution</span><span class="p">,</span>
+        <span class="n">origin</span><span class="o">=</span><span class="n">gridspec_origin</span><span class="p">,</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_geodataframe</span><span class="p">(</span><span class="n">resolution</span><span class="p">,</span> <span class="n">crs</span><span class="o">=</span><span class="n">PACIFIC_EPSG</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GeoDataFrame</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">GeoDataFrame</span><span class="p">(</span><span class="n">geometry</span><span class="o">=</span><span class="n">_geoseries</span><span class="p">(</span><span class="n">resolution</span><span class="p">,</span> <span class="n">crs</span><span class="p">),</span> <span class="n">crs</span><span class="o">=</span><span class="n">crs</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_geoseries</span><span class="p">(</span><span class="n">resolution</span><span class="p">,</span> <span class="n">crs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GeoSeries</span><span class="p">:</span>
+    <span class="n">bounds</span> <span class="o">=</span> <span class="n">BoundingBox</span><span class="p">(</span><span class="mi">120</span><span class="p">,</span> <span class="o">-</span><span class="mi">30</span><span class="p">,</span> <span class="mi">280</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="n">crs</span><span class="o">=</span><span class="s2">&quot;EPSG:4326&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">to_crs</span><span class="p">(</span><span class="n">crs</span><span class="p">)</span>
+    <span class="n">tiles</span> <span class="o">=</span> <span class="n">_gridspec</span><span class="p">(</span><span class="n">resolution</span><span class="p">,</span> <span class="n">crs</span><span class="p">)</span><span class="o">.</span><span class="n">tiles</span><span class="p">(</span><span class="n">bounds</span><span class="p">)</span>
+    <span class="n">geometry</span><span class="p">,</span> <span class="n">index</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span>
+        <span class="o">*</span><span class="p">[(</span><span class="n">a_tile</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">boundingbox</span><span class="o">.</span><span class="n">polygon</span><span class="o">.</span><span class="n">geom</span><span class="p">,</span> <span class="n">a_tile</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="k">for</span> <span class="n">a_tile</span> <span class="ow">in</span> <span class="n">tiles</span><span class="p">]</span>
+    <span class="p">)</span>
+
+    <span class="n">gs</span> <span class="o">=</span> <span class="n">gpd</span><span class="o">.</span><span class="n">GeoSeries</span><span class="p">(</span><span class="n">geometry</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">crs</span><span class="o">=</span><span class="n">PACIFIC_EPSG</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">crs</span> <span class="o">!=</span> <span class="n">PACIFIC_EPSG</span><span class="p">:</span>
+        <span class="n">gs</span> <span class="o">=</span> <span class="n">gs</span><span class="o">.</span><span class="n">to_crs</span><span class="p">(</span><span class="n">crs</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">crs</span> <span class="o">==</span> <span class="mi">4326</span><span class="p">:</span>
+            <span class="n">gs</span> <span class="o">=</span> <span class="n">gs</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">geom</span><span class="p">:</span> <span class="n">shape</span><span class="p">(</span><span class="n">antimeridian</span><span class="o">.</span><span class="n">fix_shape</span><span class="p">(</span><span class="n">geom</span><span class="p">)))</span>
+
+    <span class="k">return</span> <span class="n">gs</span>
+
+
+<span class="c1"># The origin is in the projected CRS. This works for Landsat.</span>
+<span class="n">PACIFIC_GRID_30</span> <span class="o">=</span> <span class="n">grid</span><span class="p">()</span>
+<span class="sd">&quot;&quot;&quot;:py:class:`geopandas.GeoDataFrame`: A 30-meter resolution grid.&quot;&quot;&quot;</span>
+
+<span class="c1"># This grid is for Sentinel-2 and has the same footprint</span>
+<span class="n">PACIFIC_GRID_10</span> <span class="o">=</span> <span class="n">grid</span><span class="p">(</span><span class="n">resolution</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+<span class="sd">&quot;&quot;&quot;:py:class:`geopandas.GeoDataFrame`: A 10-meter resolution grid.&quot;&quot;&quot;</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Digital Earth Pacific.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,353 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>dep_tools.task module &mdash; dep-tools 0.5.4 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=e1a677a5"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="dep_tools.utils module" href="dep_tools.utils.html" />
+    <link rel="prev" title="dep_tools.stac_utils module" href="dep_tools.stac_utils.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            dep-tools
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">dep_tools</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="dep_tools.html">dep_tools package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="dep_tools.html#submodules">Submodules</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.aws.html">dep_tools.aws module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.exceptions.html">dep_tools.exceptions module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.grids.html">dep_tools.grids module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.landsat_utils.html">dep_tools.landsat_utils module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.loaders.html">dep_tools.loaders module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.namers.html">dep_tools.namers module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.parsers.html">dep_tools.parsers module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.processors.html">dep_tools.processors module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.s2_utils.html">dep_tools.s2_utils module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.searchers.html">dep_tools.searchers module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.stac_utils.html">dep_tools.stac_utils module</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">dep_tools.task module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.utils.html">dep_tools.utils module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.writers.html">dep_tools.writers module</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="dep_tools.html#module-dep_tools">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">dep-tools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">dep_tools</a></li>
+          <li class="breadcrumb-item"><a href="dep_tools.html">dep_tools package</a></li>
+      <li class="breadcrumb-item active">dep_tools.task module</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/api/dep_tools.task.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-dep_tools.task">
+<span id="dep-tools-task-module"></span><h1>dep_tools.task module<a class="headerlink" href="#module-dep_tools.task" title="Link to this heading"></a></h1>
+<p>Tasks form the core of the DEP scaling procedure. They orchestrate tasks
+by loading data, processing it, and writing the output. Tasks can be generic
+but are sometimes fine-tuned for specific processing.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="dep_tools.task.Task">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">dep_tools.task.</span></span><span class="sig-name descname"><span class="pre">Task</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">task_id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loader</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">processor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">writer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dep_tools/task.html#Task"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dep_tools.task.Task" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
+<p>The abstract base for Task objects.</p>
+<p>Task objects load data, process it, and write output. They are
+reusable for the same task operating on new data.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>id</strong> – An identifier for a particular task.</p></li>
+<li><p><strong>loader</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="dep_tools.loaders.html#dep_tools.loaders.Loader" title="dep_tools.loaders.Loader"><code class="xref py py-class docutils literal notranslate"><span class="pre">Loader</span></code></a></span>) – A loader loads data, usually based on the id.</p></li>
+<li><p><strong>processor</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="dep_tools.processors.html#dep_tools.processors.Processor" title="dep_tools.processors.Processor"><code class="xref py py-class docutils literal notranslate"><span class="pre">Processor</span></code></a></span>) – A processor processes loaded data.</p></li>
+<li><p><strong>writer</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="dep_tools.writers.html#dep_tools.writers.Writer" title="dep_tools.writers.Writer"><code class="xref py py-class docutils literal notranslate"><span class="pre">Writer</span></code></a></span>) – A writer writes output from the processor.</p></li>
+<li><p><strong>logger</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Logger</span></code></span>) – A logger records processing information.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="dep_tools.task.Task.run">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dep_tools/task.html#Task.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dep_tools.task.Task.run" title="Link to this definition"></a></dt>
+<dd><p>The run method orchestrates the processing. Usually a typical
+workflow would be load -&gt; process -&gt; write.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></span></p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Typically a task will return artifacts from the processing (like
+a file path).</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="dep_tools.task.AreaTask">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">dep_tools.task.</span></span><span class="sig-name descname"><span class="pre">AreaTask</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">area</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loader</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">processor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">writer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger=&lt;RootLogger</span> <span class="pre">root</span> <span class="pre">(WARNING)&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dep_tools/task.html#AreaTask"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dep_tools.task.AreaTask" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#dep_tools.task.Task" title="dep_tools.task.Task"><code class="xref py py-class docutils literal notranslate"><span class="pre">Task</span></code></a></p>
+<p>An AreaTask adds an <cite>area</cite> property to a basic <a class="reference internal" href="#dep_tools.task.Task" title="dep_tools.task.Task"><code class="xref py py-class docutils literal notranslate"><span class="pre">Task</span></code></a>.</p>
+<p>Most other arguments are as for <a class="reference internal" href="#dep_tools.task.Task" title="dep_tools.task.Task"><code class="xref py py-class docutils literal notranslate"><span class="pre">Task</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>area</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">GeoDataFrame</span></code></span>) – An area for use by the loader and/or processor. For instance,
+it can be used to clip data.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="dep_tools.task.AreaTask.run">
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dep_tools/task.html#AreaTask.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dep_tools.task.AreaTask.run" title="Link to this definition"></a></dt>
+<dd><p>Run the task.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>] | <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></span></p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>The output of the writer, typically a list of paths as strings.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="dep_tools.task.StacTask">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">dep_tools.task.</span></span><span class="sig-name descname"><span class="pre">StacTask</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">area</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">searcher</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loader</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">processor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">writer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">post_processor=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stac_creator=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stac_writer=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger=&lt;RootLogger</span> <span class="pre">root</span> <span class="pre">(WARNING)&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dep_tools/task.html#StacTask"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dep_tools.task.StacTask" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#dep_tools.task.AreaTask" title="dep_tools.task.AreaTask"><code class="xref py py-class docutils literal notranslate"><span class="pre">AreaTask</span></code></a></p>
+<p>A StacTask extends <a class="reference internal" href="#dep_tools.task.AreaTask" title="dep_tools.task.AreaTask"><code class="xref py py-class docutils literal notranslate"><span class="pre">AreaTask</span></code></a> by adding a searcher and optional
+post-processor, STAC creator, and STAC writer.</p>
+<p>Most arguments (id, area, loader, processor, writer, logger) are as for
+<a class="reference internal" href="#dep_tools.task.AreaTask" title="dep_tools.task.AreaTask"><code class="xref py py-class docutils literal notranslate"><span class="pre">AreaTask</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>searcher</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="dep_tools.searchers.html#dep_tools.searchers.Searcher" title="dep_tools.searchers.Searcher"><code class="xref py py-class docutils literal notranslate"><span class="pre">Searcher</span></code></a></span>) – The searcher searches for data, typically on the basis of
+the id and/or the area.</p></li>
+<li><p><strong>post_processor</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="dep_tools.processors.html#dep_tools.processors.Processor" title="dep_tools.processors.Processor"><code class="xref py py-class docutils literal notranslate"><span class="pre">Processor</span></code></a>]</span>) – A <code class="xref py py-class docutils literal notranslate"><span class="pre">Processor</span></code> that can prep data for writing,
+for example scaling or data type conversions.</p></li>
+<li><p><strong>stac_creator</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="dep_tools.stac_utils.html#dep_tools.stac_utils.StacCreator" title="dep_tools.stac_utils.StacCreator"><code class="xref py py-class docutils literal notranslate"><span class="pre">StacCreator</span></code></a>]</span>) – Creates a STAC Item from the data.</p></li>
+<li><p><strong>stac_writer</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="dep_tools.writers.html#dep_tools.writers.Writer" title="dep_tools.writers.Writer"><code class="xref py py-class docutils literal notranslate"><span class="pre">Writer</span></code></a>]</span>) – Writes the STAC Item to storage.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="dep_tools.task.StacTask.run">
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dep_tools/task.html#StacTask.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dep_tools.task.StacTask.run" title="Link to this definition"></a></dt>
+<dd><p>Run the task.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The output of the writer, typically a list of paths as strings.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="dep_tools.task.AwsStacTask">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">dep_tools.task.</span></span><span class="sig-name descname"><span class="pre">AwsStacTask</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">itempath</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">area</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">searcher</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loader</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">processor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">post_processor=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger=&lt;RootLogger</span> <span class="pre">root</span> <span class="pre">(WARNING)&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">**kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dep_tools/task.html#AwsStacTask"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dep_tools.task.AwsStacTask" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#dep_tools.task.StacTask" title="dep_tools.task.StacTask"><code class="xref py py-class docutils literal notranslate"><span class="pre">StacTask</span></code></a></p>
+<p>A convenience class with values of <cite>writer</cite>, <cite>stac_creator</cite>, and
+<cite>stac_writer</cite> set to sensible defaults for writing to S3.</p>
+<p>By default, an <code class="xref py py-class docutils literal notranslate"><span class="pre">AwsDsCogWriter</span></code> is used as the primary writer,
+an <code class="xref py py-class docutils literal notranslate"><span class="pre">AwsStacWriter</span></code> is used to write STAC Items, and the base
+<code class="xref py py-class docutils literal notranslate"><span class="pre">StacCreator</span></code> is used to create the STAC object.</p>
+<p>All other arguments are as for <a class="reference internal" href="#dep_tools.task.StacTask" title="dep_tools.task.StacTask"><code class="xref py py-class docutils literal notranslate"><span class="pre">StacTask</span></code></a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>**kwargs</strong> – Additional arguments passed to <a class="reference internal" href="#dep_tools.task.StacTask" title="dep_tools.task.StacTask"><code class="xref py py-class docutils literal notranslate"><span class="pre">StacTask</span></code></a>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="dep_tools.task.ItemStacTask">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">dep_tools.task.</span></span><span class="sig-name descname"><span class="pre">ItemStacTask</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">item</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loader</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">processor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">writer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">post_processor=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stac_creator=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stac_writer=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger=&lt;RootLogger</span> <span class="pre">root</span> <span class="pre">(WARNING)&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dep_tools/task.html#ItemStacTask"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dep_tools.task.ItemStacTask" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#dep_tools.task.Task" title="dep_tools.task.Task"><code class="xref py py-class docutils literal notranslate"><span class="pre">Task</span></code></a></p>
+<p>A task for a single STAC item.</p>
+<p>Most arguments are as for <a class="reference internal" href="#dep_tools.task.StacTask" title="dep_tools.task.StacTask"><code class="xref py py-class docutils literal notranslate"><span class="pre">StacTask</span></code></a>, except <cite>area</cite> is dropped.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>item</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Item</span></code></span>) – A <code class="xref py py-class docutils literal notranslate"><span class="pre">pystac.Item</span></code> representing the input data.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="dep_tools.task.ItemStacTask.run">
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dep_tools/task.html#ItemStacTask.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dep_tools.task.ItemStacTask.run" title="Link to this definition"></a></dt>
+<dd><p>The run method orchestrates the processing. Usually a typical
+workflow would be load -&gt; process -&gt; write.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Typically a task will return artifacts from the processing (like
+a file path).</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="dep_tools.task.ErrorCategoryAreaTask">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">dep_tools.task.</span></span><span class="sig-name descname"><span class="pre">ErrorCategoryAreaTask</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">area</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loader</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">processor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">writer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger=&lt;RootLogger</span> <span class="pre">root</span> <span class="pre">(WARNING)&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dep_tools/task.html#ErrorCategoryAreaTask"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dep_tools.task.ErrorCategoryAreaTask" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#dep_tools.task.AreaTask" title="dep_tools.task.AreaTask"><code class="xref py py-class docutils literal notranslate"><span class="pre">AreaTask</span></code></a></p>
+<p>An AreaTask with extra logging.</p>
+<dl class="simple">
+<dt>Errors logged include:</dt><dd><ul class="simple">
+<li><p><code class="xref py py-exc docutils literal notranslate"><span class="pre">EmptyCollectionError</span></code> from loader: logged as “no items for areas”</p></li>
+<li><p>Other <code class="xref py py-exc docutils literal notranslate"><span class="pre">Exception</span></code> from loader: logged as “load error”</p></li>
+<li><p><code class="xref py py-exc docutils literal notranslate"><span class="pre">Exception</span></code> from processor: logged as “processor error”</p></li>
+<li><p>Empty processor output: logged as “no output from processor”</p></li>
+<li><p>Writer error: logged as “error” (could be from writer or something
+beforehand if using dask)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="dep_tools.task.ErrorCategoryAreaTask.run">
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dep_tools/task.html#ErrorCategoryAreaTask.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dep_tools.task.ErrorCategoryAreaTask.run" title="Link to this definition"></a></dt>
+<dd><p>Run the task.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The output of the writer, typically a list of paths as strings.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="dep_tools.task.MultiAreaTask">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">dep_tools.task.</span></span><span class="sig-name descname"><span class="pre">MultiAreaTask</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ids</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">areas</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">task_class</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fail_on_error</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dep_tools/task.html#MultiAreaTask"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dep_tools.task.MultiAreaTask" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A “Task” object that iterates over multiple IDs and runs a task for each.</p>
+<p>This class is useful when running multiple short tasks where the time
+to build the run environment (for instance, if running on a pod) adds
+considerably to overall processing time.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ids</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</span>) – A list of IDs.</p></li>
+<li><p><strong>areas</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">GeoDataFrame</span></code></span>) – A <code class="xref py py-class docutils literal notranslate"><span class="pre">geopandas.GeoDataFrame</span></code> with index corresponding to the IDs.</p></li>
+<li><p><strong>task_class</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">type</span></code>[<a class="reference internal" href="#dep_tools.task.AreaTask" title="dep_tools.task.AreaTask"><code class="xref py py-class docutils literal notranslate"><span class="pre">AreaTask</span></code></a>]</span>) – The <a class="reference internal" href="#dep_tools.task.AreaTask" title="dep_tools.task.AreaTask"><code class="xref py py-class docutils literal notranslate"><span class="pre">AreaTask</span></code></a> subclass to use for each task.</p></li>
+<li><p><strong>fail_on_error</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span>) – If True, will exit on error. Otherwise, will log the full
+exception and continue.</p></li>
+<li><p><strong>logger</strong> – A logger.</p></li>
+<li><p><strong>**kwargs</strong> – Additional arguments to the <cite>task_class</cite> constructor.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="dep_tools.task.MultiAreaTask.run">
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dep_tools/task.html#MultiAreaTask.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dep_tools.task.MultiAreaTask.run" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="dep_tools.task.SimpleLoggingAreaTask">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">dep_tools.task.</span></span><span class="sig-name descname"><span class="pre">SimpleLoggingAreaTask</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">id</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">area</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loader</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">processor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">writer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">logger=&lt;RootLogger</span> <span class="pre">root</span> <span class="pre">(WARNING)&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dep_tools/task.html#SimpleLoggingAreaTask"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dep_tools.task.SimpleLoggingAreaTask" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#dep_tools.task.AreaTask" title="dep_tools.task.AreaTask"><code class="xref py py-class docutils literal notranslate"><span class="pre">AreaTask</span></code></a></p>
+<p>An AreaTask with basic logging.</p>
+<p>All arguments are as for <a class="reference internal" href="#dep_tools.task.AreaTask" title="dep_tools.task.AreaTask"><code class="xref py py-class docutils literal notranslate"><span class="pre">AreaTask</span></code></a>.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="dep_tools.task.SimpleLoggingAreaTask.run">
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dep_tools/task.html#SimpleLoggingAreaTask.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dep_tools.task.SimpleLoggingAreaTask.run" title="Link to this definition"></a></dt>
+<dd><p>Run the task.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns<span class="colon">:</span></dt>
+<dd class="field-odd"><p>The output of the writer, typically a list of paths as strings.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="dep_tools.stac_utils.html" class="btn btn-neutral float-left" title="dep_tools.stac_utils module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="dep_tools.utils.html" class="btn btn-neutral float-right" title="dep_tools.utils module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Digital Earth Pacific.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,274 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>dep_tools.grids module &mdash; dep-tools 0.5.4 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=e1a677a5"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="dep_tools.landsat_utils module" href="dep_tools.landsat_utils.html" />
+    <link rel="prev" title="dep_tools.exceptions module" href="dep_tools.exceptions.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            dep-tools
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">dep_tools</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="dep_tools.html">dep_tools package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="dep_tools.html#submodules">Submodules</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.aws.html">dep_tools.aws module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.exceptions.html">dep_tools.exceptions module</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">dep_tools.grids module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.landsat_utils.html">dep_tools.landsat_utils module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.loaders.html">dep_tools.loaders module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.namers.html">dep_tools.namers module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.parsers.html">dep_tools.parsers module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.processors.html">dep_tools.processors module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.s2_utils.html">dep_tools.s2_utils module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.searchers.html">dep_tools.searchers module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.stac_utils.html">dep_tools.stac_utils module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.task.html">dep_tools.task module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.utils.html">dep_tools.utils module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.writers.html">dep_tools.writers module</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="dep_tools.html#module-dep_tools">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">dep-tools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">dep_tools</a></li>
+          <li class="breadcrumb-item"><a href="dep_tools.html">dep_tools package</a></li>
+      <li class="breadcrumb-item active">dep_tools.grids module</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/api/dep_tools.grids.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-dep_tools.grids">
+<span id="dep-tools-grids-module"></span><h1>dep_tools.grids module<a class="headerlink" href="#module-dep_tools.grids" title="Link to this heading"></a></h1>
+<p>Grid definitions for use in creating products.</p>
+<dl class="py data">
+<dt class="sig sig-object py" id="dep_tools.grids.PACIFIC_EPSG">
+<span class="sig-prename descclassname"><span class="pre">dep_tools.grids.</span></span><span class="sig-name descname"><span class="pre">PACIFIC_EPSG</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'EPSG:3832'</span></em><a class="headerlink" href="#dep_tools.grids.PACIFIC_EPSG" title="Link to this definition"></a></dt>
+<dd><p>The EPSG code used for products</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="dep_tools.grids.GADM_FILE">
+<span class="sig-prename descclassname"><span class="pre">dep_tools.grids.</span></span><span class="sig-name descname"><span class="pre">GADM_FILE</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">PosixPath('/usr/local/lib/python3.10/dist-packages/dep_tools/gadm_pacific.gpkg')</span></em><a class="headerlink" href="#dep_tools.grids.GADM_FILE" title="Link to this definition"></a></dt>
+<dd><p>The path to a geopackage containing GADM data over the Digital Earth Pacific countries and territories.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Path</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="dep_tools.grids.COUNTRIES_AND_CODES">
+<span class="sig-prename descclassname"><span class="pre">dep_tools.grids.</span></span><span class="sig-name descname"><span class="pre">COUNTRIES_AND_CODES</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">{'American</span> <span class="pre">Samoa':</span> <span class="pre">'ASM',</span> <span class="pre">'Cook</span> <span class="pre">Islands':</span> <span class="pre">'COK',</span> <span class="pre">'Fiji':</span> <span class="pre">'FJI',</span> <span class="pre">'French</span> <span class="pre">Polynesia':</span> <span class="pre">'PYF',</span> <span class="pre">'Guam':</span> <span class="pre">'GUM',</span> <span class="pre">'Kiribati':</span> <span class="pre">'KIR',</span> <span class="pre">'Marshall</span> <span class="pre">Islands':</span> <span class="pre">'MHL',</span> <span class="pre">'Micronesia':</span> <span class="pre">'FSM',</span> <span class="pre">'Nauru':</span> <span class="pre">'NRU',</span> <span class="pre">'New</span> <span class="pre">Caledonia':</span> <span class="pre">'NCL',</span> <span class="pre">'Niue':</span> <span class="pre">'NIU',</span> <span class="pre">'Northern</span> <span class="pre">Mariana</span> <span class="pre">Islands':</span> <span class="pre">'MNP',</span> <span class="pre">'Palau':</span> <span class="pre">'PLW',</span> <span class="pre">'Papua</span> <span class="pre">New</span> <span class="pre">Guinea':</span> <span class="pre">'PNG',</span> <span class="pre">'Pitcairn</span> <span class="pre">Islands':</span> <span class="pre">'PCN',</span> <span class="pre">'Samoa':</span> <span class="pre">'WSM',</span> <span class="pre">'Solomon</span> <span class="pre">Islands':</span> <span class="pre">'SLB',</span> <span class="pre">'Tokelau':</span> <span class="pre">'TKL',</span> <span class="pre">'Tonga':</span> <span class="pre">'TON',</span> <span class="pre">'Tuvalu':</span> <span class="pre">'TUV',</span> <span class="pre">'Vanuatu':</span> <span class="pre">'VUT',</span> <span class="pre">'Wallis</span> <span class="pre">and</span> <span class="pre">Futuna':</span> <span class="pre">'WLF'}</span></em><a class="headerlink" href="#dep_tools.grids.COUNTRIES_AND_CODES" title="Link to this definition"></a></dt>
+<dd><p>The names and 3-letter country codes of Digital Earth Pacific countries and territories.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>dict[str, str]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="dep_tools.grids.gadm">
+<span class="sig-prename descclassname"><span class="pre">dep_tools.grids.</span></span><span class="sig-name descname"><span class="pre">gadm</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dep_tools/grids.html#gadm"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dep_tools.grids.gadm" title="Link to this definition"></a></dt>
+<dd><p>GADM data for Digital Earth Pacific Island Countries and Territories.</p>
+<p>Creates and stores the file at <a class="reference internal" href="#dep_tools.grids.GADM_FILE" title="dep_tools.grids.GADM_FILE"><code class="xref py py-const docutils literal notranslate"><span class="pre">GADM_FILE</span></code></a> if it does not exist. Otherwise,
+it is simply read and returned.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">GeoDataFrame</span></code></span></p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A GeoDataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="dep_tools.grids.gadm_union">
+<span class="sig-prename descclassname"><span class="pre">dep_tools.grids.</span></span><span class="sig-name descname"><span class="pre">gadm_union</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dep_tools/grids.html#gadm_union"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dep_tools.grids.gadm_union" title="Link to this definition"></a></dt>
+<dd><p>GADM polygons as a single shape.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">GeoDataFrame</span></code></span></p>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>A GeoDataFrame.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="dep_tools.grids.get_tiles">
+<span class="sig-prename descclassname"><span class="pre">dep_tools.grids.</span></span><span class="sig-name descname"><span class="pre">get_tiles</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">resolution</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">30</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">country_codes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">buffer_distance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dep_tools/grids.html#get_tiles"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dep_tools.grids.get_tiles" title="Link to this definition"></a></dt>
+<dd><p>Returns a list of tile IDs for the Pacific region, optionally filtered
+by country code.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>resolution</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>) – The output resolution of the tiles</p></li>
+<li><p><strong>country_codes</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]]</span>) – A list of 3-letter codes of the desired countries or
+territories. If unset, all PICTs are returned.</p></li>
+<li><p><strong>buffer_distance</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</span>) – As for <a class="reference internal" href="#dep_tools.grids.grid" title="dep_tools.grids.grid"><code class="xref py py-func docutils literal notranslate"><span class="pre">grid()</span></code></a>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">GeoBox</span></code>]]</span></p>
+</dd>
+</dl>
+<p>Returns:</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>ValueError</strong> – If country codes are not in <a class="reference internal" href="#dep_tools.grids.COUNTRIES_AND_CODES" title="dep_tools.grids.COUNTRIES_AND_CODES"><code class="xref py py-const docutils literal notranslate"><span class="pre">COUNTRIES_AND_CODES</span></code></a>.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="dep_tools.grids.grid">
+<span class="sig-prename descclassname"><span class="pre">dep_tools.grids.</span></span><span class="sig-name descname"><span class="pre">grid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">resolution</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">30</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">simplify_tolerance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">crs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'EPSG:3832'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">return_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'GridSpec'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">intersect_with</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">buffer_distance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dep_tools/grids.html#grid"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dep_tools.grids.grid" title="Link to this definition"></a></dt>
+<dd><p>Returns a GridSpec or GeoSeries representing the Pacific grid, optionally
+intersected with an area of interest.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>resolution</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></span>) – The resolution, in meters, of the output. As tiles are
+defined to be 96,000 meters on each side, it should divide 96,000
+evenly.</p></li>
+<li><p><strong>crs</strong> – The desired crs of the output.</p></li>
+<li><p><strong>return_type</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Literal</span></code>[<code class="docutils literal notranslate"><span class="pre">'GridSpec'</span></code>, <code class="docutils literal notranslate"><span class="pre">'GeoSeries'</span></code>, <code class="docutils literal notranslate"><span class="pre">'GeoDataFrame'</span></code>]</span>) – The return type. If intersect_with (see below) is not None,
+this is ignored.</p></li>
+<li><p><strong>intersect_with</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">GeoDataFrame</span></code>]</span>) – The output is intersected with the supplied GeoDataFrame
+before returning, returning only tiles which overlap with those
+features. If <cite>return_type</cite> is <cite>GridSpec</cite>, an iterator of tuples each
+containing the tile id (in column, row order) and its GeoBox.
+Otherwise, a GeoDataFrame containing only the portions of each tile
+that intersect the given GeoDataFrame is returned.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">GridSpec</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">GeoSeries</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">GeoDataFrame</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Iterator</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">GeoBox</span></code>]]]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="dep_tools.grids.PACIFIC_GRID_30">
+<span class="sig-prename descclassname"><span class="pre">dep_tools.grids.</span></span><span class="sig-name descname"><span class="pre">PACIFIC_GRID_30</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">GridSpec(crs=EPSG:3832,</span> <span class="pre">tile_shape=Shape2d(x=3200,</span> <span class="pre">y=3200),</span> <span class="pre">resolution=Resolution(x=30,</span> <span class="pre">y=-30))</span></em><a class="headerlink" href="#dep_tools.grids.PACIFIC_GRID_30" title="Link to this definition"></a></dt>
+<dd><p>A 30-meter resolution grid.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">geopandas.GeoDataFrame</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py data">
+<dt class="sig sig-object py" id="dep_tools.grids.PACIFIC_GRID_10">
+<span class="sig-prename descclassname"><span class="pre">dep_tools.grids.</span></span><span class="sig-name descname"><span class="pre">PACIFIC_GRID_10</span></span><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">GridSpec(crs=EPSG:3832,</span> <span class="pre">tile_shape=Shape2d(x=9600,</span> <span class="pre">y=9600),</span> <span class="pre">resolution=Resolution(x=10,</span> <span class="pre">y=-10))</span></em><a class="headerlink" href="#dep_tools.grids.PACIFIC_GRID_10" title="Link to this definition"></a></dt>
+<dd><p>A 10-meter resolution grid.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">geopandas.GeoDataFrame</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="dep_tools.exceptions.html" class="btn btn-neutral float-left" title="dep_tools.exceptions module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="dep_tools.landsat_utils.html" class="btn btn-neutral float-right" title="dep_tools.landsat_utils module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Digital Earth Pacific.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

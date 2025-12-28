@@ -1,0 +1,308 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>dep_tools.writers module &mdash; dep-tools 0.5.4 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=e1a677a5"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="prev" title="dep_tools.utils module" href="dep_tools.utils.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            dep-tools
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">dep_tools</a><ul class="current">
+<li class="toctree-l2 current"><a class="reference internal" href="dep_tools.html">dep_tools package</a><ul class="current">
+<li class="toctree-l3 current"><a class="reference internal" href="dep_tools.html#submodules">Submodules</a><ul class="current">
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.aws.html">dep_tools.aws module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.exceptions.html">dep_tools.exceptions module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.grids.html">dep_tools.grids module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.landsat_utils.html">dep_tools.landsat_utils module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.loaders.html">dep_tools.loaders module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.namers.html">dep_tools.namers module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.parsers.html">dep_tools.parsers module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.processors.html">dep_tools.processors module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.s2_utils.html">dep_tools.s2_utils module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.searchers.html">dep_tools.searchers module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.stac_utils.html">dep_tools.stac_utils module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.task.html">dep_tools.task module</a></li>
+<li class="toctree-l4"><a class="reference internal" href="dep_tools.utils.html">dep_tools.utils module</a></li>
+<li class="toctree-l4 current"><a class="current reference internal" href="#">dep_tools.writers module</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="dep_tools.html#module-dep_tools">Module contents</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">dep-tools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="modules.html">dep_tools</a></li>
+          <li class="breadcrumb-item"><a href="dep_tools.html">dep_tools package</a></li>
+      <li class="breadcrumb-item active">dep_tools.writers module</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/api/dep_tools.writers.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-dep_tools.writers">
+<span id="dep-tools-writers-module"></span><h1>dep_tools.writers module<a class="headerlink" href="#module-dep_tools.writers" title="Link to this heading"></a></h1>
+<p>This module contains the definition and various implementations of
+<a class="reference internal" href="#dep_tools.writers.Writer" title="dep_tools.writers.Writer"><code class="xref py py-class docutils literal notranslate"><span class="pre">Writer</span></code></a> objects, which are used to write files locally or to the
+cloud.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="dep_tools.writers.Writer">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">dep_tools.writers.</span></span><span class="sig-name descname"><span class="pre">Writer</span></span><a class="reference internal" href="../_modules/dep_tools/writers.html#Writer"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dep_tools.writers.Writer" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
+<p>The base abstract class for writing.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="dep_tools.writers.Writer.write">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">write</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dep_tools/writers.html#Writer.write"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dep_tools.writers.Writer.write" title="Link to this definition"></a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="dep_tools.writers.DsCogWriter">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">dep_tools.writers.</span></span><span class="sig-name descname"><span class="pre">DsCogWriter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">itempath</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">write_multithreaded=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">load_before_write=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">write_function=&lt;function</span> <span class="pre">write_to_s3&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">**kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dep_tools/writers.html#DsCogWriter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dep_tools.writers.DsCogWriter" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#dep_tools.writers.Writer" title="dep_tools.writers.Writer"><code class="xref py py-class docutils literal notranslate"><span class="pre">Writer</span></code></a></p>
+<p>A <a class="reference internal" href="#dep_tools.writers.Writer" title="dep_tools.writers.Writer"><code class="xref py py-class docutils literal notranslate"><span class="pre">Writer</span></code></a> object which writes an <code class="xref py py-class docutils literal notranslate"><span class="pre">xarray.Dataset</span></code>
+to a cloud-optimized GeoTIFF (COG) file or files. A COG is written
+for each Dataset variable.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>itempath</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="dep_tools.namers.html#dep_tools.namers.ItemPath" title="dep_tools.namers.ItemPath"><code class="xref py py-class docutils literal notranslate"><span class="pre">ItemPath</span></code></a></span>) – The <code class="xref py py-class docutils literal notranslate"><span class="pre">ItemPath</span></code> used to define the output path.</p></li>
+<li><p><strong>write_multithreaded</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span>) – Whether to use multiple threads (one for
+each Dataset variable) when writing.</p></li>
+<li><p><strong>load_before_write</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span>) – Whether to load the Dataset before writing. This
+can be useful to prevent re-reading source data from
+when multiple variables depend on the same source.
+data.</p></li>
+<li><p><strong>write_function</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code></span>) – The function actually used to write the data. It
+should take an <code class="xref py py-class docutils literal notranslate"><span class="pre">xarray.DataArray</span></code> as the first parameter
+and the output path (as a string or <code class="xref py py-class docutils literal notranslate"><span class="pre">Path</span></code>) as a named
+parameter.</p></li>
+<li><p><strong>**kwargs</strong> – Additional arguments to <code class="xref py py-func docutils literal notranslate"><span class="pre">write_function()</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="dep_tools.writers.DsCogWriter.write">
+<span class="sig-name descname"><span class="pre">write</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">item_id</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dep_tools/writers.html#DsCogWriter.write"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dep_tools.writers.DsCogWriter.write" title="Link to this definition"></a></dt>
+<dd><p>Write a <code class="xref py py-class docutils literal notranslate"><span class="pre">xarray.Dataset</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>xr</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Dataset</span></code></span>) – The Dataset.</p></li>
+<li><p><strong>item_id</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – An item id. It is passed to the <code class="xref py py-class docutils literal notranslate"><span class="pre">ItemPath</span></code> provided
+on initialization to determine the output file path.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>]</span></p>
+</dd>
+</dl>
+<p>Returns: The output path(s) as a string or list of strings.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="dep_tools.writers.AwsDsCogWriter">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">dep_tools.writers.</span></span><span class="sig-name descname"><span class="pre">AwsDsCogWriter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">itempath</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">write_multithreaded=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">load_before_write=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">write_function=&lt;function</span> <span class="pre">write_to_s3&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">**kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dep_tools/writers.html#AwsDsCogWriter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dep_tools.writers.AwsDsCogWriter" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#dep_tools.writers.DsCogWriter" title="dep_tools.writers.DsCogWriter"><code class="xref py py-class docutils literal notranslate"><span class="pre">DsCogWriter</span></code></a></p>
+<p>A <a class="reference internal" href="#dep_tools.writers.DsCogWriter" title="dep_tools.writers.DsCogWriter"><code class="xref py py-class docutils literal notranslate"><span class="pre">DsCogWriter</span></code></a> which writes to S3 storage. The only difference
+is that the ItemPath is an <code class="xref py py-class docutils literal notranslate"><span class="pre">S3ItemPath</span></code>; <cite>itempath.bucket</cite> is passed
+as the <cite>bucket</cite> keyword argument to <cite>write_function</cite>.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="dep_tools.writers.LocalDsCogWriter">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">dep_tools.writers.</span></span><span class="sig-name descname"><span class="pre">LocalDsCogWriter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dep_tools/writers.html#LocalDsCogWriter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dep_tools.writers.LocalDsCogWriter" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#dep_tools.writers.DsCogWriter" title="dep_tools.writers.DsCogWriter"><code class="xref py py-class docutils literal notranslate"><span class="pre">DsCogWriter</span></code></a></p>
+<p>A <a class="reference internal" href="#dep_tools.writers.DsCogWriter" title="dep_tools.writers.DsCogWriter"><code class="xref py py-class docutils literal notranslate"><span class="pre">DsCogWriter</span></code></a> which writes to local storage using
+<a class="reference internal" href="dep_tools.utils.html#dep_tools.utils.write_to_local_storage" title="dep_tools.utils.write_to_local_storage"><code class="xref py py-func docutils literal notranslate"><span class="pre">dep_tools.utils.write_to_local_storage()</span></code></a>.</p>
+<p>A <a class="reference internal" href="#dep_tools.writers.Writer" title="dep_tools.writers.Writer"><code class="xref py py-class docutils literal notranslate"><span class="pre">Writer</span></code></a> object which writes an <code class="xref py py-class docutils literal notranslate"><span class="pre">xarray.Dataset</span></code>
+to a cloud-optimized GeoTIFF (COG) file or files. A COG is written
+for each Dataset variable.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>itempath</strong> – The <code class="xref py py-class docutils literal notranslate"><span class="pre">ItemPath</span></code> used to define the output path.</p></li>
+<li><p><strong>write_multithreaded</strong> – Whether to use multiple threads (one for
+each Dataset variable) when writing.</p></li>
+<li><p><strong>load_before_write</strong> – Whether to load the Dataset before writing. This
+can be useful to prevent re-reading source data from
+when multiple variables depend on the same source.
+data.</p></li>
+<li><p><strong>write_function</strong> – The function actually used to write the data. It
+should take an <code class="xref py py-class docutils literal notranslate"><span class="pre">xarray.DataArray</span></code> as the first parameter
+and the output path (as a string or <code class="xref py py-class docutils literal notranslate"><span class="pre">Path</span></code>) as a named
+parameter.</p></li>
+<li><p><strong>**kwargs</strong> – Additional arguments to <code class="xref py py-func docutils literal notranslate"><span class="pre">write_function()</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="dep_tools.writers.StacWriter">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">dep_tools.writers.</span></span><span class="sig-name descname"><span class="pre">StacWriter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">itempath</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">write_stac_function=&lt;function</span> <span class="pre">write_stac_s3&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">**kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dep_tools/writers.html#StacWriter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dep_tools.writers.StacWriter" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#dep_tools.writers.Writer" title="dep_tools.writers.Writer"><code class="xref py py-class docutils literal notranslate"><span class="pre">Writer</span></code></a></p>
+<p>A <code class="xref py py-class docutils literal notranslate"><span class="pre">Write</span></code> which writes spatio-temporal asset catalog (STAC)
+Items.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>itempath</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="dep_tools.namers.html#dep_tools.namers.GenericItemPath" title="dep_tools.namers.GenericItemPath"><code class="xref py py-class docutils literal notranslate"><span class="pre">GenericItemPath</span></code></a></span>) – The <code class="xref py py-class docutils literal notranslate"><span class="pre">ItemPath</span></code> used to define the output path.</p></li>
+<li><p><strong>write_stac_function</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code></span>) – The function used to write a STAC item. It should
+take the Item as its first argument and the output path as its
+second.</p></li>
+<li><p><strong>**kwargs</strong> – Additional arguments to <code class="xref py py-func docutils literal notranslate"><span class="pre">write_stac_function()</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="dep_tools.writers.StacWriter.write">
+<span class="sig-name descname"><span class="pre">write</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">item</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">item_id</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dep_tools/writers.html#StacWriter.write"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dep_tools.writers.StacWriter.write" title="Link to this definition"></a></dt>
+<dd><p>Write a STAC Item to an output file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>item</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Item</span></code></span>) – The STAC Item.</p></li>
+<li><p><strong>item_id</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – The item id, passed to <code class="xref py py-func docutils literal notranslate"><span class="pre">ItemPath.stac_path()</span></code> to
+define the output path.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span></p>
+</dd>
+</dl>
+<p>Returns: The self reference of the item (<cite>item.self_href</cite>).</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="dep_tools.writers.AwsStacWriter">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">dep_tools.writers.</span></span><span class="sig-name descname"><span class="pre">AwsStacWriter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">itempath</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dep_tools/writers.html#AwsStacWriter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dep_tools.writers.AwsStacWriter" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#dep_tools.writers.StacWriter" title="dep_tools.writers.StacWriter"><code class="xref py py-class docutils literal notranslate"><span class="pre">StacWriter</span></code></a></p>
+<p>A <a class="reference internal" href="#dep_tools.writers.StacWriter" title="dep_tools.writers.StacWriter"><code class="xref py py-class docutils literal notranslate"><span class="pre">StacWriter</span></code></a> to write to Amazon S3 Storage.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>itempath</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="dep_tools.namers.html#dep_tools.namers.S3ItemPath" title="dep_tools.namers.S3ItemPath"><code class="xref py py-class docutils literal notranslate"><span class="pre">S3ItemPath</span></code></a></span>) – The itempath used to define the output path. <cite>itempath.bucket</cite>
+is passed as the <cite>bucket</cite> keyword argument to
+<a class="reference internal" href="dep_tools.aws.html#dep_tools.aws.write_to_s3" title="dep_tools.aws.write_to_s3"><code class="xref py py-func docutils literal notranslate"><span class="pre">dep_tools.aws.write_to_s3()</span></code></a>.</p></li>
+<li><p><strong>**kwargs</strong> – Additional arguments to <code class="xref py py-func docutils literal notranslate"><span class="pre">StacWriter.__init__()</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="dep_tools.writers.LocalStacWriter">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">dep_tools.writers.</span></span><span class="sig-name descname"><span class="pre">LocalStacWriter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">itempath</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dep_tools/writers.html#LocalStacWriter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dep_tools.writers.LocalStacWriter" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#dep_tools.writers.StacWriter" title="dep_tools.writers.StacWriter"><code class="xref py py-class docutils literal notranslate"><span class="pre">StacWriter</span></code></a></p>
+<p>A <a class="reference internal" href="#dep_tools.writers.StacWriter" title="dep_tools.writers.StacWriter"><code class="xref py py-class docutils literal notranslate"><span class="pre">StacWriter</span></code></a> to write to a local file.</p>
+<p>This class uses <a class="reference internal" href="dep_tools.utils.html#dep_tools.utils.write_to_local_storage" title="dep_tools.utils.write_to_local_storage"><code class="xref py py-func docutils literal notranslate"><span class="pre">dep_tools.utils.write_to_local_storage()</span></code></a> to
+write the data. It is typically used for testing only.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>itempath</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="dep_tools.namers.html#dep_tools.namers.GenericItemPath" title="dep_tools.namers.GenericItemPath"><code class="xref py py-class docutils literal notranslate"><span class="pre">GenericItemPath</span></code></a></span>) – The itempath used to define the output path.</p></li>
+<li><p><strong>**kwargs</strong> – Additional arguments to <code class="xref py py-func docutils literal notranslate"><span class="pre">StacWriter.__init__()</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="dep_tools.utils.html" class="btn btn-neutral float-left" title="dep_tools.utils module" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Digital Earth Pacific.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

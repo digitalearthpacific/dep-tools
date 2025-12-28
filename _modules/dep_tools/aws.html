@@ -1,0 +1,310 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>dep_tools.aws &mdash; dep-tools 0.5.4 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=e1a677a5"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            dep-tools
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api/modules.html">dep_tools</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">dep-tools</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">dep_tools.aws</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for dep_tools.aws</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Utility / helper functions for using Amazon S3 Storage.&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">io</span><span class="w"> </span><span class="kn">import</span> <span class="n">BytesIO</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">IO</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">boto3</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">botocore.client</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseClient</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">fiona.io</span><span class="w"> </span><span class="kn">import</span> <span class="n">MemoryFile</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">geopandas</span><span class="w"> </span><span class="kn">import</span> <span class="n">GeoDataFrame</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">odc.geo.xr</span><span class="w"> </span><span class="kn">import</span> <span class="n">to_cog</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pystac</span><span class="w"> </span><span class="kn">import</span> <span class="n">Item</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">xarray</span><span class="w"> </span><span class="kn">import</span> <span class="n">DataArray</span><span class="p">,</span> <span class="n">Dataset</span>
+
+
+<div class="viewcode-block" id="object_exists">
+<a class="viewcode-back" href="../../api/dep_tools.aws.html#dep_tools.aws.object_exists">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">object_exists</span><span class="p">(</span><span class="n">bucket</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">client</span><span class="p">:</span> <span class="n">BaseClient</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check if a given object exists in a bucket.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        bucket: The name of the bucket.</span>
+<span class="sd">        key: The object key.</span>
+<span class="sd">        client: An optional client. If none is specified the default client is used.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        True if the object is in the bucket, otherwise False.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">client</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">client</span><span class="p">:</span> <span class="n">BaseClient</span> <span class="o">=</span> <span class="n">boto3</span><span class="o">.</span><span class="n">client</span><span class="p">(</span><span class="s2">&quot;s3&quot;</span><span class="p">)</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">client</span><span class="o">.</span><span class="n">head_object</span><span class="p">(</span><span class="n">Bucket</span><span class="o">=</span><span class="n">bucket</span><span class="p">,</span> <span class="n">Key</span><span class="o">=</span><span class="n">key</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">except</span> <span class="n">client</span><span class="o">.</span><span class="n">exceptions</span><span class="o">.</span><span class="n">ClientError</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span></div>
+
+
+
+<div class="viewcode-block" id="s3_dump">
+<a class="viewcode-back" href="../../api/dep_tools.aws.html#dep_tools.aws.s3_dump">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">s3_dump</span><span class="p">(</span>
+    <span class="n">data</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">bytes</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">IO</span><span class="p">],</span> <span class="n">bucket</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">client</span><span class="p">:</span> <span class="n">BaseClient</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Write data to an s3 bucket.</span>
+
+<span class="sd">    This is a wrapper around :py:func:`boto3.client.put_object`.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        data: The data to write.</span>
+<span class="sd">        bucket: The name of the bucket.</span>
+<span class="sd">        key: The key in the bucket where the data should go.</span>
+<span class="sd">        client: A client.</span>
+<span class="sd">        **kwargs: Additional arguments to :py:func:`boto3.client.put_object`</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        True if the operation was successful, otherwise False.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">r</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">put_object</span><span class="p">(</span><span class="n">Bucket</span><span class="o">=</span><span class="n">bucket</span><span class="p">,</span> <span class="n">Key</span><span class="o">=</span><span class="n">key</span><span class="p">,</span> <span class="n">Body</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="n">code</span> <span class="o">=</span> <span class="n">r</span><span class="p">[</span><span class="s2">&quot;ResponseMetadata&quot;</span><span class="p">][</span><span class="s2">&quot;HTTPStatusCode&quot;</span><span class="p">]</span>
+    <span class="k">return</span> <span class="mi">200</span> <span class="o">&lt;=</span> <span class="n">code</span> <span class="o">&lt;</span> <span class="mi">300</span></div>
+
+
+
+<div class="viewcode-block" id="write_to_s3">
+<a class="viewcode-back" href="../../api/dep_tools.aws.html#dep_tools.aws.write_to_s3">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">write_to_s3</span><span class="p">(</span>
+    <span class="n">d</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">DataArray</span><span class="p">,</span> <span class="n">Dataset</span><span class="p">,</span> <span class="n">GeoDataFrame</span><span class="p">,</span> <span class="n">Item</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span>
+    <span class="n">path</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Path</span><span class="p">],</span>
+    <span class="n">bucket</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">overwrite</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">use_odc_writer</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="n">client</span><span class="p">:</span> <span class="n">BaseClient</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">s3_dump_kwargs</span><span class="p">:</span> <span class="nb">dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(),</span>
+    <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Writes a given object to s3.</span>
+
+<span class="sd">    This is a specialized version of :py:func:`s3_dump`. If the object is a GeoDataFrame,</span>
+<span class="sd">    :py:func:`geopandas.to_file` is used. If an xarray DataArray or Dataset,</span>
+<span class="sd">    :py:func:`odc.geo.xr.to_cog` is used if `use_odc_writer` is `True`, otherwise</span>
+<span class="sd">    :py:func:`rioxarray.to.raster` is used. If a :py:class:`pystac.Item`, `d` is first</span>
+<span class="sd">    dumped to json.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        d: The data or object to write.</span>
+<span class="sd">        path: The path (key) to write the object.</span>
+<span class="sd">        bucket: The bucket where the object should go.</span>
+<span class="sd">        overwrite: Whether existing objects with the same key should be overwritten.</span>
+<span class="sd">        use_odc_writer: Whether :py:func:`odc.geo.xr.to_cog` should be used to write</span>
+<span class="sd">            the object. If `False` :py:func:`rioxarray.to_raster` is used. Only</span>
+<span class="sd">            matters for xarray objects (DataArrays or Datasets).</span>
+<span class="sd">        client: The s3 client. If not set the default client is used.</span>
+<span class="sd">        s3_dump_kwargs (): Additional arguments to :py:func:`s3_dump`.</span>
+<span class="sd">        **kwargs: Additional arguments to the writing function, if the object is</span>
+<span class="sd">            a :py:class:`geopandas.GeoDataFrame` or :py:class:`xarray.DataArray` /</span>
+<span class="sd">            :py:class:`xarray.Dataset`.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        ValueError: If `d` is not of the allowed types.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">client</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">client</span> <span class="o">=</span> <span class="n">boto3</span><span class="o">.</span><span class="n">client</span><span class="p">(</span><span class="s2">&quot;s3&quot;</span><span class="p">)</span>
+
+    <span class="n">key</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">overwrite</span> <span class="ow">and</span> <span class="n">object_exists</span><span class="p">(</span><span class="n">bucket</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">client</span><span class="p">):</span>
+        <span class="k">return</span>
+
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="p">(</span><span class="n">DataArray</span><span class="p">,</span> <span class="n">Dataset</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="n">use_odc_writer</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s2">&quot;driver&quot;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+                <span class="k">del</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;driver&quot;</span><span class="p">]</span>
+            <span class="n">binary_data</span> <span class="o">=</span> <span class="n">to_cog</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="n">s3_dump</span><span class="p">(</span>
+                <span class="n">binary_data</span><span class="p">,</span>
+                <span class="n">bucket</span><span class="p">,</span>
+                <span class="n">key</span><span class="p">,</span>
+                <span class="n">client</span><span class="p">,</span>
+                <span class="n">ContentType</span><span class="o">=</span><span class="s2">&quot;image/tiff&quot;</span><span class="p">,</span>
+                <span class="o">**</span><span class="n">s3_dump_kwargs</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">with</span> <span class="n">BytesIO</span><span class="p">()</span> <span class="k">as</span> <span class="n">binary_data</span><span class="p">:</span>
+                <span class="n">d</span><span class="o">.</span><span class="n">rio</span><span class="o">.</span><span class="n">to_raster</span><span class="p">(</span><span class="n">binary_data</span><span class="p">,</span> <span class="n">driver</span><span class="o">=</span><span class="s2">&quot;COG&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+                <span class="n">binary_data</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+                <span class="n">s3_dump</span><span class="p">(</span>
+                    <span class="n">binary_data</span><span class="p">,</span>
+                    <span class="n">bucket</span><span class="p">,</span>
+                    <span class="n">key</span><span class="p">,</span>
+                    <span class="n">client</span><span class="p">,</span>
+                    <span class="n">ContentType</span><span class="o">=</span><span class="s2">&quot;image/tiff&quot;</span><span class="p">,</span>
+                    <span class="o">**</span><span class="n">s3_dump_kwargs</span><span class="p">,</span>
+                <span class="p">)</span>
+
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">GeoDataFrame</span><span class="p">):</span>
+        <span class="k">with</span> <span class="n">MemoryFile</span><span class="p">()</span> <span class="k">as</span> <span class="n">buffer</span><span class="p">:</span>
+            <span class="n">d</span><span class="o">.</span><span class="n">to_file</span><span class="p">(</span><span class="n">buffer</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="n">buffer</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+            <span class="n">s3_dump</span><span class="p">(</span><span class="n">buffer</span><span class="o">.</span><span class="n">read</span><span class="p">(),</span> <span class="n">bucket</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">client</span><span class="p">,</span> <span class="o">**</span><span class="n">s3_dump_kwargs</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">Item</span><span class="p">):</span>
+        <span class="n">s3_dump</span><span class="p">(</span>
+            <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(),</span> <span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">),</span>
+            <span class="n">bucket</span><span class="p">,</span>
+            <span class="n">key</span><span class="p">,</span>
+            <span class="n">client</span><span class="p">,</span>
+            <span class="n">ContentType</span><span class="o">=</span><span class="s2">&quot;application/json&quot;</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">s3_dump_kwargs</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">s3_dump</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">bucket</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">client</span><span class="p">,</span> <span class="o">**</span><span class="n">s3_dump_kwargs</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">&quot;You can only write an Xarray DataArray or Dataset, Geopandas GeoDataFrame, Pystac Item, or string&quot;</span>
+        <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="write_stac_s3">
+<a class="viewcode-back" href="../../api/dep_tools.aws.html#dep_tools.aws.write_stac_s3">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">write_stac_s3</span><span class="p">(</span>
+    <span class="n">item</span><span class="p">:</span> <span class="n">Item</span><span class="p">,</span>
+    <span class="n">stac_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">bucket</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Writes a STAC item to s3.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        item: A STAC item.</span>
+<span class="sd">        stac_path: The path where the item should go.</span>
+<span class="sd">        bucket: The bucket where the item should go.</span>
+<span class="sd">        **kwargs: Additional arguments to :py:func:`write_to_s3`.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The stac_path.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">item_string</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">item</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(),</span> <span class="n">indent</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+    <span class="n">write_to_s3</span><span class="p">(</span>
+        <span class="n">item_string</span><span class="p">,</span> <span class="n">stac_path</span><span class="p">,</span> <span class="n">bucket</span><span class="o">=</span><span class="n">bucket</span><span class="p">,</span> <span class="n">ContentType</span><span class="o">=</span><span class="s2">&quot;application/json&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">stac_path</span></div>
+
+
+
+<div class="viewcode-block" id="get_s3_bucket_region">
+<a class="viewcode-back" href="../../api/dep_tools.aws.html#dep_tools.aws.get_s3_bucket_region">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_s3_bucket_region</span><span class="p">(</span><span class="n">bucket_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">client</span><span class="p">:</span> <span class="n">BaseClient</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return the AWS region for a given bucket.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        bucket_name: The name of the bucket</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        The name of the region.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">client</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">client</span><span class="p">:</span> <span class="n">BaseClient</span> <span class="o">=</span> <span class="n">boto3</span><span class="o">.</span><span class="n">client</span><span class="p">(</span><span class="s2">&quot;s3&quot;</span><span class="p">)</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">head_bucket</span><span class="p">(</span><span class="n">Bucket</span><span class="o">=</span><span class="n">bucket_name</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">response</span><span class="p">[</span><span class="s2">&quot;BucketRegion&quot;</span><span class="p">]</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2025, Digital Earth Pacific.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
