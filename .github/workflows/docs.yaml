@@ -23,6 +23,14 @@ jobs:
 
       - name: Install dependencies
         run: |
+          apt-get update && apt-get install -y \
+            python3-pip \
+            python3-dev \
+            git \
+            libpq-dev \
+            ca-certificates \
+            build-essential
+          pip3 install --upgrade pip setuptools wheel poetry
           pip install -r docs/requirements.txt
           pip install .
 
