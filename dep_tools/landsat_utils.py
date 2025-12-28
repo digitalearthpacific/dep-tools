@@ -17,11 +17,14 @@ def cloud_mask(
     """Get the cloud mask for landsat data.
 
     Args:
-        xr: DataArray containing Landsat data including the `qa_pixel` band.
+        xr: An xarray object containing Landsat data, including the `qa_pixel` band.
         filters: List of filters to apply to the cloud mask. Each filter is a tuple of
-            (filter name, filter size). Valid filter names are 'opening' and 'dilation'.
-            If None, no filters will be applied.
-            For example: [("closing", 10),("opening", 2),("dilation", 2)]
+            `(<filter name>, <filter size>)`. Valid filter names are `'opening'` and
+            `'dilation'`. If `None`, no filters will be applied.
+            For example: `[("closing", 10),("opening", 2),("dilation", 2)]`.
+
+    Returns:
+        The cloud mask defined by the `'qa_pixel'` band, with optional filters applied.
 
     """
     CLOUD = 3
@@ -53,11 +56,14 @@ def mask_clouds(
     Args:
         xr: DataArray containing Landsat data including the `qa_pixel` band.
         filters: List of filters to apply to the cloud mask. Each filter is a tuple of
-            (filter name, filter size). Valid filter names are 'opening' and 'dilation'.
-            If None, no filters will be applied.
-            For example: [("closing", 10),("opening", 2),("dilation", 2)]
+            `(<filter name>, <filter size>)`. Valid filter names are 'opening' and
+            'dilation'. If None, no filters will be applied.
+            For example: `[("closing", 10),("opening", 2),("dilation", 2)]`.
         keep_ints: If True, return the masked data as integers. Otherwise, return
             the masked data as floats.
+
+    Returns:
+        The input, with masks applied.
     """
 
     mask = cloud_mask(xr, filters)
@@ -70,7 +76,11 @@ def mask_clouds(
 
 def landsat_grid() -> GeoDataFrame:
     """The official Landsat grid filtered to Pacific Island Countries and
-    Territories as defined by GADM."""
+    Territories as defined by GADM.
+
+    Returns:
+        A GeoDataFrame, indexed by `'PATH'` & `'ROW'`.
+    """
     ls_grid_path = Path(__file__).parent / "landsat_grid.gpkg"
     if not ls_grid_path.exists():
         dep_pathrows = read_pathrows_file()
@@ -90,9 +100,13 @@ def _pathrows() -> GeoDataFrame:
     return pathrows
 
 
-def read_pathrows_file() -> list[Tuple[int, int]]:
-    """Read list of pathrows for the DE Pacific aoi
-    from a file and return them as a list of tuples."""
+def read_pathrows_file() -> list[Tuple[int, ...]]:
+    """Read list of pathrows containing land within the Digital Earth Pacific aoi
+    from a file and return them as a list of tuples.
+
+    Returns:
+        A list of tuples of the form `(<path>, <row>)`.
+    """
     cwd = os.path.dirname(os.path.abspath(__file__))
     pathrows_file = os.path.join(cwd, "pathrows.txt")
 
@@ -101,7 +115,20 @@ def read_pathrows_file() -> list[Tuple[int, int]]:
     return [tuple(map(int, line.strip().split("/"))) for line in lines if line.strip()]
 
 
-def pathrows_in_area(area: GeoDataFrame, pathrows: GeoDataFrame | None = None):
+def pathrows_in_area(
+    area: GeoDataFrame, pathrows: GeoDataFrame | None = None
+) -> GeoDataFrame:
+    """Get a list of Landsat pathrows in a given area or areas.
+
+    Args:
+        area: A :py:class:`geopandas.GeoDataFrame` with polygons.
+        pathrows: The pathrows. If unset, the Landsat pathrows are downloaded and
+            used.
+
+    Returns:
+        A :py:class:`geopandas.GeoDataFrame` of pathrows that intersect the given area.
+
+    """
     if pathrows is None:
         pathrows = _pathrows()
 
@@ -117,6 +144,22 @@ def pathrows_in_area(area: GeoDataFrame, pathrows: GeoDataFrame | None = None):
 def items_in_pathrows(
     items: ItemCollection, some_pathrows: GeoDataFrame
 ) -> ItemCollection:
+    """Filter STAC items to a set of Landsat pathrows.
+
+    This function is likely due for deprecation.
+
+    Args:
+        items: A :py:class:`pystac.ItemCollection`. The Landsat pathrow of each
+            item is identified by the properties `'landsat:wrs_path'` and
+            `'landsat:wrs_row'`.
+        some_pathrows:
+            The Landsat pathrows of interest. The columns `'PATH'` and `'ROW'`, containing
+            integer or string values are used to identify the pathrows.
+
+    Returns:
+        The filtered pathrows.
+
+    """
     return ItemCollection(
         some_pathrows.apply(
             lambda row: [
@@ -131,7 +174,17 @@ def items_in_pathrows(
 
 
 def pathrow_with_greatest_area(shapes: GeoDataFrame) -> Tuple[str, str]:
+    """Return the Landsat pathrow with the largest intersection of the given shapes.
+
+    Args:
+        shapes: A :py:class:`geopandas.GeoDataFrame` with polygons or
+            multipolygons.
+
+    Returns:
+        A tuple of the form `(<path>, <row>)`, indicating the Landsat pathrow
+        with the greatest overlap.
+    """
     pathrows = _pathrows()
-    intersection = shapes.overlay(pathrows, how="intersection")
+    intersection = shapes.to_crs(pathrows.crs).overlay(pathrows, how="intersection")
     row_with_greatest_area = intersection.iloc[[intersection.geometry.area.idxmax()]]
     return (row_with_greatest_area.PATH.item(), row_with_greatest_area.ROW.item())

@@ -1,3 +1,5 @@
+"""This module contains utility functions which don't belong elsewhere."""
+
 import json
 from logging import INFO, Formatter, Logger, StreamHandler, getLogger
 from pathlib import Path
@@ -54,6 +56,16 @@ def join_path_or_url(prefix: Path | str, file: str) -> str:
 
 
 def mask_to_gadm(xarr: DataArray | Dataset, area: GeoBox) -> DataArray | Dataset:
+    """Masks an input xarray object to GADM.
+
+    Args:
+        xarr: The input xarray object.
+        area: An area used to limit the GADM footprint so the operation doesn't
+            take as long.
+
+    Returns:
+        The input xarray object, masked to GADM.
+    """
     geom = unary_intersection(
         [
             area.boundingbox.polygon,
@@ -64,7 +76,16 @@ def mask_to_gadm(xarr: DataArray | Dataset, area: GeoBox) -> DataArray | Dataset
 
 
 def get_logger(prefix: str, name: str) -> Logger:
-    """Set up a simple logger"""
+    """Set up a simple logger.
+
+    Args:
+        prefix: The prefix to attach to each message.
+        name: The name of the logger.
+
+    Returns:
+        A :class:Logger:.
+
+    """
     console = StreamHandler()
     time_format = "%Y-%m-%d %H:%M:%S"
     console.setFormatter(
@@ -83,9 +104,13 @@ def get_logger(prefix: str, name: str) -> Logger:
 def shift_negative_longitudes(
     geometry: Union[LineString, MultiLineString],
 ) -> Union[LineString, MultiLineString]:
-    """
-    Fixes lines that span the antimeridian by adding 360 to any negative
-    longitudes.
+    """Fixes lines spanning the antimeridian by adding 360 to any negative longitudes.
+
+    Args:
+        geometry: The geometry to fix.
+
+    Returns:
+        The fixed geometry.
     """
     # This is likely a pacific-specific test.
     if abs(geometry.bounds[2] - geometry.bounds[0]) < 180:
@@ -104,6 +129,18 @@ BBOX = list[float]
 
 
 def bbox_across_180(region: GeoDataFrame | GeoBox) -> BBOX | tuple[BBOX, BBOX]:
+    """Calculate a bounding box or boxes for an input region.
+
+    If the given region crosses the antimeridian, the bounding box is split
+    into two, which straddle but do not cross it.
+
+    Args:
+        region: The region of interest.
+
+    Returns:
+        A list of floats, or a two-tuple containing lists of floats.
+
+    """
     if isinstance(region, GeoBox):
         geometry = region.geographic_extent.geom
     else:
@@ -148,11 +185,17 @@ def bbox_across_180(region: GeoDataFrame | GeoBox) -> BBOX | tuple[BBOX, BBOX]:
 
 
 def fix_winding(geom: Geometry) -> Geometry:
-    """Fixes the orientation of the exterior coordinates of Polygon and
-    MultiPolygon geometry, which should run counterclockwise.
+    """Orient the geometry coordinates to run counter-clockwise.
+
+    This is usually non-essential but resolves a barrage of warnings from
+    the antimeridian package.
+
+    Args:
+        geom: An input Geometry
+
+    Returns:
+        The input Geometry, which orientation fixed if needed.
     """
-    # This is non-essential but resolves a barrage of warnings from
-    # the antimeridian package
     if geom.geom_type == "Polygon" and not geom.exterior.is_ccw:
         return orient(geom)
     elif geom.geom_type == "MultiPolygon":
@@ -185,10 +228,20 @@ def _fix_geometry(geometry):
 def search_across_180(
     region: GeoDataFrame | GeoBox, client: pystac_client.Client | None = None, **kwargs
 ) -> ItemCollection:
-    """
-    region: A GeoDataFrame.
-    **kwargs: Arguments besides bbox and intersects passed to
-        pystac_client.Client.search
+    """Conduct a STAC search that handles data crossing the antimeridian correctly.
+
+    Sometimes search results that cross the antimeridian will make the output data
+    span the globe when loaded by e.g. :func:`odc.stac.load`. This works by first
+    calling :func:`bbox_across_180`, and then searching within each bounding box
+    and combining the results if there is more than one.
+
+    Args:
+        region: A GeoDataFrame.
+        **kwargs: Arguments besides `bbox` and `intersects` passed to
+            :func:`pystac_client.Client.search`.
+
+    Returns:
+        An ItemCollection.
     """
     if client is None:
         client = pystac_client.Client.open(
@@ -215,8 +268,19 @@ def search_across_180(
 def copy_attrs(
     source: DataArray | Dataset, destination: DataArray | Dataset
 ) -> DataArray | Dataset:
-    # See https://corteva.github.io/rioxarray/html/getting_started/manage_information_loss.html
-    # Doesn't account if source and dest don't have the same vars
+    """Copy attributes from one xarray object to another.
+
+    See https://corteva.github.io/rioxarray/html/getting_started/manage_information_loss.html This function Doesn't account for situations where the inputs don't have the same
+    variables.
+    Args:
+        source: The source object.
+        destination: The destination object.
+
+    Returns:
+        The destination object, with source attributes, encoding, and nodata value
+        set.
+
+    """
     if isinstance(destination, DataArray):
         destination.rio.write_crs(source.rio.crs, inplace=True)
         destination.rio.update_attrs(source.attrs, inplace=True)
@@ -232,9 +296,23 @@ def scale_and_offset(
     da: DataArray | Dataset,
     scale: List[float] = [1],
     offset: float = 0,
-    keep_attrs=True,
+    keep_attrs: bool = True,
 ) -> DataArray | Dataset:
-    """Apply the given scale and offset to the given Xarray object."""
+    """Applies a scale and offset to data.
+
+    If the process converts e.g. an integer to a floating point, the dtype will
+    change.
+
+    Args:
+        da: The input data.
+        scale: The scale to apply.
+        offset: The offset to apply, after scaling.
+        keep_attrs: Whether to retain the input attributes in the output.
+
+    Returns:
+        The input data, with scale and offset applied.
+    """
+
     output = da * scale + offset
     if keep_attrs:
         output = copy_attrs(da, output)
@@ -249,6 +327,20 @@ def write_to_local_storage(
     use_odc_writer: bool = False,
     **kwargs,  # for compatibiilty only
 ) -> None:
+    """Write something to local storage.
+
+    Args:
+        d: What to write.
+        path: Where to write it.
+        write_args: Additional arguments to the writer.
+        overwrite: Whether to overwrite existing data.
+        use_odc_writer: Whether to use :func:`write_cog` for xarray objects. Othewise
+            :func:`rioxarray.rio.to_raster` is used.
+        **kwargs: Not used.
+
+    Raises:
+        ValueError: If the input data is not of the available types.
+    """
     if isinstance(path, str):
         path = Path(path)
 
@@ -284,8 +376,19 @@ def scale_to_int16(
     output_nodata: int,
     scale_int16s: bool = False,
 ) -> Union[DataArray, Dataset]:
-    """Multiply the given DataArray by the given multiplier and convert to
-    int16 data type, with the given nodata value"""
+    """Scale an xarray object to a 16-bit integer.
+
+    Args:
+        xr: The input data.
+        output_multiplier: The multiplier to apply to the input data.
+        output_nodata: The output nodata value. Any null values in the input
+            will be set to this. Additional the `"nodata"` attribute will be
+            set to this.
+        scale_int16s: Whether to scale data which is already an integer.
+
+    Returns:
+        This input data, with scaling applied.
+    """
 
     def scale_da(da: DataArray):
         # I exclude int64 here as it seems to cause issues
@@ -314,11 +417,18 @@ def scale_to_int16(
 
 
 def fix_bad_epsgs(item_collection: ItemCollection) -> None:
-    """Repairs some band epsg codes in stac items loaded from the Planetary
-    Computer stac catalog"""
-    # ** modifies in place **
-    # See https://github.com/microsoft/PlanetaryComputer/discussions/113
-    # Will get fixed at some point and we can remove this
+    """Repair some band EPSG codes in stac items loaded from the MSPC.
+
+    This function modifies in place.
+    See https://github.com/microsoft/PlanetaryComputer/discussions/113 for more
+    information.
+
+    Args:
+        item_collection: The input items.
+
+    Returns:
+        The input items, with any bad EPSG codes fixed.
+    """
     for item in item_collection:
         if item.collection_id == "landsat-c2-l2":
             if "proj:epsg" in item.properties:
@@ -330,10 +440,18 @@ def fix_bad_epsgs(item_collection: ItemCollection) -> None:
 
 
 def remove_bad_items(item_collection: ItemCollection) -> ItemCollection:
-    """Remove really bad items which clobber processes even if `fail_on_error` is
-    set to False for odc.stac.load or the equivalent for stackstac.stack. The
-    first one here is a real file that is just an error in html.
+    """Remove some error-causing STAC Items from an item collection.
+
+    Remove really bad items which clobber processes even if `fail_on_error` is
+    set to False for :func:`odc.stac.load` or the equivalent for
+    :func:`stackstac.stack`.
     See https://github.com/microsoft/PlanetaryComputer/discussions/101
+
+    Args:
+        item_collection: The items.
+
+    Returns:
+        The items, with any with known bad IDs removed.
     """
     bad_ids = [
         "LC08_L2SR_081074_20220514_02_T1",

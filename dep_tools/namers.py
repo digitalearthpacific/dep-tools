@@ -1,3 +1,7 @@
+"""Base class and implementation of :class:`Namer` objects, which are used to
+define paths for output data and accompanying files, such as STAC Items.
+"""
+
 from abc import ABC, abstractmethod
 from datetime import datetime
 from pathlib import Path
@@ -7,6 +11,8 @@ from .utils import join_path_or_url
 
 
 class ItemPath(ABC):
+    """An ItemPath returns a path."""
+
     def __init__(self) -> None:
         pass
 
@@ -16,6 +22,8 @@ class ItemPath(ABC):
 
 
 class GenericItemPath(ItemPath):
+    """A GenericItemPath represents a path on a network or local drive."""
+
     def __init__(
         self,
         sensor: str,
@@ -26,6 +34,20 @@ class GenericItemPath(ItemPath):
         zero_pad_numbers: bool = True,
         full_path_prefix: str | Path | None = None,
     ):
+        """
+        Args:
+            sensor: The satellite sensor, typically "ls" for Landsat or "s2"
+                for Sentinel-2.
+            dataset_id: The identifier for this product, such as "geomad".
+            version: A version identified.
+            time: A time, such as "2012".
+            prefix: The prefix for the product, typically representing the
+                data producer, such as "dep" for Digital Earth Pacific.
+            zero_pad_numbers: Whether to pad numbers in the item id (see below)
+                to three digits.
+            full_path_prefix: Something to put at the beginning of the full path
+                representation of the path, such as "/home/".
+        """
         self.sensor = sensor
         self.dataset_id = dataset_id
         self.version = version
@@ -63,10 +85,40 @@ class GenericItemPath(ItemPath):
     def _folder(self, item_id) -> str:
         return f"{self._folder_prefix}/{self._format_item_id(item_id)}/{self.time}"
 
-    def basename(self, item_id) -> str:
+    def basename(self, item_id: list[str | int] | tuple[str | int] | str) -> str:
+        """The stem of the file name, without any parent folders.
+
+        Args:
+            item_id: The item id. If a list, items are converted to string, optionally
+                zero-padded (according to the class parameter `zero_pad_numbers`),
+                and joined using an underscore. Otherwise, the value is used directly.
+
+        Returns:
+            A string.
+
+        """
         return f"{self.item_prefix}_{self._format_item_id(item_id, join_str='_')}_{self.time}"
 
-    def path(self, item_id, asset_name=None, ext=".tif", absolute: bool = False) -> str:
+    def path(
+        self,
+        item_id: list[str | int] | tuple[str | int] | str,
+        asset_name: str | None = None,
+        ext: str = ".tif",
+        absolute: bool = False,
+    ) -> str:
+        """
+
+        Args:
+            item_id: The item id.
+            asset_name: If the thing we are naming has multiple assets / bands, this
+                is the name of the asset.
+            ext: The extension for the path.
+            absolute: Whether to return the absolute path.
+
+        Returns:
+            The path as a string.
+
+        """
         relative_path = (
             f"{self._folder(item_id)}/{self.basename(item_id)}_{asset_name}{ext}"
             if asset_name is not None
@@ -79,18 +131,46 @@ class GenericItemPath(ItemPath):
             else relative_path
         )
 
-    def stac_path(self, item_id, **kwargs):
+    def stac_path(
+        self, item_id: list[str | int] | tuple[str | int] | str, **kwargs
+    ) -> str:
+        """The path to the STAC item.
+
+        Args:
+            item_id: The item id.
+            **kwargs: Additional arguments to :py:func:`GenericItemPath.path`.
+
+        Returns:
+            The path as a string.
+
+        """
         return self.path(item_id, ext=".stac-item.json", **kwargs)
 
     def log_path(self) -> str:
+        """The path to the log file.
+
+        The path represents a csv file and is not used in all processing.
+
+        Returns:
+            The path as a string.
+
+        """
         return f"{self._folder_prefix}/logs/{self.item_prefix}_{self.time}_log.csv"
 
 
 class DepItemPath(GenericItemPath):
+    """A DepItemPath is just a renamed GenericItemPath, for backwards compatibility."""
+
     pass
 
 
 class S3ItemPath(GenericItemPath):
+    """An ItemPath for something on Amazon S3 storage.
+
+    Attributes:
+        bucket: The name of the bucket.
+    """
+
     def __init__(
         self,
         bucket: str,
@@ -123,11 +203,11 @@ class S3ItemPath(GenericItemPath):
 
 
 class DailyItemPath(S3ItemPath):
-    """An ItemPath which produces approprate paths for "daily" items where the time
+    """An S3ItemPath which produces approprate paths for "daily" items where the time
     is a datetime parseable by datetime.datetime.fromisoformat.
     Folders will have format YYYY/mm/dd, and stems will have dates in the
     format YYYY-mm-dd.
-    Example: a time value of "2025-06-13 15:56:54.012509"
+    Example: a time value of `"2025-06-13 15:56:54.012509"`
     would produce
     dep_ls_wofl/99/77/2025/06/13/dep_ls_wofl_99_77_2025-06-13.tif
     """
@@ -137,6 +217,12 @@ class DailyItemPath(S3ItemPath):
         self.datetime = (
             datetime.fromisoformat(time) if not isinstance(time, datetime) else time
         )
+
+    """
+        Args:
+            time: The time.
+            **kwargs: Additonal arguments to :py:class:`S3ItemPath`.
+    """
 
     def _folder(self, item_id) -> str:
         return f"{self._folder_prefix}/{self._format_item_id(item_id)}/{self.datetime:%Y/%m/%d}"

@@ -1,41 +1,49 @@
-"""This module contains various parsers, or functions that data in one format
-and convert it to another. These are primarily useful as convenience functions
-when using the typer module, particularly in combination with argo workflows.
+"""This module contains various parsers for converting data.
 
-Example usage might be something like
+These are primarily useful as convenience functions when using the typer module,
+particularly in combination with argo workflows, which only allows certain
+parameter types.
 
-```
-from typing import Annotated
-import typer
+Example usage might be something like::
 
-def main(flag: Annotated[str, typer.Option(parser=bool_parser)] = "True"):
-    print(flag.__class__)
+    from typing import Annotated
+    import typer
 
-if __name__ == "__main__":
-    typer.run(main())
-```
+    def main(flag: Annotated[str, typer.Option(parser=bool_parser)] = "True"):
+        print(flag.__class__)
 
-Calling this code like
+    if __name__ == "__main__":
+        typer.run(main())
 
-$ python file.py --flag True
-or
-$ python file.py
+Calling this code like::
 
-will produce
+    $ python file.py --flag True
 
-<class 'bool'>
+or::
+
+    $ python file.py
+
+will produce::
+
+    <class 'bool'>
 
 That is, the input string argument has automatically been converted to a bool.
 
-Why not just define the type as a bool? Argo can't have flag options. So
 the parameter must have a name and a value.
 """
 
 
 def datetime_parser(datetime: str) -> list[str]:
-    """Parse a string in the format <year> or <year 1>_<year 2>. If a
-    single year, it is returned as a single item list. Otherwise a generator
-    producing integer values in the range [year1, year2 + 1] is returned.
+    """Parse a string representing a year or multiple years.
+
+    Args:
+        datetime: A string of the format `'<year>'` or `'<year x>_<year y>'`.
+            If the latter, the years must be in order.
+
+    Returns:
+        If `datetime` is a single year, it is returned as a single item list.
+        Otherwise a generator producing integer values in the range
+        `[<year x>, <year y> + 1]` is returned.
     """
     years = datetime.split("_")
     if len(years) == 2:
@@ -46,7 +54,12 @@ def datetime_parser(datetime: str) -> list[str]:
 
 
 def bool_parser(raw: str) -> bool:
-    """Convert the input string into a boolean, which is False if the input is
-    "False" and true otherwise.
+    """Parse a string representing a true or false condition.
+
+    Args:
+        raw: Either "False" or something else.
+
+    Returns:
+        False if `raw` is `"False"'` and true otherwise.
     """
     return False if raw == "False" else True

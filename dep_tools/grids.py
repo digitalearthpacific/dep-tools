@@ -1,3 +1,5 @@
+"""Grid definitions for use in creating products."""
+
 from pathlib import Path
 from typing import Literal, Iterator
 
@@ -12,8 +14,11 @@ from shapely.geometry import shape
 # This EPSG code is what we're using for now
 # but it's not ideal, as its not an equal area projection...
 PACIFIC_EPSG = "EPSG:3832"
+"""str: The EPSG code used for products"""
 
 GADM_FILE = Path(__file__).parent / "gadm_pacific.gpkg"
+"""Path: The path to a geopackage containing GADM data over the Digital Earth Pacific countries and territories."""
+
 GADM_UNION_FILE = Path(__file__).parent / "gadm_pacific_union.gpkg"
 COUNTRIES_AND_CODES = {
     "American Samoa": "ASM",
@@ -39,9 +44,19 @@ COUNTRIES_AND_CODES = {
     "Vanuatu": "VUT",
     "Wallis and Futuna": "WLF",
 }
+"""dict[str, str]: The names and 3-letter country codes of Digital Earth Pacific countries and territories."""
 
 
 def gadm() -> GeoDataFrame:
+    """GADM data for Digital Earth Pacific Island Countries and Territories.
+
+    Creates and stores the file at :py:const:`GADM_FILE` if it does not exist. Otherwise,
+    it is simply read and returned.
+
+    Returns:
+        A GeoDataFrame
+
+    """
     if not GADM_FILE.exists() or not GADM_UNION_FILE.exists():
         all_polys = pd.concat(
             [
@@ -60,6 +75,12 @@ def gadm() -> GeoDataFrame:
 
 
 def gadm_union() -> GeoDataFrame:
+    """GADM polygons as a single shape.
+
+    Returns:
+        A GeoDataFrame.
+
+    """
     if not GADM_UNION_FILE.exists():
         gadm()
 
@@ -71,7 +92,21 @@ def get_tiles(
     country_codes: list[str] | None = None,
     buffer_distance: int | float | None = None,
 ) -> Iterator[tuple[tuple[int, int], GeoBox]]:
-    """Returns a list of tile IDs for the Pacific region, optionally filtered by country code."""
+    """Returns a list of tile IDs for the Pacific region, optionally filtered
+    by country code.
+
+    Args:
+        resolution: The output resolution of the tiles
+        country_codes: A list of 3-letter codes of the desired countries or
+            territories. If unset, all PICTs are returned.
+        buffer_distance: As for :py:func:`grid`.
+
+    Returns:
+
+
+    Raises:
+        ValueError: If country codes are not in :py:const:`COUNTRIES_AND_CODES`.
+    """
 
     if country_codes is None:
         geometries = gadm_union()
@@ -186,6 +221,8 @@ def _geoseries(resolution, crs) -> GeoSeries:
 
 # The origin is in the projected CRS. This works for Landsat.
 PACIFIC_GRID_30 = grid()
+""":py:class:`geopandas.GeoDataFrame`: A 30-meter resolution grid."""
 
 # This grid is for Sentinel-2 and has the same footprint
 PACIFIC_GRID_10 = grid(resolution=10)
+""":py:class:`geopandas.GeoDataFrame`: A 10-meter resolution grid."""

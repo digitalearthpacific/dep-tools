@@ -1,10 +1,20 @@
+import warnings
+
 from dep_tools.grids import get_tiles, gadm, PACIFIC_EPSG
 from json import loads
+import urllib.error
 
 from odc.geo import Geometry
+import pytest
 
+
+@pytest.mark.xfail(
+    raises=urllib.error.URLError,
+    reason="GADM load failed, source server is likely down",
+)
 def test_get_gadm():
     all = gadm()
+
     assert len(all) == 22
 
     # Convert to a ODC Geometry
@@ -12,6 +22,10 @@ def test_get_gadm():
     assert geom.crs == 4326
 
 
+@pytest.mark.xfail(
+    raises=urllib.error.URLError,
+    reason="GADM load failed, source server is likely down",
+)
 def test_get_tiles():
     # This takes 2 minutes to retrieve all the tiles. Keep it as a generator.
     tiles = get_tiles(resolution=30)
