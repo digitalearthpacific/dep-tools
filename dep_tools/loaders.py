@@ -88,7 +88,7 @@ class OdcLoader(StacLoader):
             ValueError: If `areas` is a GeoBox and `clip_to_areas` is set to `True`.
         """
         if isinstance(areas, GeoDataFrame):
-            load_geometry = dict(geopolygons=areas)
+            load_geometry = dict(geopolygon=areas)
         elif isinstance(areas, GeoBox):
             load_geometry = dict(geobox=areas)
         else:
