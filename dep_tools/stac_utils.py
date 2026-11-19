@@ -2,11 +2,12 @@
 
 from datetime import datetime
 import json
+import os
 import warnings
 
 import numpy as np
 from pandas import DataFrame
-from pystac import Asset, Item, MediaType, read_dict
+from pystac import Asset, Item, Link, MediaType, read_dict
 import pystac_client
 import rasterio
 from rio_stac.stac import create_stac_item, get_raster_info
@@ -16,6 +17,25 @@ from xarray import DataArray, Dataset
 from .aws import object_exists
 from .namers import GenericItemPath, S3ItemPath
 from .processors import Processor
+
+
+PROCESSING_SCHEMA = "https://stac-extensions.github.io/processing/v1.1.0/schema.json"
+
+
+def set_derived_from(items: list[Item], ds: DataArray | Dataset):
+    """Record the canonical hrefs of source `items` in `ds.attrs["stac_derived_from"]`,
+    for :func:`get_stac_item` to turn into `derived_from` links."""
+    ds.attrs["stac_derived_from"] = [
+        i.get_self_href() for i in items if i.get_self_href() is not None
+    ]
+    return ds
+
+
+def _software_from_env() -> dict[str, str]:
+    """Processing software info from the IMAGE_TAG and COMMIT environment
+    variables. Unset or empty variables are skipped; there are no defaults."""
+    names = {"docker-image": "IMAGE_TAG", "commit": "COMMIT"}
+    return {k: os.environ[v] for k, v in names.items() if os.environ.get(v)}
 
 
 class StacCreator(Processor):
@@ -71,6 +91,11 @@ def get_stac_item(
     - If the kwargs include "with_raster=True" and `data` is an
       :class:`xarray.Dataset`, raster information is created for each variable.
     - The self href of the output is set, using `itempath.stac_path`.
+    - Provenance: `derived_from` links are added for hrefs in the
+      `stac_derived_from` attribute of `data` (see :func:`set_derived_from`).
+      If the `IMAGE_TAG` / `COMMIT` environment variables are set they are
+      recorded as `processing:software` (processing extension), and
+      `IMAGE_REPO` as a `via` link.
 
     Args:
         itempath: The :class:`ItemPath` for the raster output.
@@ -135,6 +160,17 @@ def get_stac_item(
         collection=collection,
         **kwargs,
     )
+    for href in data.attrs.get("stac_derived_from", []):
+        item.add_link(Link("derived_from", href, media_type="application/geo+json"))
+
+    software = _software_from_env()
+    if software:
+        item.properties["processing:software"] = software
+        if PROCESSING_SCHEMA not in item.stac_extensions:
+            item.stac_extensions.append(PROCESSING_SCHEMA)
+    if image_repo := os.environ.get("IMAGE_REPO"):
+        item.add_link(Link("via", image_repo, title="Processing code"))
+
     if set_geometry_from_input:
         if "stac_geometry" in data.attrs:
             item.geometry = data.attrs["stac_geometry"]

@@ -128,3 +128,30 @@ def test_stac_url():
         item_path.stac_path((99, 66), absolute=True)
         == "https://test.com/dep_nose_aroma/test/099/066/2024/dep_nose_aroma_099_066_2024.stac-item.json"
     )
+
+
+def test_derived_from_links(itempath, dataset):
+    href = "https://example.com/stac/items/abc"
+    stac_item = get_stac_item(
+        itempath, "12,34", dataset.assign_attrs(stac_derived_from=[href])
+    )
+    assert [l.target for l in stac_item.get_links("derived_from")] == [href]
+
+
+def test_processing_software_from_env(itempath, dataset, monkeypatch):
+    monkeypatch.setenv("IMAGE_TAG", "repo/img:1")
+    monkeypatch.setenv("COMMIT", "abc123")
+    monkeypatch.setenv("IMAGE_REPO", "https://github.com/x/y/tree/abc123/")
+    item = get_stac_item(itempath, "12,34", dataset)
+    assert item.properties["processing:software"] == {
+        "docker-image": "repo/img:1",
+        "commit": "abc123",
+    }
+    assert any("processing" in e for e in item.stac_extensions)
+    assert item.get_single_link("via").target == "https://github.com/x/y/tree/abc123/"
+
+
+def test_no_processing_without_env(stac_item, monkeypatch):
+    assert "processing:software" not in stac_item.properties
+    assert not any("processing" in e for e in stac_item.stac_extensions)
+    assert stac_item.get_single_link("via") is None

@@ -15,7 +15,12 @@ from .loaders import Loader, StacLoader
 from .processors import Processor
 from .namers import S3ItemPath
 from .searchers import Searcher
-from .stac_utils import set_stac_properties, StacCreator, copy_stac_properties
+from .stac_utils import (
+    set_stac_properties,
+    StacCreator,
+    copy_stac_properties,
+    set_derived_from,
+)
 from .writers import Writer, AwsDsCogWriter, AwsStacWriter
 
 TaskID = str
@@ -147,6 +152,7 @@ class StacTask(AreaTask):
         output_data = set_stac_properties(
             input_data, self.processor.process(input_data, **processor_kwargs)
         )
+        set_derived_from(items, output_data)
 
         if self.post_processor is not None:
             output_data = self.post_processor.process(output_data)
@@ -239,6 +245,7 @@ class ItemStacTask(Task):
         output_data = copy_stac_properties(
             self.item, self.processor.process(input_data)
         )
+        set_derived_from([self.item], output_data)
 
         if self.post_processor is not None:
             output_data = self.post_processor.process(output_data)
