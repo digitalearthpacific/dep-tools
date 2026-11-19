@@ -13,28 +13,13 @@ jobs:
   build-deploy:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/osgeo/gdal:ubuntu-full-3.8.4
+      image: python:3.12-bookworm
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.10"
-
       - name: Install dependencies
-        run: |
-          apt-get update && apt-get install -y \
-            python3-pip \
-            python3-dev \
-            git \
-            libpq-dev \
-            ca-certificates \
-            build-essential
-          pip3 install --upgrade pip setuptools wheel poetry
-          pip install -r docs/requirements.txt
-          pip install .
+        run: pip install -r docs/requirements.txt .
 
       - name: Build docs
         run: sphinx-build -b html docs docs/_build/html
