@@ -165,6 +165,25 @@ def test_no_software_without_env(stac_item, monkeypatch):
     assert stac_item.get_single_link("via") is None
 
 
+def test_asset_overrides(itempath, dataset):
+    item = get_stac_item(
+        itempath,
+        "12,34",
+        dataset,
+        asset_overrides={"wofs": {"roles": ["visual"], "title": "True colour"}},
+    )
+    asset = item.assets["wofs"]
+    assert asset.roles == ["visual"]
+    assert asset.title == "True colour"
+    assert (
+        asset.media_type == "image/tiff; application=geotiff; profile=cloud-optimized"
+    )
+
+
+def test_asset_defaults_without_overrides(stac_item):
+    assert stac_item.assets["wofs"].roles == ["data"]
+
+
 def test_disable_derived_from(itempath, dataset):
     href = "https://example.com/stac/items/abc"
     data = dataset.assign_attrs(stac_derived_from=[href])

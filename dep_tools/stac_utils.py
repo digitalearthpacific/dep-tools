@@ -78,6 +78,7 @@ def get_stac_item(
     data: DataArray | Dataset,
     collection_url_root: str = "https://stac.staging.digitalearthpacific.io/collections",
     set_geometry_from_input: bool = False,
+    asset_overrides: dict[str, dict] | None = None,
     disable_derived_from: bool = False,
     **kwargs,
 ) -> Item:
@@ -109,6 +110,10 @@ def get_stac_item(
         set_geometry_from_input: Whether the geometry property should be copied from
             the `stac_properties` attribute of `data`. If this property is missing,
             a warning is emitted and nothing is set.
+        asset_overrides: Optional per-asset (variable name) overrides of the
+            default asset fields, e.g.
+            `{"visual": {"roles": ["visual"], "title": "True colour image"}}`.
+            Supported keys are `roles`, `title` and `media_type`.
         disable_derived_from: Set to True to not add `derived_from` links (which
             can be numerous, e.g. one for every scene in an annual composite).
             They are added by default.
@@ -135,11 +140,13 @@ def get_stac_item(
             with rasterio.open(full_path) as src_dst:
                 raster_info = {"raster:bands": get_raster_info(src_dst, max_size=1024)}
 
+        asset_args = {
+            "media_type": MediaType.COG,
+            "roles": ["data"],
+            **(asset_overrides or {}).get(variable, {}),
+        }
         assets[variable] = Asset(
-            media_type=MediaType.COG,
-            href=full_path,
-            roles=["data"],
-            extra_fields={**raster_info},
+            href=full_path, extra_fields={**raster_info}, **asset_args
         )
     stac_id = itempath.basename(item_id)
     collection = itempath.item_prefix
