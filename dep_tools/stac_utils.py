@@ -1,6 +1,6 @@
 """This module contains classes and functions to aid in STAC Item creation."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 import json
 import os
 import warnings
@@ -18,7 +18,7 @@ from .aws import object_exists
 from .namers import GenericItemPath, S3ItemPath
 from .processors import Processor
 
-PROCESSING_SCHEMA = "https://stac-extensions.github.io/processing/v1.1.0/schema.json"
+PROCESSING_SCHEMA = "https://stac-extensions.github.io/processing/v1.3.0/schema.json"
 
 
 def set_derived_from(items: list[Item], ds: DataArray | Dataset):
@@ -90,7 +90,8 @@ def get_stac_item(
     - If the kwargs include "with_raster=True" and `data` is an
       :class:`xarray.Dataset`, raster information is created for each variable.
     - The self href of the output is set, using `itempath.stac_path`.
-    - Provenance: `derived_from` links are added for hrefs in the
+    - Provenance: `processing:datetime` is set to the current UTC time (processing
+      extension). `derived_from` links are added for hrefs in the
       `stac_derived_from` attribute of `data` (see :func:`set_derived_from`).
       If the `IMAGE_TAG` / `COMMIT` environment variables are set they are
       recorded as `processing:software` (processing extension), and
@@ -162,11 +163,13 @@ def get_stac_item(
     for href in data.attrs.get("stac_derived_from", []):
         item.add_link(Link("derived_from", href, media_type="application/geo+json"))
 
+    item.properties["processing:datetime"] = datetime.now(timezone.utc).strftime(
+        "%Y-%m-%dT%H:%M:%SZ"
+    )
+    item.stac_extensions.append(PROCESSING_SCHEMA)
     software = _software_from_env()
     if software:
         item.properties["processing:software"] = software
-        if PROCESSING_SCHEMA not in item.stac_extensions:
-            item.stac_extensions.append(PROCESSING_SCHEMA)
     if image_repo := os.environ.get("IMAGE_REPO"):
         item.add_link(Link("via", image_repo, title="Processing code"))
 

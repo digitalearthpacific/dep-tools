@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from pathlib import Path
 from pystac import Item
 import pytest
@@ -151,7 +152,14 @@ def test_processing_software_from_env(itempath, dataset, monkeypatch):
     assert item.get_single_link("via").target == "https://github.com/x/y/tree/abc123/"
 
 
-def test_no_processing_without_env(stac_item, monkeypatch):
+def test_processing_datetime(stac_item):
+    assert any("processing" in e for e in stac_item.stac_extensions)
+    dt = datetime.strptime(
+        stac_item.properties["processing:datetime"], "%Y-%m-%dT%H:%M:%SZ"
+    ).replace(tzinfo=timezone.utc)
+    assert abs((datetime.now(timezone.utc) - dt).total_seconds()) < 60
+
+
+def test_no_software_without_env(stac_item, monkeypatch):
     assert "processing:software" not in stac_item.properties
-    assert not any("processing" in e for e in stac_item.stac_extensions)
     assert stac_item.get_single_link("via") is None
