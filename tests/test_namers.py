@@ -1,6 +1,12 @@
+<<<<<<< HEAD
 import pytest
 from dep_tools.namers import DepItemPath
+=======
+from datetime import datetime
+from dep_tools.namers import DailyItemPath, DepItemPath
+>>>>>>> origin/main
 
+bucket = "test-bucket"
 sensor = "ls"
 dataset_id = "wofs"
 version = "1.0.1"
@@ -10,7 +16,10 @@ paddedItemPath = DepItemPath(sensor, dataset_id, version, time, zero_pad_numbers
 nonPaddedItemPath = DepItemPath(
     sensor, dataset_id, version, time, zero_pad_numbers=False
 )
+<<<<<<< HEAD
 
+=======
+>>>>>>> origin/main
 item_id = "001,002"
 asset_name = "mean"
 
@@ -91,3 +100,39 @@ def test_non_padded_format_item_id_iterable_int():
 
 def test_non_padded_format_item_id_list_as_string():
     assert nonPaddedItemPath._format_item_id("001,002", "_") == "001_002"
+
+
+def test_daily_path(s3):
+    s3.create_bucket(
+        Bucket=bucket, CreateBucketConfiguration={"LocationConstraint": "us-west-2"}
+    )
+    dailyItemPath = DailyItemPath(
+        bucket=bucket,
+        sensor=sensor,
+        dataset_id=dataset_id,
+        version=version,
+        time="2025-07-28 15:44:14.926241",
+    )
+
+    assert (
+        dailyItemPath.path(item_id, asset_name)
+        == "dep_ls_wofs/1-0-1/001/002/2025/07/28/dep_ls_wofs_001_002_2025-07-28_mean.tif"
+    )
+
+
+def test_daily_path_datetime(s3):
+    s3.create_bucket(
+        Bucket=bucket, CreateBucketConfiguration={"LocationConstraint": "us-west-2"}
+    )
+    dailyItemPath = DailyItemPath(
+        bucket=bucket,
+        sensor=sensor,
+        dataset_id=dataset_id,
+        version=version,
+        time=datetime.fromisoformat("2025-07-28 15:44:14.926241"),
+    )
+
+    assert (
+        dailyItemPath.path(item_id, asset_name)
+        == "dep_ls_wofs/1-0-1/001/002/2025/07/28/dep_ls_wofs_001_002_2025-07-28_mean.tif"
+    )

@@ -7,6 +7,7 @@ fiona
 gdal
 geocube
 geopandas
+moto
 odc-stac
 odc-algo
 pystac-client
@@ -16,5 +17,4 @@ rio-stac>=0.8.0
 stackstac
 retry
 tqdm
-urlpath>=1.2.0
 xarray

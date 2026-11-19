@@ -1,0 +1,6 @@
+sphinx
+sphinx-rtd-theme
+sphinx-autodoc-typehints
+nbsphinx
+nbsphinx-link
+myst-parser
