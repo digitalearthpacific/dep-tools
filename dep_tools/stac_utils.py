@@ -314,7 +314,8 @@ def set_stac_properties(
             `"start_datetime"` and `"end_datetime"`; `"datetime"` is still the
             centre of `period` (or of `window` if there is no `period`).
         nominal_datetime: An exact value for `"datetime"` (an RFC 3339 string),
-            instead of the centre.
+            used instead of the centre of `period`. `"start_datetime"` and
+            `"end_datetime"` are not affected.
 
     Returns:
         `output_xr` with the `"stac_properties"` attribute set as described.
