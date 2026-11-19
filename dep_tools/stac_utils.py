@@ -18,7 +18,6 @@ from .aws import object_exists
 from .namers import GenericItemPath, S3ItemPath
 from .processors import Processor
 
-
 PROCESSING_SCHEMA = "https://stac-extensions.github.io/processing/v1.1.0/schema.json"
 
 
