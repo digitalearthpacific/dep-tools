@@ -113,7 +113,8 @@ def get_stac_item(
         asset_overrides: Optional per-asset (variable name) overrides of the
             default asset fields, e.g.
             `{"visual": {"roles": ["visual"], "title": "True colour image"}}`.
-            Supported keys are `roles`, `title` and `media_type`.
+            Keys can be any :class:`pystac.Asset` argument (such as `roles`, `title`,
+            and `media_type`), except `href` and `extra_fields`.
         disable_derived_from: Set to True to not add `derived_from` links (which
             can be numerous, e.g. one for every scene in an annual composite).
             They are added by default.
