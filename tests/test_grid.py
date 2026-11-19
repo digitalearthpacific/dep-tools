@@ -8,13 +8,10 @@ from odc.geo import Geometry
 import pytest
 
 
-<<<<<<< HEAD
-=======
 @pytest.mark.xfail(
     raises=urllib.error.URLError,
     reason="GADM load failed, source server is likely down",
 )
->>>>>>> origin/main
 def test_get_gadm():
     all = gadm()
 

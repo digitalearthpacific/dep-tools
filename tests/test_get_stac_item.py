@@ -21,15 +21,8 @@ def itempath() -> GenericItemPath:
         version="1.0.0",
         time="2021-01-01",
         zero_pad_numbers=False,
-<<<<<<< HEAD
-    )
-    tif = itempath.path("12,34", asset_name="wofs")
-    test_xr = rioxarray.open_rasterio(tif).to_dataset(name="wofs")
-    item = get_stac_item(itempath=itempath, item_id="12,34", data=test_xr, remote=False)
-=======
         full_path_prefix=str(DATA_DIR),
     )
->>>>>>> origin/main
 
 
 @pytest.fixture

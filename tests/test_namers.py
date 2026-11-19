@@ -1,10 +1,6 @@
-<<<<<<< HEAD
 import pytest
-from dep_tools.namers import DepItemPath
-=======
 from datetime import datetime
 from dep_tools.namers import DailyItemPath, DepItemPath
->>>>>>> origin/main
 
 bucket = "test-bucket"
 sensor = "ls"
@@ -16,10 +12,6 @@ paddedItemPath = DepItemPath(sensor, dataset_id, version, time, zero_pad_numbers
 nonPaddedItemPath = DepItemPath(
     sensor, dataset_id, version, time, zero_pad_numbers=False
 )
-<<<<<<< HEAD
-
-=======
->>>>>>> origin/main
 item_id = "001,002"
 asset_name = "mean"
 
