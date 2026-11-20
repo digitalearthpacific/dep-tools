@@ -118,6 +118,11 @@ class StacTask(AreaTask):
             for example scaling or data type conversions.
         stac_creator: Creates a STAC Item from the data.
         stac_writer: Writes the STAC Item to storage.
+        period: The period the output represents, e.g. "2024" or
+            "2024-04/2024-09" (the same as you would give the searcher).
+            Used for the start, end and centre datetimes of the STAC Item. If
+            not given they are worked out from the loaded data. See
+            :func:`set_stac_properties`.
     """
 
     def __init__(
@@ -132,9 +137,11 @@ class StacTask(AreaTask):
         stac_creator: StacCreator | None = None,
         stac_writer: Writer | None = None,
         logger: Logger = getLogger(),
+        period: str | None = None,
     ):
         """ """
         super().__init__(id, area, loader, processor, writer, logger)
+        self.period = period
         self.id = id
         self.searcher = searcher
         self.post_processor = post_processor
@@ -150,7 +157,9 @@ class StacTask(AreaTask):
         )
 
         output_data = set_stac_properties(
-            input_data, self.processor.process(input_data, **processor_kwargs)
+            input_data,
+            self.processor.process(input_data, **processor_kwargs),
+            period=self.period,
         )
         set_derived_from(items, output_data)
 

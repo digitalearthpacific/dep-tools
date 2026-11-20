@@ -6,7 +6,7 @@ import os
 import warnings
 
 import numpy as np
-from pandas import DataFrame
+from pandas import DataFrame, Period
 from pystac import Asset, Item, Link, MediaType, read_dict
 import pystac_client
 import rasterio
@@ -244,40 +244,99 @@ def remove_items_with_existing_stac(grid: DataFrame, itempath: S3ItemPath) -> Da
     return grid[~grid.index.isin(existing_stac_items(list(grid.index), itempath))]
 
 
+def _period_bounds(period: str) -> tuple[np.datetime64, np.datetime64]:
+    """Start and (exclusive) end of an ISO period, as `datetime64[s]`.
+
+    `period` is a partial ISO date understood by :class:`pandas.Period`
+    (e.g. `"2024"`, `"2024-03"`, `"2024Q1"`, `"2024-03-05"`) or an interval of
+    two of them separated by `/` (e.g. `"2020/2022"`, `"2024-04/2024-09"`).
+    """
+    first, _, last = period.partition("/")
+    return (
+        Period(first).start_time.to_datetime64().astype("datetime64[s]"),
+        Period(last or first)
+        .end_time.floor("s")
+        .to_datetime64()
+        .astype("datetime64[s]")
+        + np.timedelta64(1, "s"),
+    )
+
+
+def _data_bounds(time: DataArray) -> tuple[np.datetime64, np.datetime64]:
+    """Start and (exclusive) end of the period covered by `time`, snapped
+    outwards to whole years if it spans more than about half a year, otherwise to
+    whole months."""
+    first, last = time.min().values, time.max().values
+    # A six month period spans at most 184 days between its first and last scene
+    unit = "M" if (last - first) <= np.timedelta64(190, "D") else "Y"
+    return (
+        np.datetime64(first, unit).astype("datetime64[s]"),
+        (np.datetime64(last, unit) + np.timedelta64(1, unit)).astype("datetime64[s]"),
+    )
+
+
 def set_stac_properties(
-    input_xr: DataArray | Dataset, output_xr: DataArray | Dataset
+    input_xr: DataArray | Dataset,
+    output_xr: DataArray | Dataset,
+    period: str | None = None,
+    window: str | None = None,
+    nominal_datetime: str | None = None,
 ) -> Dataset | DataArray:
     """Set the `"stac_properties"` attribute of an Xarray object based on another.
 
     Sets an attribute called `"stac_properties"` in the output which is a
     dictionary containing the following properties for use in stac writing:
-    `"start_datetime"`, `"end_datetime"`, `"datetime"`, and `"created"`. These are
-    set from the input_xr.time coordinate. Typically, `input_xr` would be
-    an array of EO data (e.g. Landsat) containing data over a range of
-    dates (such as a year).
+    `"start_datetime"`, `"end_datetime"`, `"datetime"`, and `"created"` (the
+    current time in UTC). Typically, `input_xr` would be an array of EO data
+    (e.g. Landsat) containing data over a range of dates (such as a year).
+
+    The preferred way to set the dates is to say what period the output
+    represents with `period`. The start and end are then exact, whatever scenes
+    happened to be found, and `"datetime"` is the centre of the period.
+
+    Without `period` (or `window`), the period is worked out from the
+    `input_xr.time` coordinate, snapped outwards to calendar boundaries so that
+    a sparse start or end (e.g. a cloudy January) doesn't shorten it: whole
+    years (Jan 1 to Dec 31) if the data spans more than about half a year,
+    otherwise whole months (first day of the first month to last day of the last
+    month). `"datetime"` is the centre of that.
 
     Args:
-        input_xr: The object whose `time` coordinate is used.
+        input_xr: The object whose `time` coordinate is used if neither `period`
+            nor `window` is given.
         output_xr: The object whose properties are set.
+        period: The period the output represents, as a partial ISO date
+            (`"2024"`, `"2024-03"`, `"2024Q1"`) or an interval of two of them
+            separated by `/` (`"2024-04/2024-09"`).
+        window: The time span of the input observations, in the same format, if
+            it is different from `period`, e.g. `"2011/2013"` for a nominal
+            2012 made from inputs with a buffer year either side. Sets
+            `"start_datetime"` and `"end_datetime"`; `"datetime"` is still the
+            centre of `period` (or of `window` if there is no `period`).
+        nominal_datetime: An exact value for `"datetime"` (an RFC 3339 string),
+            used instead of the centre of `period`. `"start_datetime"` and
+            `"end_datetime"` are not affected.
 
     Returns:
         `output_xr` with the `"stac_properties"` attribute set as described.
     """
-    start_datetime = np.datetime_as_string(
-        np.datetime64(input_xr.time.min().values, "Y"), unit="ms", timezone="UTC"
-    )
+    if period is None and window is None:
+        start, end = centre_span = _data_bounds(input_xr.time)
+    else:
+        centre_span = _period_bounds(period or window)
+        start, end = _period_bounds(window) if window else centre_span
+    centre = centre_span[0] + (centre_span[1] - centre_span[0]) // 2
 
-    end_datetime = np.datetime_as_string(
-        np.datetime64(input_xr.time.max().values, "Y")
-        + np.timedelta64(1, "Y")
-        - np.timedelta64(1, "s"),
-        timezone="UTC",
-    )
+    def fmt(t):
+        return np.datetime_as_string(t, unit="s", timezone="UTC")
+
     output_xr.attrs["stac_properties"] = dict(
-        start_datetime=start_datetime,
-        datetime=start_datetime,
-        end_datetime=end_datetime,
-        created=np.datetime_as_string(np.datetime64(datetime.now()), timezone="UTC"),
+        start_datetime=fmt(start),
+        datetime=nominal_datetime or fmt(centre),
+        end_datetime=fmt(end - np.timedelta64(1, "s")),
+        created=datetime.now(timezone.utc)
+        .isoformat(timespec="milliseconds")
+        .replace("+00:00", "Z"),
     )
 
     return output_xr
