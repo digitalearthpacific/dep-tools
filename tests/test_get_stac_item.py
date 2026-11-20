@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from pathlib import Path
 from pystac import Item
 import pytest
@@ -127,4 +128,59 @@ def test_stac_url():
     assert (
         item_path.stac_path((99, 66), absolute=True)
         == "https://test.com/dep_nose_aroma/test/099/066/2024/dep_nose_aroma_099_066_2024.stac-item.json"
+    )
+
+
+def test_derived_from_links(itempath, dataset):
+    href = "https://example.com/stac/items/abc"
+    stac_item = get_stac_item(
+        itempath, "12,34", dataset.assign_attrs(stac_derived_from=[href])
+    )
+    assert [l.target for l in stac_item.get_links("derived_from")] == [href]
+
+
+def test_processing_software_from_env(itempath, dataset, monkeypatch):
+    monkeypatch.setenv("IMAGE_TAG", "repo/img:1")
+    monkeypatch.setenv("COMMIT", "abc123")
+    monkeypatch.setenv("IMAGE_REPO", "https://github.com/x/y/tree/abc123/")
+    item = get_stac_item(itempath, "12,34", dataset)
+    assert item.properties["processing:software"] == {
+        "docker-image": "repo/img:1",
+        "commit": "abc123",
+    }
+    assert any("processing" in e for e in item.stac_extensions)
+    assert item.get_single_link("via").target == "https://github.com/x/y/tree/abc123/"
+
+
+def test_processing_datetime(stac_item):
+    assert any("processing" in e for e in stac_item.stac_extensions)
+    dt = datetime.strptime(
+        stac_item.properties["processing:datetime"], "%Y-%m-%dT%H:%M:%SZ"
+    ).replace(tzinfo=timezone.utc)
+    assert abs((datetime.now(timezone.utc) - dt).total_seconds()) < 60
+
+
+def test_no_software_without_env(stac_item, monkeypatch):
+    assert "processing:software" not in stac_item.properties
+    assert stac_item.get_single_link("via") is None
+
+
+def test_disable_derived_from(itempath, dataset):
+    href = "https://example.com/stac/items/abc"
+    data = dataset.assign_attrs(stac_derived_from=[href])
+    assert len(get_stac_item(itempath, "12,34", data).get_links("derived_from")) == 1
+    item = get_stac_item(itempath, "12,34", data, disable_derived_from=True)
+    assert item.get_links("derived_from") == []
+    # the rest of the provenance is unaffected
+    assert "processing:datetime" in item.properties
+
+
+def test_disable_derived_from_via_stac_creator(itempath, dataset):
+    from dep_tools.stac_utils import StacCreator
+
+    data = dataset.assign_attrs(stac_derived_from=["https://example.com/a"])
+    creator = StacCreator(itempath, disable_derived_from=True)
+    assert creator.process(data, "12,34").get_links("derived_from") == []
+    assert (
+        len(StacCreator(itempath).process(data, "12,34").get_links("derived_from")) == 1
     )
