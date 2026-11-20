@@ -8,14 +8,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>dep_tools.loaders module &mdash; dep-tools 0.5.4 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
-      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/sphinx_autodoc_typehints.css?v=057ac668" />
 
   
       <script src="../_static/jquery.js?v=5d32c60e"></script>
       <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
       <script src="../_static/documentation_options.js?v=e1a677a5"></script>
-      <script src="../_static/doctools.js?v=9bcbadda"></script>
-      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -101,24 +102,24 @@
 <p>ABC definition and implementation of Loader objects.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="dep_tools.loaders.Loader">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">dep_tools.loaders.</span></span><span class="sig-name descname"><span class="pre">Loader</span></span><a class="reference internal" href="../_modules/dep_tools/loaders.html#Loader"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dep_tools.loaders.Loader" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">dep_tools.loaders.</span></span><span class="sig-name descname"><span class="pre">Loader</span></span><a class="reference internal" href="../_modules/dep_tools/loaders.html#Loader"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dep_tools.loaders.Loader" title="Link to this definition"></a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></p>
 <p>A base class for something that loads data based on input areas.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="dep_tools.loaders.Loader.load">
-<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">areas</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dep_tools/loaders.html#Loader.load"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dep_tools.loaders.Loader.load" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">areas</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dep_tools/loaders.html#Loader.load"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dep_tools.loaders.Loader.load" title="Link to this definition"></a></dt>
 <dd></dd></dl>
 
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="dep_tools.loaders.StacLoader">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">dep_tools.loaders.</span></span><span class="sig-name descname"><span class="pre">StacLoader</span></span><a class="reference internal" href="../_modules/dep_tools/loaders.html#StacLoader"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dep_tools.loaders.StacLoader" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">dep_tools.loaders.</span></span><span class="sig-name descname"><span class="pre">StacLoader</span></span><a class="reference internal" href="../_modules/dep_tools/loaders.html#StacLoader"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dep_tools.loaders.StacLoader" title="Link to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#dep_tools.loaders.Loader" title="dep_tools.loaders.Loader"><code class="xref py py-class docutils literal notranslate"><span class="pre">Loader</span></code></a></p>
 <p>A loader which loads data based on (STAC) items and areas.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="dep_tools.loaders.StacLoader.load">
-<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">items</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">areas</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dep_tools/loaders.html#StacLoader.load"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dep_tools.loaders.StacLoader.load" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">abstractmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">items</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">areas</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dep_tools/loaders.html#StacLoader.load"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dep_tools.loaders.StacLoader.load" title="Link to this definition"></a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Any</span></code></span></p>
@@ -130,7 +131,7 @@
 
 <dl class="py class">
 <dt class="sig sig-object py" id="dep_tools.loaders.OdcLoader">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">dep_tools.loaders.</span></span><span class="sig-name descname"><span class="pre">OdcLoader</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">load_as_dataset</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clip_to_areas</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dep_tools/loaders.html#OdcLoader"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dep_tools.loaders.OdcLoader" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">dep_tools.loaders.</span></span><span class="sig-name descname"><span class="pre">OdcLoader</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">load_as_dataset</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clip_to_areas</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dep_tools/loaders.html#OdcLoader"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dep_tools.loaders.OdcLoader" title="Link to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#dep_tools.loaders.StacLoader" title="dep_tools.loaders.StacLoader"><code class="xref py py-class docutils literal notranslate"><span class="pre">StacLoader</span></code></a></p>
 <p>A wrapper around <code class="xref py py-func docutils literal notranslate"><span class="pre">odc.stac.load()</span></code>.</p>
 <p>In addition to allowing conformance to the <a class="reference internal" href="#dep_tools.loaders.Loader" title="dep_tools.loaders.Loader"><code class="xref py py-class docutils literal notranslate"><span class="pre">Loader</span></code></a> form, this
@@ -166,7 +167,7 @@ contains the nodata value, <cite>xr[variable].nodata</cite> will be set on load.
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>items</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterable</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Item</span></code>]</span>) – The items to load.</p></li>
-<li><p><strong>areas</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">GeoDataFrame</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">GeoBox</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]</span>) – If <cite>clip_to_areas</cite> is <cite>True</cite>, the output is clipped to these areas.</p></li>
+<li><p><strong>areas</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">GeoDataFrame</span></code> | <code class="xref py py-class docutils literal notranslate"><span class="pre">GeoBox</span></code> | <span class="highlight sphinx_autodoc_typehints-value"><code class="xref py py-obj docutils literal notranslate"><span class="kc"><span class="pre">None</span></span></code></span></span>) – If <cite>clip_to_areas</cite> is <cite>True</cite>, the output is clipped to these areas.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
@@ -187,7 +188,7 @@ variables set on the <cite>“band”</cite> dimension.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="dep_tools.loaders.StackStacLoader">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">dep_tools.loaders.</span></span><span class="sig-name descname"><span class="pre">StackStacLoader</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">stack_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{'resolution':</span> <span class="pre">30}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">resamplers_and_assets</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dep_tools/loaders.html#StackStacLoader"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dep_tools.loaders.StackStacLoader" title="Link to this definition"></a></dt>
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">dep_tools.loaders.</span></span><span class="sig-name descname"><span class="pre">StackStacLoader</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">stack_kwargs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">{'resolution':</span> <span class="pre">30}</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">resamplers_and_assets</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/dep_tools/loaders.html#StackStacLoader"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#dep_tools.loaders.StackStacLoader" title="Link to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#dep_tools.loaders.StacLoader" title="dep_tools.loaders.StacLoader"><code class="xref py py-class docutils literal notranslate"><span class="pre">StacLoader</span></code></a></p>
 <dl class="py method">
 <dt class="sig sig-object py" id="dep_tools.loaders.StackStacLoader.load">

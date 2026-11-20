@@ -8,14 +8,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>dep_tools.aws module &mdash; dep-tools 0.5.4 documentation</title>
       <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
-      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+      <link rel="stylesheet" type="text/css" href="../_static/sphinx_autodoc_typehints.css?v=057ac668" />
 
   
       <script src="../_static/jquery.js?v=5d32c60e"></script>
       <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
       <script src="../_static/documentation_options.js?v=e1a677a5"></script>
-      <script src="../_static/doctools.js?v=9bcbadda"></script>
-      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
     <script src="../_static/js/theme.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -108,7 +109,7 @@
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>bucket</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – The name of the bucket.</p></li>
 <li><p><strong>key</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></span>) – The object key.</p></li>
-<li><p><strong>client</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">BaseClient</span></code>]</span>) – An optional client. If none is specified the default client is used.</p></li>
+<li><p><strong>client</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseClient</span></code> | <span class="highlight sphinx_autodoc_typehints-value"><code class="xref py py-obj docutils literal notranslate"><span class="kc"><span class="pre">None</span></span></code></span></span>) – An optional client. If none is specified the default client is used.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
@@ -163,7 +164,7 @@ dumped to json.</p>
 <li><p><strong>use_odc_writer</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></span>) – Whether <code class="xref py py-func docutils literal notranslate"><span class="pre">odc.geo.xr.to_cog()</span></code> should be used to write
 the object. If <cite>False</cite> <code class="xref py py-func docutils literal notranslate"><span class="pre">rioxarray.to_raster()</span></code> is used. Only
 matters for xarray objects (DataArrays or Datasets).</p></li>
-<li><p><strong>client</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">BaseClient</span></code>]</span>) – The s3 client. If not set the default client is used.</p></li>
+<li><p><strong>client</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">BaseClient</span></code> | <span class="highlight sphinx_autodoc_typehints-value"><code class="xref py py-obj docutils literal notranslate"><span class="kc"><span class="pre">None</span></span></code></span></span>) – The s3 client. If not set the default client is used.</p></li>
 <li><p><strong>(</strong><strong>)</strong> (<em>s3_dump_kwargs</em>) – Additional arguments to <a class="reference internal" href="#dep_tools.aws.s3_dump" title="dep_tools.aws.s3_dump"><code class="xref py py-func docutils literal notranslate"><span class="pre">s3_dump()</span></code></a>.</p></li>
 <li><p><strong>**kwargs</strong> – Additional arguments to the writing function, if the object is
 a <code class="xref py py-class docutils literal notranslate"><span class="pre">geopandas.GeoDataFrame</span></code> or <code class="xref py py-class docutils literal notranslate"><span class="pre">xarray.DataArray</span></code> /
