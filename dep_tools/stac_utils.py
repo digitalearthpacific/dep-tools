@@ -78,6 +78,7 @@ def get_stac_item(
     data: DataArray | Dataset,
     collection_url_root: str = "https://stac.staging.digitalearthpacific.io/collections",
     set_geometry_from_input: bool = False,
+    disable_derived_from: bool = False,
     **kwargs,
 ) -> Item:
     """Create a STAC Item.
@@ -108,6 +109,9 @@ def get_stac_item(
         set_geometry_from_input: Whether the geometry property should be copied from
             the `stac_properties` attribute of `data`. If this property is missing,
             a warning is emitted and nothing is set.
+        disable_derived_from: Set to True to not add `derived_from` links (which
+            can be numerous, e.g. one for every scene in an annual composite).
+            They are added by default.
         **kwargs: Additional arguments to :func:`rio_stac.create_stac_item`.
 
     Returns:
@@ -160,8 +164,9 @@ def get_stac_item(
         collection=collection,
         **kwargs,
     )
-    for href in data.attrs.get("stac_derived_from", []):
-        item.add_link(Link("derived_from", href, media_type="application/geo+json"))
+    if not disable_derived_from:
+        for href in data.attrs.get("stac_derived_from", []):
+            item.add_link(Link("derived_from", href, media_type="application/geo+json"))
 
     item.properties["processing:datetime"] = datetime.now(timezone.utc).strftime(
         "%Y-%m-%dT%H:%M:%SZ"

@@ -163,3 +163,24 @@ def test_processing_datetime(stac_item):
 def test_no_software_without_env(stac_item, monkeypatch):
     assert "processing:software" not in stac_item.properties
     assert stac_item.get_single_link("via") is None
+
+
+def test_disable_derived_from(itempath, dataset):
+    href = "https://example.com/stac/items/abc"
+    data = dataset.assign_attrs(stac_derived_from=[href])
+    assert len(get_stac_item(itempath, "12,34", data).get_links("derived_from")) == 1
+    item = get_stac_item(itempath, "12,34", data, disable_derived_from=True)
+    assert item.get_links("derived_from") == []
+    # the rest of the provenance is unaffected
+    assert "processing:datetime" in item.properties
+
+
+def test_disable_derived_from_via_stac_creator(itempath, dataset):
+    from dep_tools.stac_utils import StacCreator
+
+    data = dataset.assign_attrs(stac_derived_from=["https://example.com/a"])
+    creator = StacCreator(itempath, disable_derived_from=True)
+    assert creator.process(data, "12,34").get_links("derived_from") == []
+    assert (
+        len(StacCreator(itempath).process(data, "12,34").get_links("derived_from")) == 1
+    )
